@@ -54,19 +54,23 @@ impl Ident {
     }
 
     // applications
-    pub async fn create_application(&self, params: serde_json::Value) -> Result<reqwest::Response, reqwest::Error> {
+    pub async fn create_application(&self, params: Option<serde_json::Value>) -> Result<reqwest::Response, reqwest::Error> {
         let res = self.client.post(String::from("applications"), params).await?;
         Ok( res )
     }
 
-    pub async fn get_applications(&self, params: serde_json::Value) -> Result<reqwest::Response, reqwest::Error> {
+    pub async fn get_applications(&self, params: Option<serde_json::Value>) -> Result<reqwest::Response, reqwest::Error> {
         let res = self.client.get(String::from("applications"), params).await?;
         Ok( res )
     }
     
-    pub fn associate_user_with_application() {}
+    pub async fn associate_user_with_application(&self, application_id: String, params: Option<serde_json::Value>) -> Result<reqwest::Response, reqwest::Error> {
+        let uri = format!("applications/{}/users", application_id);
+        let res = self.client.post(uri, params).await?;
+        Ok ( res )
+    }
 
-    pub async fn get_application(&self, application_id: String, params: serde_json::Value) -> Result<reqwest::Response, reqwest::Error> {
+    pub async fn get_application(&self, application_id: String, params: Option<serde_json::Value>) -> Result<reqwest::Response, reqwest::Error> {
         let uri = format!("applications/{}", application_id);
         let res = self.client.get(uri, params).await?;
         Ok( res )
@@ -98,7 +102,7 @@ impl Ident {
 
     pub fn authorize_long_term_token() {}
 
-    pub async fn authenticate(&self, params: serde_json::Value) -> Result<reqwest::Response, reqwest::Error> {
+    pub async fn authenticate(&self, params: Option<serde_json::Value>) -> Result<reqwest::Response, reqwest::Error> {
         let res = self.client.post(String::from("authenticate"), params).await?;
         Ok( res )
     }
@@ -126,21 +130,34 @@ mod tests {
         assert_eq!(ident.client.base_url, String::from("https://ident.provide.services/api/v1"))
     }
 
-    
-
     #[tokio::test]
     async fn test_ident_application_suite() {
         let token = std::env::var("ACCESS_TOKEN").expect("access token");
         let ident = Ident::init(None, None, Some(token)).expect("ident application client");
 
+        // create application
         let create_app_params = serde_json::json!({
             "name": "rust test application"
         });
-        let create_app_res = ident.create_application(create_app_params).await.expect("ident create application res");
+
+        let create_app_res = ident.create_application(Some(create_app_params)).await.expect("ident create application res");
         assert_eq!(create_app_res.status(), 201);
 
         let create_app_body: Application = create_app_res.json::<Application>().await.expect("ident create application body");
         assert_eq!(create_app_body.name, String::from("rust test application"));
+
+        // get applications
+        let get_apps_res = ident.get_applications(None).await.expect("ident get applications res");
+        assert_eq!(get_apps_res.status(), 200);
+
+        // associate user with application
+        let associate_app_with_user_params = serde_json::json!({
+            "user_id": create_app_body.user_id
+        });
+
+        let associate_app_with_user_res = ident.associate_user_with_application(create_app_body.id, Some(associate_app_with_user_params)).await.expect("ident associate app with user res");
+        
+
     }
 
     // #[tokio::test]
