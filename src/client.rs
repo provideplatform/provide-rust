@@ -41,7 +41,7 @@ impl ApiClient {
         self.client.patch(url).headers(self.construct_headers()).json(&params).send().await
     }
 
-    pub async fn put(&self, uri: String, params: serde_json::Value) -> Result<reqwest::Response, reqwest::Error> {
+    pub async fn put(&self, uri: String, params: Option<serde_json::Value>) -> Result<reqwest::Response, reqwest::Error> {
         let url = format!("{}/{}", self.base_url, uri);
         self.client.put(url).headers(self.construct_headers()).json(&params).send().await
     }
@@ -51,7 +51,7 @@ impl ApiClient {
         self.client.post(url).headers(self.construct_headers()).json(&params).send().await
     }
 
-    pub async fn delete(&self, uri: String, params: serde_json::Value) -> Result<reqwest::Response, reqwest::Error> {
+    pub async fn delete(&self, uri: String, params: Option<serde_json::Value>) -> Result<reqwest::Response, reqwest::Error> {
         let url = format!("{}/{}", self.base_url, uri);
         self.client.delete(url).headers(self.construct_headers()).json(&params).send().await
     }

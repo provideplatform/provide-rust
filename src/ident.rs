@@ -5,14 +5,15 @@ pub struct Ident {
     pub client: ApiClient
 }
 
-#[derive(Serialize, Deserialize)]
+// #[derive(Copy, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ApplicationConfig {
     network_id: Option<String>,
     baselined: Option<bool>,
     webhook_secret: String
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Application {
     id: String,
     created_at: String,
@@ -64,7 +65,7 @@ impl Ident {
         Ok( res )
     }
     
-    pub async fn associate_user_with_application(&self, application_id: String, params: Option<serde_json::Value>) -> Result<reqwest::Response, reqwest::Error> {
+    pub async fn associate_user_with_application(&self, application_id: String, application_token: String, params: Option<serde_json::Value>) -> Result<reqwest::Response, reqwest::Error> {
         let uri = format!("applications/{}/users", application_id);
         let res = self.client.post(uri, params).await?;
         Ok ( res )
@@ -76,15 +77,23 @@ impl Ident {
         Ok( res )
     }
 
-    pub fn get_application_users() {}
+    pub async fn get_application_users(&self, application_id: String, params: Option<serde_json::Value>) -> Result<reqwest::Response, reqwest::Error> {
+        let uri = format!("applications/{}/users", application_id);
+        let res = self.client.get(uri, params).await?;
+        Ok( res )
+    }
 
-    pub async fn update_application(&self, application_id: String, params: serde_json::Value) -> Result<reqwest::Response, reqwest::Error> {
+    pub async fn update_application(&self, application_id: String, params: Option<serde_json::Value>) -> Result<reqwest::Response, reqwest::Error> {
         let uri = format!("applications/{}", application_id);
         let res = self.client.put(uri, params).await?;
         Ok( res )
     }
 
-    pub fn delete_application() {}
+    pub async fn delete_application(&self, application_id: String, params: Option<serde_json::Value>) -> Result<reqwest::Response, reqwest::Error> {
+        let uri = format!("applications/{}", application_id);
+        let res = self.client.delete(uri, params).await?;
+        Ok( res )
+    }
 
     // organizations
     pub fn get_organizations() {}
@@ -146,18 +155,40 @@ mod tests {
         let create_app_body: Application = create_app_res.json::<Application>().await.expect("ident create application body");
         assert_eq!(create_app_body.name, String::from("rust test application"));
 
+        let create_app_body_clone_1 = create_app_body.clone();
+        let create_app_body_clone_2 = create_app_body.clone();
+        // let create_app_body_clone_3 = create_app_body.clone();
+
         // get applications
         let get_apps_res = ident.get_applications(None).await.expect("ident get applications res");
         assert_eq!(get_apps_res.status(), 200);
 
         // associate user with application
-        let associate_app_with_user_params = serde_json::json!({
-            "user_id": create_app_body.user_id
+        // let associate_app_with_user_params = serde_json::json!({
+        //     "user_id": "e82238a9-0eb7-40d9-830d-85af3f9a3832"
+        // });
+
+        // let associate_app_with_user_res = ident.associate_user_with_application(create_app_body.id, Some(associate_app_with_user_params)).await.expect("ident associate app with user res");
+        
+        // get application
+        let get_app_res = ident.get_application(create_app_body.id, None).await.expect("ident get application res");
+        assert_eq!(get_app_res.status(), 200);
+
+        // get application users
+        let get_app_users_res = ident.get_application_users(create_app_body_clone_1.id, None).await.expect("ident get application users res");
+        assert_eq!(get_app_users_res.status(), 200);
+
+        // update application
+        let update_app_params = serde_json::json!({
+            "name": "updated rust test application"
         });
 
-        let associate_app_with_user_res = ident.associate_user_with_application(create_app_body.id, Some(associate_app_with_user_params)).await.expect("ident associate app with user res");
-        
+        let update_app_res = ident.update_application(create_app_body_clone_2.id, Some(update_app_params)).await.expect("ident update application res");
+        assert_eq!(update_app_res.status(), 204);
 
+        // delete application
+        // let delete_app_res = ident.delete_application(create_app_body_clone_3.id, None).await.expect("ident delete application res");
+        // assert_eq!(delete_app_res.status(), 204)
     }
 
     // #[tokio::test]
