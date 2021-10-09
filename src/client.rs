@@ -1,5 +1,5 @@
-use reqwest;
 use http;
+use reqwest;
 use serde_json;
 
 // make properties private?
@@ -7,7 +7,7 @@ use serde_json;
 pub struct ApiClient {
     client: reqwest::Client,
     base_url: String,
-    token: String
+    token: String,
 }
 
 const DEFAULT_API_SCHEME: &str = "https";
@@ -20,50 +20,102 @@ impl ApiClient {
     pub fn new(scheme: String, host: String, path: String, token: String) -> Self {
         let client = reqwest::Client::new();
         let base_url = format!("{}://{}/{}", scheme, host, path);
-        
+
         Self {
             client,
             base_url,
-            token
+            token,
         }
     }
 
     // pub fn client_factory?
 
-    pub async fn get(&self, uri: &str, params: &Option<serde_json::Value>) -> impl std::future::Future<Output = Result<reqwest::Response, reqwest::Error>> {
+    pub fn get(
+        &self,
+        uri: &str,
+        params: &Option<serde_json::Value>,
+    ) -> impl std::future::Future<Output = Result<reqwest::Response, reqwest::Error>> {
         let url = format!("{}/{}", self.base_url, uri);
-        self.client.get(url).headers(self.construct_headers()).json(&params).send()
+        self.client
+            .get(url)
+            .headers(self.construct_headers())
+            .json(&params)
+            .send()
     }
 
-    pub async fn patch(&self, uri: &str, params: serde_json::Value) -> impl std::future::Future<Output = Result<reqwest::Response, reqwest::Error>> {
+    pub fn patch(
+        &self,
+        uri: &str,
+        params: serde_json::Value,
+    ) -> impl std::future::Future<Output = Result<reqwest::Response, reqwest::Error>> {
         let url = format!("{}/{}", self.base_url, uri);
-        self.client.patch(url).headers(self.construct_headers()).json(&params).send()
+        self.client
+            .patch(url)
+            .headers(self.construct_headers())
+            .json(&params)
+            .send()
     }
 
-    pub async fn put(&self, uri: &str, params: &Option<serde_json::Value>) -> impl std::future::Future<Output = Result<reqwest::Response, reqwest::Error>> {
+    pub fn put(
+        &self,
+        uri: &str,
+        params: &Option<serde_json::Value>,
+    ) -> impl std::future::Future<Output = Result<reqwest::Response, reqwest::Error>> {
         let url = format!("{}/{}", self.base_url, uri);
-        self.client.put(url).headers(self.construct_headers()).json(&params).send()
+        self.client
+            .put(url)
+            .headers(self.construct_headers())
+            .json(&params)
+            .send()
     }
 
-    pub async fn post(&self, uri: &str, params: &Option<serde_json::Value>) -> impl std::future::Future<Output = Result<reqwest::Response, reqwest::Error>> {
-        let url: &str = format!("{}/{}", self.base_url, uri);
-        self.client.post(url).headers(self.construct_headers()).json(params).send()
+    pub fn post(
+        &self,
+        uri: &str,
+        params: &Option<serde_json::Value>,
+    ) -> impl std::future::Future<Output = Result<reqwest::Response, reqwest::Error>> {
+        let url = format!("{}/{}", self.base_url, uri);
+        self.client
+            .post(url)
+            .headers(self.construct_headers())
+            .json(params)
+            .send()
     }
 
-    pub async fn delete(&self, uri: &str, params: &Option<serde_json::Value>) -> impl std::future::Future<Output = Result<reqwest::Response, reqwest::Error>> {
+    pub fn delete(
+        &self,
+        uri: &str,
+        params: &Option<serde_json::Value>,
+    ) -> impl std::future::Future<Output = Result<reqwest::Response, reqwest::Error>> {
         let url = format!("{}/{}", self.base_url, uri);
-        self.client.delete(url).headers(self.construct_headers()).json(&params).send()
+        self.client
+            .delete(url)
+            .headers(self.construct_headers())
+            .json(&params)
+            .send()
     }
 
     pub fn construct_headers(&self) -> http::HeaderMap {
         let mut headers = http::HeaderMap::new();
 
-        headers.insert("content-type", http::HeaderValue::from_static("application/json"));
-        headers.insert("user-agent", http::HeaderValue::from_str(&std::env::var("USER_AGENT").unwrap_or(String::from(DEFAULT_API_USER_AGENT))).expect("user agent"));
+        headers.insert(
+            "content-type",
+            http::HeaderValue::from_static("application/json"),
+        );
+        headers.insert(
+            "user-agent",
+            http::HeaderValue::from_str(
+                &std::env::var("USER_AGENT").unwrap_or(String::from(DEFAULT_API_USER_AGENT)),
+            )
+            .expect("user agent"),
+        );
 
         if self.token != String::from("") {
             let auth = format!("bearer {}", self.token);
-            headers.insert("authorization", http::HeaderValue::from_str(&auth).expect("token"));
+            headers.insert(
+                "authorization",
+                http::HeaderValue::from_str(&auth).expect("token"),
+            );
         }
 
         headers

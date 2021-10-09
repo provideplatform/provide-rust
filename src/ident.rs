@@ -1,12 +1,12 @@
 pub use crate::client::ApiClient;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 const DEFAULT_SCHEME: &str = "https";
 const DEFAULT_HOST: &str = "ident.provide.services";
 const DEFAULT_PATH: &str = "api/v1/";
 
 pub struct Ident {
-    client: ApiClient
+    client: ApiClient,
 }
 
 // alias ie type Ident = ApiClient
@@ -27,7 +27,7 @@ pub struct Ident {
 impl Ident {
     // pub fn new?
 
-    pub fn client_factory(token: String) -> Self {
+    pub fn factory(token: String) -> Self {
         let scheme = std::env::var("IDENT_API_SCHEME").unwrap_or(String::from(DEFAULT_SCHEME));
         let host = std::env::var("IDENT_API_HOST").unwrap_or(String::from(DEFAULT_HOST));
         let path = std::env::var("IDENT_API_PATH").unwrap_or(String::from(DEFAULT_PATH));
@@ -37,9 +37,11 @@ impl Ident {
     }
 
     // applications
-    pub async fn create_application(&self, params: &Option<serde_json::Value>) -> impl std::future::Future<Output = Result<reqwest::Response, reqwest::Error>> {
-        let res = self.client.post("applications", params).await;
-        res
+    pub async fn create_application(
+        &self,
+        params: &Option<serde_json::Value>,
+    ) -> Result<reqwest::Response, reqwest::Error> {
+        return self.client.post("applications", params).await;
     }
 
     // pub async fn associate_user_with_application(&self, application_id: &str, application_token: &str, params: Option<serde_json::Value>) -> impl std::future::Future<Output = Result<reqwest::Response, reqwest::Error>> {
@@ -100,14 +102,14 @@ impl Ident {
     // }
 
     // users
-    pub fn get_users() {}
-    
     pub fn create_user() {}
-
-    pub fn update_user() {}
-
+    
     pub fn get_user() {}
     
+    pub fn get_users() {}
+    
+    pub fn update_user() {}
+
     pub fn delete_user() {}
 }
 
@@ -116,7 +118,7 @@ impl Ident {
 pub struct ApplicationConfig {
     network_id: Option<String>,
     baselined: Option<bool>,
-    webhook_secret: String
+    webhook_secret: String,
 }
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
@@ -129,7 +131,7 @@ pub struct Application {
     description: Option<String>,
     r#type: Option<String>,
     config: ApplicationConfig,
-    hidden: bool
+    hidden: bool,
 }
 
 // pub struct User {
@@ -151,15 +153,16 @@ pub struct Application {
 //     permissions: i32
 // }
 
+// create a new user and get token for every test
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[tokio::test]
     async fn test_ident_application_suite() {
-        let token = std::env::var("ACCESS_TOKEN").expect("access token");
-        let ident = Ident::client_factory(token);
-        let something = ident.client;
+        let token = std::env::var("IDENT_ACCESS_TOKEN").expect("access token");
+        let ident = Ident::factory(token);
 
         // spin up stack locally (MAKEFILE, docker compose, ops dir), use .net, baseline, etc for reference
         // create application
@@ -183,7 +186,7 @@ mod tests {
         // });
 
         // let associate_app_with_user_res = ident.associate_user_with_application(create_app_body.id, Some(associate_app_with_user_params)).await.expect("ident associate app with user res");
-        
+
         // get application
         // let get_app_res = ident.get_application(create_app_body.clone().id, None).await.expect("ident get application res");
         // assert_eq!(get_app_res.status(), 200);
