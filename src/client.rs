@@ -2,12 +2,17 @@ use http;
 use reqwest;
 use serde_json;
 
-// make properties private?
-// #[derive(Default)]
+// TODO: make properties private?
+#[derive(Debug)]
 pub struct ApiClient {
-    client: reqwest::Client,
-    base_url: String,
+    pub client: reqwest::Client,
+    pub base_url: String,
     token: String,
+}
+
+pub struct AdditionalHeader {
+    key: &'static str,
+    value: http::HeaderValue
 }
 
 const DEFAULT_API_SCHEME: &str = "https";
@@ -28,17 +33,16 @@ impl ApiClient {
         }
     }
 
-    // pub fn client_factory?
-
     pub fn get(
         &self,
         uri: &str,
         params: &Option<serde_json::Value>,
+        additional_headers: Option<Vec<AdditionalHeader>>
     ) -> impl std::future::Future<Output = Result<reqwest::Response, reqwest::Error>> {
         let url = format!("{}/{}", self.base_url, uri);
         self.client
             .get(url)
-            .headers(self.construct_headers())
+            .headers(self.construct_headers(additional_headers))
             .json(&params)
             .send()
     }
@@ -47,11 +51,12 @@ impl ApiClient {
         &self,
         uri: &str,
         params: serde_json::Value,
+        additional_headers: Option<Vec<AdditionalHeader>>
     ) -> impl std::future::Future<Output = Result<reqwest::Response, reqwest::Error>> {
         let url = format!("{}/{}", self.base_url, uri);
         self.client
             .patch(url)
-            .headers(self.construct_headers())
+            .headers(self.construct_headers(additional_headers))
             .json(&params)
             .send()
     }
@@ -60,11 +65,12 @@ impl ApiClient {
         &self,
         uri: &str,
         params: &Option<serde_json::Value>,
+        additional_headers: Option<Vec<AdditionalHeader>>
     ) -> impl std::future::Future<Output = Result<reqwest::Response, reqwest::Error>> {
         let url = format!("{}/{}", self.base_url, uri);
         self.client
             .put(url)
-            .headers(self.construct_headers())
+            .headers(self.construct_headers(additional_headers))
             .json(&params)
             .send()
     }
@@ -73,11 +79,12 @@ impl ApiClient {
         &self,
         uri: &str,
         params: &Option<serde_json::Value>,
+        additional_headers: Option<Vec<AdditionalHeader>>
     ) -> impl std::future::Future<Output = Result<reqwest::Response, reqwest::Error>> {
         let url = format!("{}/{}", self.base_url, uri);
         self.client
             .post(url)
-            .headers(self.construct_headers())
+            .headers(self.construct_headers(additional_headers))
             .json(params)
             .send()
     }
@@ -86,18 +93,22 @@ impl ApiClient {
         &self,
         uri: &str,
         params: &Option<serde_json::Value>,
+        additional_headers: Option<Vec<AdditionalHeader>>
     ) -> impl std::future::Future<Output = Result<reqwest::Response, reqwest::Error>> {
         let url = format!("{}/{}", self.base_url, uri);
         self.client
             .delete(url)
-            .headers(self.construct_headers())
-            .json(&params)
+            .headers(self.construct_headers(additional_headers))
+            .json(params)
             .send()
     }
 
-    pub fn construct_headers(&self) -> http::HeaderMap {
+    
+
+    pub fn construct_headers(&self, additional_headers: Option<Vec<AdditionalHeader>>) -> http::HeaderMap {
         let mut headers = http::HeaderMap::new();
 
+        // make conditional
         headers.insert(
             "content-type",
             http::HeaderValue::from_static("application/json"),
@@ -118,6 +129,11 @@ impl ApiClient {
             );
         }
 
+        // for item in additional_headers {
+        //     let header = item.unwrap();
+        //     headers.insert(header.key, header.value);
+        // }
+
         headers
     }
 }
@@ -129,11 +145,11 @@ mod tests {
     #[test]
     fn test_api_client_init() {
         let scheme = String::from("https");
-        let host = String::from("api.provide.services");
+        let host = String::from("provide.services");
         let path = String::from("api/");
         let token = String::from("");
 
         let client = ApiClient::new(scheme, host, path, token);
-        assert_eq!(client.base_url, "https://api.provide.services/api/")
+        assert_eq!(client.base_url, "https://provide.services/api/")
     }
 }
