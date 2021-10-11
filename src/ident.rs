@@ -29,6 +29,18 @@ trait Ident {
     async fn create_organization(&self, params: &Option<serde_json::Value>) -> Result<reqwest::Response, reqwest::Error>;
 
     async fn list_organizations(&self) -> Result<reqwest::Response, reqwest::Error>;
+
+    async fn get_organization(&self, organization_id: &str) -> Result<reqwest::Response, reqwest::Error>;
+
+    async fn update_organization(&self, organization_id: &str, params: &Option<serde_json::Value>) -> Result<reqwest::Response, reqwest::Error>;
+
+    async fn application_authorization(&self, params: &Option<serde_json::Value>) -> Result<reqwest::Response, reqwest::Error>;
+
+    async fn organization_authorization(&self, params: &Option<serde_json::Value>) -> Result<reqwest::Response, reqwest::Error>;
+
+    async fn list_tokens(&self, params: &Option<serde_json::Value>) -> Result<reqwest::Response, reqwest::Error>;
+
+    async fn list_applications(&self) -> Result<reqwest::Response, reqwest::Error>;
 }
 
 #[async_trait]
@@ -84,6 +96,32 @@ impl Ident for ApiClient {
         return self.get("organizations", &None, None).await
     }
 
+    async fn get_organization(&self, organization_id: &str) -> Result<reqwest::Response, reqwest::Error> {
+        let uri = format!("organizations/{}", organization_id);
+        return self.get(&uri, &None, None).await
+    }
+
+    async fn update_organization(&self, organization_id: &str, params: &Option<serde_json::Value>) -> Result<reqwest::Response, reqwest::Error> {
+        let uri = format!("organizations/{}", organization_id);
+        return self.put(&uri, params, None).await
+    }
+
+    async fn application_authorization(&self, params: &Option<serde_json::Value>) -> Result<reqwest::Response, reqwest::Error> {
+        return self.post("tokens", params, None).await
+    }
+
+    async fn organization_authorization(&self, params: &Option<serde_json::Value>) -> Result<reqwest::Response, reqwest::Error> {
+        return self.post("tokens", params, None).await
+    }
+
+    async fn list_tokens(&self, params: &Option<serde_json::Value>) -> Result<reqwest::Response, reqwest::Error> {
+        return self.get("tokens", params, None).await
+    }
+
+    async fn list_applications(&self) -> Result<reqwest::Response, reqwest::Error> {
+        return self.get("applications", &None, None).await
+    }
+
 }
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
@@ -120,7 +158,7 @@ pub struct User {
 }
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
-pub struct Token {
+pub struct AccessToken {
     id: String,
     expires_in: i32,
     token: String,
@@ -130,10 +168,27 @@ pub struct Token {
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
 pub struct AuthenticateResponse {
     user: User,
-    token: Token
+    token: AccessToken
 }
 
-// create a new user and get token for every test
+#[derive(Serialize, Deserialize, Debug, Default, Clone)]
+pub struct Organization {
+    id: String,
+    created_at: String,
+    name: String,
+    user_id: String,
+    description: String,
+    metadata: serde_json::Value
+}
+
+#[derive(Serialize, Deserialize, Debug, Default, Clone)]
+pub struct Token {
+    id: String,
+    expires_in: i32,
+    access_token: String,
+    refresh_token: String,
+    permissions: i32
+}
 
 #[cfg(test)]
 mod tests {
@@ -350,5 +405,227 @@ mod tests {
 
         let list_organizations_res = ident.list_organizations().await.expect("list organizations response");
         assert_eq!(list_organizations_res.status(), 200);
+    }
+
+    #[tokio::test]
+    async fn get_organization() {
+        let empty_token = "".to_string();
+        let mut ident: ApiClient = Ident::factory(empty_token);
+        let user_data = &Some(serde_json::json!({
+            "first_name": "future",
+            "last_name": "hendrix",
+            "email": "future.hendrix@example.org",
+            "password": "wzrd12345",
+        }));
+        let create_user_res = ident.create_user(user_data).await.expect("create user response");
+        assert_eq!(create_user_res.status(), 201);
+
+        let credentials = &Some(serde_json::json!({
+            "email": "future.hendrix@example.org",
+            "password": "wzrd12345"
+        }));
+        let authenticate_res = ident.authenticate(credentials).await.expect("authenticate response");
+        assert_eq!(authenticate_res.status(), 201);
+        
+        let authenticate_res_body = authenticate_res.json::<AuthenticateResponse>().await.expect("authentication response body");
+        let token = authenticate_res_body.token.token;
+        ident.token = token;
+
+        let create_organization_params = &Some(serde_json::json!({
+            "name": "ACME Inc.",
+            "description": "Organization for testing",
+            "user_id": authenticate_res_body.user.id.as_str(),
+            "metadata": {
+                "hello": "world",
+                "arbitrary": "input"
+            }
+        }));
+        let create_organization_res = ident.create_organization(create_organization_params).await.expect("create organization response");
+        assert_eq!(create_organization_res.status(), 201);
+
+        let create_organization_body = create_organization_res.json::<Organization>().await.expect("create organization body");
+
+        let get_organization_res = ident.get_organization(create_organization_body.id.as_str()).await.expect("get organization response");
+        assert_eq!(get_organization_res.status(), 200);
+    }
+
+    #[tokio::test]
+    async fn update_organization() {
+        let empty_token = "".to_string();
+        let mut ident: ApiClient = Ident::factory(empty_token);
+        let user_data = &Some(serde_json::json!({
+            "first_name": "jacques",
+            "last_name": "webster",
+            "email": "jacques.webster@example.org",
+            "password": "laflame",
+        }));
+        let create_user_res = ident.create_user(user_data).await.expect("create user response");
+        assert_eq!(create_user_res.status(), 201);
+
+        let credentials = &Some(serde_json::json!({
+            "email": "jacques.webster@example.org",
+            "password": "laflame"
+        }));
+        let authenticate_res = ident.authenticate(credentials).await.expect("authenticate response");
+        assert_eq!(authenticate_res.status(), 201);
+        
+        let authenticate_res_body = authenticate_res.json::<AuthenticateResponse>().await.expect("authentication response body");
+        let token = authenticate_res_body.token.token;
+        ident.token = token;
+
+        let create_organization_params = &Some(serde_json::json!({
+            "name": "ACME Inc.",
+            "description": "Organization for testing",
+            "user_id": authenticate_res_body.user.id.as_str(),
+            "metadata": {
+                "hello": "world",
+                "arbitrary": "input"
+            }
+        }));
+        let create_organization_res = ident.create_organization(create_organization_params).await.expect("create organization response");
+        assert_eq!(create_organization_res.status(), 201);
+        
+        let create_organization_body = create_organization_res.json::<Organization>().await.expect("create organization body");
+
+        let update_organization_params = &Some(serde_json::json!({
+            "name": "ACME Inc.",
+            "description": "Updated description",
+            "user_id": authenticate_res_body.user.id.as_str(),
+        }));
+        let update_organization_res = ident.update_organization(create_organization_body.id.as_str(), update_organization_params).await.expect("update organization response");
+        assert_eq!(update_organization_res.status(), 204);
+    }
+
+    #[tokio::test]
+    async fn organization_authorization() {
+        let empty_token = "".to_string();
+        let mut ident: ApiClient = Ident::factory(empty_token);
+        let user_data = &Some(serde_json::json!({
+            "first_name": "jeffrey",
+            "last_name": "",
+            "email": "jeffrey.wyclefjean@example.org",
+            "password": "slime-ysl",
+        }));
+        let create_user_res = ident.create_user(user_data).await.expect("create user response");
+        assert_eq!(create_user_res.status(), 201);
+
+        let credentials = &Some(serde_json::json!({
+            "email": "jeffrey.wyclefjean@example.org",
+            "password": "slime-ysl"
+        }));
+        let authenticate_res = ident.authenticate(credentials).await.expect("authenticate response");
+        assert_eq!(authenticate_res.status(), 201);
+        
+        let authenticate_res_body = authenticate_res.json::<AuthenticateResponse>().await.expect("authentication response body");
+        let token = authenticate_res_body.token.token;
+        ident.token = token;
+
+        let create_organization_params = &Some(serde_json::json!({
+            "name": "ACME Inc.",
+            "description": "Organization for testing",
+            "user_id": authenticate_res_body.user.id.as_str(),
+            "metadata": {
+                "hello": "world",
+                "arbitrary": "input"
+            }
+        }));
+        let create_organization_res = ident.create_organization(create_organization_params).await.expect("create organization response");
+        assert_eq!(create_organization_res.status(), 201);
+        
+        let create_organization_body = create_organization_res.json::<Organization>().await.expect("create organization body");
+
+        let organization_authorization_params = &Some(serde_json::json!({
+            "organization_id": create_organization_body.id,
+            "scope": "offline_access"
+        }));
+        let organization_authorization_res = ident.organization_authorization(organization_authorization_params).await.expect("organization authorization response");
+        assert_eq!(organization_authorization_res.status(), 201)
+    }
+
+    // #[tokio::test]
+    // async fn applicationn_authoization() {
+
+    // }
+
+    #[tokio::test]
+    async fn list_tokens() {
+        let empty_token = "".to_string();
+        let mut ident: ApiClient = Ident::factory(empty_token);
+        let user_data = &Some(serde_json::json!({
+            "first_name": "uzi",
+            "last_name": "vert",
+            "email": "liluzivert@example.org",
+            "password": "eternalatake",
+        }));
+        let create_user_res = ident.create_user(user_data).await.expect("create user response");
+        assert_eq!(create_user_res.status(), 201);
+
+        let credentials = &Some(serde_json::json!({
+            "email": "liluzivert@example.org",
+            "password": "eternalatake"
+        }));
+        let authenticate_res = ident.authenticate(credentials).await.expect("authenticate response");
+        assert_eq!(authenticate_res.status(), 201);
+        
+        let authenticate_res_body = authenticate_res.json::<AuthenticateResponse>().await.expect("authentication response body");
+        let token = authenticate_res_body.token.token;
+        ident.token = token;
+
+        let create_organization_params = &Some(serde_json::json!({
+            "name": "ACME Inc.",
+            "description": "Organization for testing",
+            "user_id": authenticate_res_body.user.id.as_str(),
+            "metadata": {
+                "hello": "world",
+                "arbitrary": "input"
+            }
+        }));
+        let create_organization_res = ident.create_organization(create_organization_params).await.expect("create organization response");
+        assert_eq!(create_organization_res.status(), 201);
+        
+        let create_organization_body = create_organization_res.json::<Organization>().await.expect("create organization body");
+
+        let organization_authorization_params = &Some(serde_json::json!({
+            "organization_id": create_organization_body.id,
+            "scope": "offline_access"
+        }));
+        let organization_authorization_res = ident.organization_authorization(organization_authorization_params).await.expect("organization authorization response");
+        assert_eq!(organization_authorization_res.status(), 201);
+
+        let organization_authorization_body = organization_authorization_res.json::<Token>().await.expect("organization authorization body");
+
+        let list_tokens_params = &Some(serde_json::json!({
+            "refresh_token": organization_authorization_body.refresh_token
+        }));
+        let list_tokens_res = ident.list_tokens(list_tokens_params).await.expect("list tokens res");
+        assert_eq!(list_tokens_res.status(), 200);
+    }
+
+    #[tokio::test]
+    async fn list_appications() {
+        let empty_token = "".to_string();
+        let mut ident: ApiClient = Ident::factory(empty_token);
+        let user_data = &Some(serde_json::json!({
+            "first_name": "lil",
+            "last_name": "baby",
+            "email": "lil.baby@example.org",
+            "password": "slatt",
+        }));
+        let create_user_res = ident.create_user(user_data).await.expect("create user response");
+        assert_eq!(create_user_res.status(), 201);
+
+        let credentials = &Some(serde_json::json!({
+            "email": "lil.baby@example.org",
+            "password": "slatt"
+        }));
+        let authenticate_res = ident.authenticate(credentials).await.expect("authenticate response");
+        assert_eq!(authenticate_res.status(), 201);
+        
+        let authenticate_res_body = authenticate_res.json::<AuthenticateResponse>().await.expect("authentication response body");
+        let token = authenticate_res_body.token.token;
+        ident.token = token;
+
+        let list_applications_res = ident.list_applications().await.expect("list applications response");
+        assert_eq!(list_applications_res.status(), 200);
     }
 }
