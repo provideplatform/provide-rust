@@ -7,19 +7,20 @@ use serde_json;
 pub struct ApiClient {
     pub client: reqwest::Client,
     pub base_url: String,
-    token: String,
+    pub token: String,
 }
 
+#[derive(Debug)]
 pub struct AdditionalHeader {
-    key: &'static str,
-    value: http::HeaderValue
+    pub key: &'static str,
+    pub value: http::HeaderValue
 }
 
-const DEFAULT_API_SCHEME: &str = "https";
-const DEFAULT_API_HOST: &str = "provide.services";
+// const DEFAULT_API_SCHEME: &str = "https";
+// const DEFAULT_API_HOST: &str = "provide.services";
 const DEFAULT_API_USER_AGENT: &str = "provide-rust client library";
-const DEFAULT_API_MAX_ATTEMPTS: &i32 = &5;
-const DEFAULT_API_TIMEOUT: &i32 = &120;
+// const DEFAULT_API_MAX_ATTEMPTS: &i32 = &5;
+// const DEFAULT_API_TIMEOUT: &i32 = &120;
 
 impl ApiClient {
     pub fn new(scheme: String, host: String, path: String, token: String) -> Self {
@@ -129,10 +130,14 @@ impl ApiClient {
             );
         }
 
-        // for item in additional_headers {
-        //     let header = item.unwrap();
-        //     headers.insert(header.key, header.value);
-        // }
+        match additional_headers {
+            Some(more_headers) => {
+                for header in more_headers {
+                    headers.insert(header.key, header.value);
+                }
+            },
+            None => {}
+        }
 
         headers
     }
