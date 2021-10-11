@@ -8,6 +8,8 @@ const DEFAULT_SCHEME: &str = "https";
 const DEFAULT_HOST: &str = "ident.provide.services";
 const DEFAULT_PATH: &str = "api/v1";
 
+const ROPSTEN_NETWORK_ID: &str = "66d44f30-9092-4182-a3c4-bc02736d6ae5";
+
 // new fn? (as contructor)
 
 #[async_trait]
@@ -41,6 +43,18 @@ trait Ident {
     async fn list_tokens(&self, params: &Option<serde_json::Value>) -> Result<reqwest::Response, reqwest::Error>;
 
     async fn list_applications(&self) -> Result<reqwest::Response, reqwest::Error>;
+
+    async fn create_application(&self, params: &Option<serde_json::Value>) -> Result<reqwest::Response, reqwest::Error>;
+
+    async fn get_application(&self, application_id: &str) -> Result<reqwest::Response, reqwest::Error>;
+
+    async fn update_application(&self, application_id: &str, params: &Option<serde_json::Value>) -> Result<reqwest::Response, reqwest::Error>;
+
+    async fn list_application_users(&self, application_id: &str)  -> Result<reqwest::Response, reqwest::Error>;
+
+    async fn delete_application(&self, application_id: &str)  -> Result<reqwest::Response, reqwest::Error>;
+
+    async fn associate_application_user(&self, application_id: &str, params: &Option<serde_json::Value>) -> Result<reqwest::Response, reqwest::Error>;
 }
 
 #[async_trait]
@@ -120,6 +134,35 @@ impl Ident for ApiClient {
 
     async fn list_applications(&self) -> Result<reqwest::Response, reqwest::Error> {
         return self.get("applications", &None, None).await
+    }
+
+    async fn create_application(&self, params: &Option<serde_json::Value>) -> Result<reqwest::Response, reqwest::Error> {
+        return self.post("applications", params, None).await
+    }
+
+    async fn get_application(&self, application_id: &str) -> Result<reqwest::Response, reqwest::Error> {
+        let uri = format!("applications/{}", application_id);
+        return self.get(&uri, &None, None).await
+    }
+
+    async fn update_application(&self, application_id: &str, params: &Option<serde_json::Value>) -> Result<reqwest::Response, reqwest::Error> {
+        let uri = format!("applications/{}", application_id);
+        return self.put(&uri, params, None).await
+    }
+
+    async fn list_application_users(&self, application_id: &str)  -> Result<reqwest::Response, reqwest::Error> {
+        let uri = format!("applications/{}/users", application_id);
+        return self.get(&uri, &None, None).await
+    }
+
+    async fn delete_application(&self, application_id: &str) -> Result<reqwest::Response, reqwest::Error> {
+        let uri = format!("applications/{}", application_id);
+        return self.delete(&uri, &None, None).await
+    }
+
+    async fn associate_application_user(&self, application_id: &str, params: &Option<serde_json::Value>) -> Result<reqwest::Response, reqwest::Error> {
+        let uri = format!("applications/{}/users", application_id);
+        return self.post(&uri, params, None).await
     }
 
 }
@@ -627,5 +670,126 @@ mod tests {
 
         let list_applications_res = ident.list_applications().await.expect("list applications response");
         assert_eq!(list_applications_res.status(), 200);
+    }
+
+    // #[tokio::test]
+    // async fn create_application() {
+    //     let empty_token = "".to_string();
+    //     let mut ident: ApiClient = Ident::factory(empty_token);
+    //     let user_data = &Some(serde_json::json!({
+    //         "first_name": "pop",
+    //         "last_name": "smoke",
+    //         "email": "pop.smoke@example.org",
+    //         "password": "meetthewoo",
+    //     }));
+    //     let create_user_res = ident.create_user(user_data).await.expect("create user response");
+    //     assert_eq!(create_user_res.status(), 201);
+
+    //     let credentials = &Some(serde_json::json!({
+    //         "email": "pop.smoke@example.org",
+    //         "password": "meetthewoo"
+    //     }));
+    //     let authenticate_res = ident.authenticate(credentials).await.expect("authenticate response");
+    //     assert_eq!(authenticate_res.status(), 201);
+        
+    //     let authenticate_res_body = authenticate_res.json::<AuthenticateResponse>().await.expect("authentication response body");
+    //     let token = authenticate_res_body.token.token;
+    //     ident.token = token;
+
+    //     let create_application_params = &Some(serde_json::json!({
+    //         "network_id": ROPSTEN_NETWORK_ID,
+    //         "user_id": authenticate_res_body.user.id,
+    //         "name": "Demo Application",
+    //         "description": "Application intended for demonstration purposes",
+    //         "type": "baseline",
+    //         "hidden": false
+    //     }));
+    //     let create_application_res = ident.create_application(create_application_params).await.expect("create application res");
+    //     assert_eq!(create_application_res.status(), 201);
+    // }
+
+    #[tokio::test]
+    async fn get_application() {
+        let empty_token = "".to_string();
+        let mut ident: ApiClient = Ident::factory(empty_token);
+        let user_data = &Some(serde_json::json!({
+            "first_name": "j",
+            "last_name": "cole",
+            "email": "j.cole@example.org",
+            "password": "foresthillsdrive",
+        }));
+        let create_user_res = ident.create_user(user_data).await.expect("create user response");
+        assert_eq!(create_user_res.status(), 201);
+
+        let credentials = &Some(serde_json::json!({
+            "email": "j.cole@example.org",
+            "password": "foresthillsdrive"
+        }));
+        let authenticate_res = ident.authenticate(credentials).await.expect("authenticate response");
+        assert_eq!(authenticate_res.status(), 201);
+        
+        let authenticate_res_body = authenticate_res.json::<AuthenticateResponse>().await.expect("authentication response body");
+        let token = authenticate_res_body.token.token;
+        ident.token = token;
+
+        let create_application_params = &Some(serde_json::json!({
+            "network_id": ROPSTEN_NETWORK_ID,
+            "user_id": authenticate_res_body.user.id,
+            "name": "Some other demo Application",
+            "description": "Application intended for demonstration purposes",
+            "type": "baseline",
+            "hidden": false
+        }));
+        let create_application_res = ident.create_application(create_application_params).await.expect("create application res");
+        assert_eq!(create_application_res.status(), 201);
+
+        let create_application_body = create_application_res.json::<Application>().await.expect("create application body");
+
+        let get_application_res = ident.get_application(create_application_body.id.as_str()).await.expect("get application response");
+        assert_eq!(get_application_res.status(), 200);
+    }
+
+    #[tokio::test]
+    async fn update_application() {
+        let empty_token = "".to_string();
+        let mut ident: ApiClient = Ident::factory(empty_token);
+        let user_data = &Some(serde_json::json!({
+            "first_name": "j",
+            "last_name": "cole",
+            "email": "j.cole@example.org",
+            "password": "foresthillsdrive",
+        }));
+        let create_user_res = ident.create_user(user_data).await.expect("create user response");
+        assert_eq!(create_user_res.status(), 201);
+
+        let credentials = &Some(serde_json::json!({
+            "email": "j.cole@example.org",
+            "password": "foresthillsdrive"
+        }));
+        let authenticate_res = ident.authenticate(credentials).await.expect("authenticate response");
+        assert_eq!(authenticate_res.status(), 201);
+        
+        let authenticate_res_body = authenticate_res.json::<AuthenticateResponse>().await.expect("authentication response body");
+        let token = authenticate_res_body.token.token;
+        ident.token = token;
+
+        let create_application_params = &Some(serde_json::json!({
+            "network_id": ROPSTEN_NETWORK_ID,
+            "user_id": authenticate_res_body.user.id,
+            "name": "Another demo Application",
+            "description": "Application intended for demonstration purposes",
+            "type": "baseline",
+            "hidden": false
+        }));
+        let create_application_res = ident.create_application(create_application_params).await.expect("create application res");
+        assert_eq!(create_application_res.status(), 201);
+
+        let create_application_body = create_application_res.json::<Application>().await.expect("create application body");
+
+        let update_application_params = &Some(serde_json::json!({
+            "description": "An updated description"
+        }));
+        let update_application_res = ident.update_application(create_application_body.id.as_str(), update_application_params).await.expect("update application response");
+        assert_eq!(update_application_res.status(), 204);
     }
 }
