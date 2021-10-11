@@ -171,7 +171,7 @@ impl Ident for ApiClient {
 pub struct ApplicationConfig {
     network_id: Option<String>,
     baselined: Option<bool>,
-    webhook_secret: String,
+    webhook_secret: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
@@ -586,7 +586,7 @@ mod tests {
     }
 
     // #[tokio::test]
-    // async fn applicationn_authoization() {
+    // async fn application_authoization() {
 
     // }
 
@@ -672,41 +672,41 @@ mod tests {
         assert_eq!(list_applications_res.status(), 200);
     }
 
-    // #[tokio::test]
-    // async fn create_application() {
-    //     let empty_token = "".to_string();
-    //     let mut ident: ApiClient = Ident::factory(empty_token);
-    //     let user_data = &Some(serde_json::json!({
-    //         "first_name": "pop",
-    //         "last_name": "smoke",
-    //         "email": "pop.smoke@example.org",
-    //         "password": "meetthewoo",
-    //     }));
-    //     let create_user_res = ident.create_user(user_data).await.expect("create user response");
-    //     assert_eq!(create_user_res.status(), 201);
+    #[tokio::test]
+    async fn create_application() {
+        let empty_token = "".to_string();
+        let mut ident: ApiClient = Ident::factory(empty_token);
+        let user_data = &Some(serde_json::json!({
+            "first_name": "pop",
+            "last_name": "smoke",
+            "email": "pop.smoke@example.org",
+            "password": "meetthewoo",
+        }));
+        let create_user_res = ident.create_user(user_data).await.expect("create user response");
+        assert_eq!(create_user_res.status(), 201);
 
-    //     let credentials = &Some(serde_json::json!({
-    //         "email": "pop.smoke@example.org",
-    //         "password": "meetthewoo"
-    //     }));
-    //     let authenticate_res = ident.authenticate(credentials).await.expect("authenticate response");
-    //     assert_eq!(authenticate_res.status(), 201);
+        let credentials = &Some(serde_json::json!({
+            "email": "pop.smoke@example.org",
+            "password": "meetthewoo"
+        }));
+        let authenticate_res = ident.authenticate(credentials).await.expect("authenticate response");
+        assert_eq!(authenticate_res.status(), 201);
         
-    //     let authenticate_res_body = authenticate_res.json::<AuthenticateResponse>().await.expect("authentication response body");
-    //     let token = authenticate_res_body.token.token;
-    //     ident.token = token;
+        let authenticate_res_body = authenticate_res.json::<AuthenticateResponse>().await.expect("authentication response body");
+        let token = authenticate_res_body.token.token;
+        ident.token = token;
 
-    //     let create_application_params = &Some(serde_json::json!({
-    //         "network_id": ROPSTEN_NETWORK_ID,
-    //         "user_id": authenticate_res_body.user.id,
-    //         "name": "Demo Application",
-    //         "description": "Application intended for demonstration purposes",
-    //         "type": "baseline",
-    //         "hidden": false
-    //     }));
-    //     let create_application_res = ident.create_application(create_application_params).await.expect("create application res");
-    //     assert_eq!(create_application_res.status(), 201);
-    // }
+        let create_application_params = &Some(serde_json::json!({
+            "network_id": ROPSTEN_NETWORK_ID,
+            "user_id": authenticate_res_body.user.id,
+            "name": "Demo Application",
+            "description": "Application intended for demonstration purposes",
+            "type": "baseline",
+            "hidden": false
+        }));
+        let create_application_res = ident.create_application(create_application_params).await.expect("create application res");
+        assert_eq!(create_application_res.status(), 201);
+    }
 
     #[tokio::test]
     async fn get_application() {
@@ -754,17 +754,17 @@ mod tests {
         let empty_token = "".to_string();
         let mut ident: ApiClient = Ident::factory(empty_token);
         let user_data = &Some(serde_json::json!({
-            "first_name": "j",
-            "last_name": "cole",
-            "email": "j.cole@example.org",
-            "password": "foresthillsdrive",
+            "first_name": "kodak",
+            "last_name": "black",
+            "email": "k.black@example.org",
+            "password": "peachy",
         }));
         let create_user_res = ident.create_user(user_data).await.expect("create user response");
         assert_eq!(create_user_res.status(), 201);
 
         let credentials = &Some(serde_json::json!({
-            "email": "j.cole@example.org",
-            "password": "foresthillsdrive"
+            "email": "k.black@example.org",
+            "password": "peachy"
         }));
         let authenticate_res = ident.authenticate(credentials).await.expect("authenticate response");
         assert_eq!(authenticate_res.status(), 201);
