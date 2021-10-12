@@ -13,7 +13,7 @@ const ROPSTEN_NETWORK_ID: &str = "66d44f30-9092-4182-a3c4-bc02736d6ae5";
 // new fn? (as contructor)
 
 #[async_trait]
-trait Ident {
+pub trait Ident {
     fn factory(token: String) -> Self;
     
     async fn create_user(&self, params: Option<serde_json::Value>) -> Result<reqwest::Response, reqwest::Error>;
@@ -210,15 +210,15 @@ pub struct User {
 pub struct AccessToken {
     id: String,
     expires_in: Option<i32>,
-    token: String,
+    pub token: String,
     permissions: Option<i32>,
     created_at: Option<String>
 }
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
 pub struct AuthenticateResponse {
-    user: User,
-    token: AccessToken
+    pub user: User,
+    pub token: AccessToken
 }
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
@@ -246,13 +246,12 @@ mod tests {
     use fake::faker::name::en::{Name, FirstName, LastName};
     use fake::faker::internet::en::{FreeEmail, Password};
     use fake::{Fake};
-    use std;
 
     async fn generate_new_user_and_token() -> AuthenticateResponse {
         let ident: ApiClient = Ident::factory("".to_string());
 
         let email = FreeEmail().fake::<String>();
-        let password = Password(std::ops::Range { start: 8, end: 15 }).fake::<String>();
+        let password = Password(8..15).fake::<String>();
 
         let user_data = Some(serde_json::json!({
             "first_name": FirstName().fake::<String>(),
