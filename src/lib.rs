@@ -4,3 +4,4 @@
 pub mod client;
 pub mod ident;
 pub mod vault;
+pub mod privacy;

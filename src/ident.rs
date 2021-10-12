@@ -742,3 +742,6 @@ mod tests {
 // the token properties shouldn't be public?
 // token enum - beaertoken, accessandresponsetoken, machinetomachine, revokabletoken
 // new fn? (as contructor)
+// check my pattern w passing references / values through functions
+// basically all of these "optional" params (body) are not really optional - change them to required?
+// should add required data struct in fn call args, referencing ^
