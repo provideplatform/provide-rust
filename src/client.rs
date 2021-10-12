@@ -37,7 +37,7 @@ impl ApiClient {
     pub fn get(
         &self,
         uri: &str,
-        params: &Option<serde_json::Value>,
+        params: Option<serde_json::Value>,
         additional_headers: Option<Vec<AdditionalHeader>>
     ) -> impl std::future::Future<Output = Result<reqwest::Response, reqwest::Error>> {
         let url = format!("{}/{}", self.base_url, uri);
@@ -51,7 +51,7 @@ impl ApiClient {
     pub fn patch(
         &self,
         uri: &str,
-        params: serde_json::Value,
+        params: Option<serde_json::Value>,
         additional_headers: Option<Vec<AdditionalHeader>>
     ) -> impl std::future::Future<Output = Result<reqwest::Response, reqwest::Error>> {
         let url = format!("{}/{}", self.base_url, uri);
@@ -65,7 +65,7 @@ impl ApiClient {
     pub fn put(
         &self,
         uri: &str,
-        params: &Option<serde_json::Value>,
+        params: Option<serde_json::Value>,
         additional_headers: Option<Vec<AdditionalHeader>>
     ) -> impl std::future::Future<Output = Result<reqwest::Response, reqwest::Error>> {
         let url = format!("{}/{}", self.base_url, uri);
@@ -79,28 +79,28 @@ impl ApiClient {
     pub fn post(
         &self,
         uri: &str,
-        params: &Option<serde_json::Value>,
+        params: Option<serde_json::Value>,
         additional_headers: Option<Vec<AdditionalHeader>>
     ) -> impl std::future::Future<Output = Result<reqwest::Response, reqwest::Error>> {
         let url = format!("{}/{}", self.base_url, uri);
         self.client
             .post(url)
             .headers(self.construct_headers(additional_headers))
-            .json(params)
+            .json(&params)
             .send()
     }
 
     pub fn delete(
         &self,
         uri: &str,
-        params: &Option<serde_json::Value>,
+        params: Option<serde_json::Value>,
         additional_headers: Option<Vec<AdditionalHeader>>
     ) -> impl std::future::Future<Output = Result<reqwest::Response, reqwest::Error>> {
         let url = format!("{}/{}", self.base_url, uri);
         self.client
             .delete(url)
             .headers(self.construct_headers(additional_headers))
-            .json(params)
+            .json(&params)
             .send()
     }
 
@@ -148,7 +148,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_api_client_init() {
+    fn new_api_client() {
         let scheme = String::from("https");
         let host = String::from("provide.services");
         let path = String::from("api/");
