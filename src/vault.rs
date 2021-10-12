@@ -2,7 +2,7 @@ pub use crate::client::{ApiClient, AdditionalHeader};
 use std::result::{Result};
 use serde::{Deserialize, Serialize};
 use async_trait::async_trait;
-// use http;
+use serde_json::{Value};
 
 const DEFAULT_SCHEME: &str = "https";
 const DEFAULT_HOST: &str = "vault.provide.services";
@@ -12,29 +12,29 @@ const DEFAULT_PATH: &str = "api/v1";
 pub trait Vault {
     fn factory(token: String) -> Self;
 
-    async fn create_vault(&self, params: Option<serde_json::Value>) -> Result<reqwest::Response, reqwest::Error>;
+    async fn create_vault(&self, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error>;
 
     async fn list_vaults(&self) -> Result<reqwest::Response, reqwest::Error>;
 
     async fn create_seal_unseal_key(&self) -> Result<reqwest::Response, reqwest::Error>;
 
-    async fn unseal_vault(&self, params: Option<serde_json::Value>) -> Result<reqwest::Response, reqwest::Error>;
+    async fn unseal_vault(&self, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error>;
 
-    async fn create_key(&self, vault_id: &str, params: Option<serde_json::Value>) -> Result<reqwest::Response, reqwest::Error>;
+    async fn create_key(&self, vault_id: &str, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error>;
 
     async fn delete_key(&self, vault_id: &str, key_id: &str) -> Result<reqwest::Response, reqwest::Error>;
 
-    async fn derive_key(&self, vault_id: &str, key_id: &str, params: Option<serde_json::Value>) -> Result<reqwest::Response, reqwest::Error>;
+    async fn derive_key(&self, vault_id: &str, key_id: &str, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error>;
 
-    async fn encrypt(&self, vault_id: &str, key_id: &str, params: Option<serde_json::Value>) -> Result<reqwest::Response, reqwest::Error>;
+    async fn encrypt(&self, vault_id: &str, key_id: &str, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error>;
 
-    async fn decrypt(&self, vault_id: &str, key_id: &str, params: Option<serde_json::Value>) -> Result<reqwest::Response, reqwest::Error>;
+    async fn decrypt(&self, vault_id: &str, key_id: &str, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error>;
 
     async fn list_keys(&self, vault_id: &str) -> Result<reqwest::Response, reqwest::Error>;
 
     async fn list_secrets(&self, vault_id: &str) -> Result<reqwest::Response, reqwest::Error>;
 
-    async fn store_secret(&self, vault_id: &str, params: Option<serde_json::Value>) -> Result<reqwest::Response, reqwest::Error>;
+    async fn store_secret(&self, vault_id: &str, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error>;
 
     async fn retrieve_secret(&self, vault_id: &str, secret_id: &str) -> Result<reqwest::Response, reqwest::Error>;
 
@@ -51,7 +51,7 @@ impl Vault for ApiClient {
         return ApiClient::new(scheme, host, path, token);
     }
 
-    async fn create_vault(&self, params: Option<serde_json::Value>) -> Result<reqwest::Response, reqwest::Error> {
+    async fn create_vault(&self, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error> {
         return self.post("vaults", params, None).await
     }
 
@@ -63,11 +63,11 @@ impl Vault for ApiClient {
         return self.post("unsealerkey", None, None).await
     }
 
-    async fn unseal_vault(&self, params: Option<serde_json::Value>) -> Result<reqwest::Response, reqwest::Error> {
+    async fn unseal_vault(&self, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error> {
         return self.post("unseal", params, None).await
     }
 
-    async fn create_key(&self, vault_id: &str, params: Option<serde_json::Value>) -> Result<reqwest::Response, reqwest::Error> {
+    async fn create_key(&self, vault_id: &str, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error> {
         let uri = format!("vaults/{}/keys", vault_id);
         return self.post(&uri, params, None).await
     }
@@ -77,17 +77,17 @@ impl Vault for ApiClient {
         return self.delete(&uri, None, None).await
     }
 
-    async fn derive_key(&self, vault_id: &str, key_id: &str, params: Option<serde_json::Value>) -> Result<reqwest::Response, reqwest::Error> {
+    async fn derive_key(&self, vault_id: &str, key_id: &str, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error> {
         let uri = format!("vaults/{}/keys/{}/derive", vault_id, key_id);
         return self.post(&uri, params, None).await
     }
 
-    async fn encrypt(&self, vault_id: &str, key_id: &str, params: Option<serde_json::Value>) -> Result<reqwest::Response, reqwest::Error> {
+    async fn encrypt(&self, vault_id: &str, key_id: &str, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error> {
         let uri = format!("vaults/{}/keys/{}/encrypt", vault_id, key_id);
         return self.post(&uri, params, None).await
     }
 
-    async fn decrypt(&self, vault_id: &str, key_id: &str, params: Option<serde_json::Value>) -> Result<reqwest::Response, reqwest::Error> {
+    async fn decrypt(&self, vault_id: &str, key_id: &str, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error> {
         let uri = format!("vaults/{}/keys/{}/encrypt", vault_id, key_id);
         return self.post(&uri, params, None).await
     }
@@ -102,7 +102,7 @@ impl Vault for ApiClient {
         return self.get(&uri, None, None).await
     }
 
-    async fn store_secret(&self, vault_id: &str, params: Option<serde_json::Value>) -> Result<reqwest::Response, reqwest::Error> {
+    async fn store_secret(&self, vault_id: &str, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error> {
         let uri = format!("vaults/{}/secrets", vault_id);
         return self.post(&uri, params, None).await
     }
@@ -165,15 +165,16 @@ mod tests {
     use fake::faker::name::en::{Name, FirstName, LastName};
     use fake::faker::internet::en::{FreeEmail, Password};
     use fake::{Fake};
-    pub use crate::ident::{Ident, AuthenticateResponse};
+    use crate::ident::{Ident, AuthenticateResponse};
+    use serde_json::json;
 
     async fn generate_new_user_and_token() -> AuthenticateResponse {
         let ident: ApiClient = Ident::factory("".to_string());
 
         let email = FreeEmail().fake::<String>();
-        let password = Password(std::ops::Range { start: 8, end: 15 }).fake::<String>();
+        let password = Password(8..15).fake::<String>();
 
-        let user_data = Some(serde_json::json!({
+        let user_data = Some(json!({
             "first_name": FirstName().fake::<String>(),
             "last_name": LastName().fake::<String>(),
             "email": &email,
@@ -182,18 +183,19 @@ mod tests {
         let create_user_res = ident.create_user(user_data).await.expect("create user response");
         assert_eq!(create_user_res.status(), 201);
 
-        let credentials = Some(serde_json::json!({
+        let params = Some(json!({
             "email": &email,
             "password": &password,
+            "scope": "offline_access",
         }));
-        let authenticate_res = ident.authenticate(credentials).await.expect("authenticate response");
+        let authenticate_res = ident.authenticate(params).await.expect("authenticate response");
         assert_eq!(authenticate_res.status(), 201);
 
         return authenticate_res.json::<AuthenticateResponse>().await.expect("authentication response body");
     }
 
     async fn generate_vault(vault: &ApiClient) -> VaultContainer {
-        let create_vault_params = Some(serde_json::json!({
+        let create_vault_params = Some(json!({
             "name": format!("{} {}", Name().fake::<String>(), "Vault"),
             "description": "Some vault description",
         }));
@@ -205,7 +207,7 @@ mod tests {
     }
 
     async fn generate_key(vault: &ApiClient, vault_id: &str) -> VaultKey {
-        let create_key_params = Some(serde_json::json!({
+        let create_key_params = Some(json!({
             "type": "symmetric",
             "usage": "encrypt/decrypt",
             "spec": "ChaCha20",
@@ -221,7 +223,12 @@ mod tests {
     #[tokio::test]
     async fn create_vault() {
         let authentication_res_body = generate_new_user_and_token().await;
-        let vault: ApiClient = Vault::factory(authentication_res_body.token.token);
+        let access_token = match authentication_res_body.token.access_token {
+            Some(string) => string,
+            None => panic!("authentication response access token not found"),
+        };
+
+        let vault: ApiClient = Vault::factory(access_token);
 
         let _ = generate_vault(&vault);
     }
@@ -229,7 +236,12 @@ mod tests {
     #[tokio::test]
     async fn list_vaults() {
         let authentication_res_body = generate_new_user_and_token().await;
-        let vault: ApiClient = Vault::factory(authentication_res_body.token.token);
+        let access_token = match authentication_res_body.token.access_token {
+            Some(string) => string,
+            None => panic!("authentication response access token not found"),
+        };
+
+        let vault: ApiClient = Vault::factory(access_token);
 
         let list_vaults_response = vault.list_vaults().await.expect("list vaults response");
         assert_eq!(list_vaults_response.status(), 200);
@@ -238,7 +250,12 @@ mod tests {
     #[tokio::test]
     async fn create_seal_unseal_key() {
         let authentication_res_body = generate_new_user_and_token().await;
-        let vault: ApiClient = Vault::factory(authentication_res_body.token.token);
+        let access_token = match authentication_res_body.token.access_token {
+            Some(string) => string,
+            None => panic!("authentication response access token not found"),
+        };
+
+        let vault: ApiClient = Vault::factory(access_token);
 
         let create_seal_unseal_key_response = vault.create_seal_unseal_key().await.expect("create seal unseal key response");
         assert_eq!(create_seal_unseal_key_response.status(), 201);
@@ -247,14 +264,19 @@ mod tests {
     #[tokio::test]
     async fn unseal_vault() {
         let authentication_res_body = generate_new_user_and_token().await;
-        let vault: ApiClient = Vault::factory(authentication_res_body.token.token);
+        let access_token = match authentication_res_body.token.access_token {
+            Some(string) => string,
+            None => panic!("authentication response access token not found"),
+        };
+
+        let vault: ApiClient = Vault::factory(access_token);
 
         let create_seal_unseal_key_response = vault.create_seal_unseal_key().await.expect("create seal unseal key response");
         assert_eq!(create_seal_unseal_key_response.status(), 201);
 
         let unsealer_key = create_seal_unseal_key_response.json::<UnsealerKey>().await.expect("unsealer key");
 
-        let unseal_vault_params = Some(serde_json::json!({
+        let unseal_vault_params = Some(json!({
             "key": unsealer_key.key,
         }));
         let unseal_key_res = vault.unseal_vault(unseal_vault_params).await.expect("unseal key response");
@@ -264,7 +286,12 @@ mod tests {
     #[tokio::test]
     async fn create_key() {
         let authentication_res_body = generate_new_user_and_token().await;
-        let vault: ApiClient = Vault::factory(authentication_res_body.token.token);
+        let access_token = match authentication_res_body.token.access_token {
+            Some(string) => string,
+            None => panic!("authentication response access token not found"),
+        };
+
+        let vault: ApiClient = Vault::factory(access_token);
 
         let create_vault_res = generate_vault(&vault).await;
 
@@ -274,7 +301,12 @@ mod tests {
     #[tokio::test]
     async fn delete_key() {
         let authentication_res_body = generate_new_user_and_token().await;
-        let vault: ApiClient = Vault::factory(authentication_res_body.token.token);
+        let access_token = match authentication_res_body.token.access_token {
+            Some(string) => string,
+            None => panic!("authentication response access token not found"),
+        };
+
+        let vault: ApiClient = Vault::factory(access_token);
 
         let create_vault_res = generate_vault(&vault).await;
         let create_key_res = generate_key(&vault, create_vault_res.id.as_str()).await;
@@ -286,11 +318,16 @@ mod tests {
     #[tokio::test]
     async fn derive_key() {
         let authentication_res_body = generate_new_user_and_token().await;
-        let vault: ApiClient = Vault::factory(authentication_res_body.token.token);
+        let access_token = match authentication_res_body.token.access_token {
+            Some(string) => string,
+            None => panic!("authentication response access token not found"),
+        };
+
+        let vault: ApiClient = Vault::factory(access_token);
 
         let create_vault_res = generate_vault(&vault).await;
         let create_key_res = generate_key(&vault, create_vault_res.id.as_str()).await;
-        let derive_key_params = Some(serde_json::json!({
+        let derive_key_params = Some(json!({
             "nonce": 2,
             "context": "provide rust testing",
             "name": Name().fake::<String>(),
@@ -304,11 +341,16 @@ mod tests {
     #[tokio::test]
     async fn encrypt() {
         let authentication_res_body = generate_new_user_and_token().await;
-        let vault: ApiClient = Vault::factory(authentication_res_body.token.token);
+        let access_token = match authentication_res_body.token.access_token {
+            Some(string) => string,
+            None => panic!("authentication response access token not found"),
+        };
+
+        let vault: ApiClient = Vault::factory(access_token);
 
         let create_vault_res = generate_vault(&vault).await;
         let create_key_res = generate_key(&vault, create_vault_res.id.as_str()).await;
-        let encrypt_params = Some(serde_json::json!({
+        let encrypt_params = Some(json!({
             "data": "some data",
         }));
 
@@ -319,11 +361,16 @@ mod tests {
     #[tokio::test]
     async fn decrypt() {
         let authentication_res_body = generate_new_user_and_token().await;
-        let vault: ApiClient = Vault::factory(authentication_res_body.token.token);
+        let access_token = match authentication_res_body.token.access_token {
+            Some(string) => string,
+            None => panic!("authentication response access token not found"),
+        };
+
+        let vault: ApiClient = Vault::factory(access_token);
 
         let create_vault_res = generate_vault(&vault).await;
         let create_key_res = generate_key(&vault, create_vault_res.id.as_str()).await;
-        let encrypt_params = Some(serde_json::json!({
+        let encrypt_params = Some(json!({
             "data": "some data",
         }));
 
@@ -331,7 +378,7 @@ mod tests {
         assert_eq!(encrypt_res.status(), 200);
 
         let encrypt_res_body = encrypt_res.json::<EncryptedData>().await.expect("encrypted response body");
-        let decrypt_params = Some(serde_json::json!({
+        let decrypt_params = Some(json!({
             "data": encrypt_res_body.data,
         }));
 
@@ -342,7 +389,12 @@ mod tests {
     #[tokio::test]
     async fn list_users() {
         let authentication_res_body = generate_new_user_and_token().await;
-        let vault: ApiClient = Vault::factory(authentication_res_body.token.token);
+        let access_token = match authentication_res_body.token.access_token {
+            Some(string) => string,
+            None => panic!("authentication response access token not found"),
+        };
+
+        let vault: ApiClient = Vault::factory(access_token);
 
         let create_vault_res = generate_vault(&vault).await;
 
@@ -353,7 +405,12 @@ mod tests {
     #[tokio::test]
     async fn list_secrets() {
         let authentication_res_body = generate_new_user_and_token().await;
-        let vault: ApiClient = Vault::factory(authentication_res_body.token.token);
+        let access_token = match authentication_res_body.token.access_token {
+            Some(string) => string,
+            None => panic!("authentication response access token not found"),
+        };
+
+        let vault: ApiClient = Vault::factory(access_token);
 
         let create_vault_res = generate_vault(&vault).await;
 
@@ -364,11 +421,16 @@ mod tests {
     #[tokio::test]
     async fn store_secret() {
         let authentication_res_body = generate_new_user_and_token().await;
-        let vault: ApiClient = Vault::factory(authentication_res_body.token.token);
+        let access_token = match authentication_res_body.token.access_token {
+            Some(string) => string,
+            None => panic!("authentication response access token not found"),
+        };
+
+        let vault: ApiClient = Vault::factory(access_token);
 
         let create_vault_res = generate_vault(&vault).await;
 
-        let store_secret_params = Some(serde_json::json!({
+        let store_secret_params = Some(json!({
             "type": "sample secret",
             "name": Name().fake::<String>(),
             "description": "this secret is being stored for demonstration purposes",
@@ -382,11 +444,16 @@ mod tests {
     #[tokio::test]
     async fn retrieve_secret() {
         let authentication_res_body = generate_new_user_and_token().await;
-        let vault: ApiClient = Vault::factory(authentication_res_body.token.token);
+        let access_token = match authentication_res_body.token.access_token {
+            Some(string) => string,
+            None => panic!("authentication response access token not found"),
+        };
+
+        let vault: ApiClient = Vault::factory(access_token);
 
         let create_vault_res = generate_vault(&vault).await;
 
-        let store_secret_params = Some(serde_json::json!({
+        let store_secret_params = Some(json!({
             "type": "sample secret",
             "name": Name().fake::<String>(),
             "description": "this secret is being stored for demonstration purposes",
@@ -405,11 +472,16 @@ mod tests {
     #[tokio::test]
     async fn delete_secret() {
         let authentication_res_body = generate_new_user_and_token().await;
-        let vault: ApiClient = Vault::factory(authentication_res_body.token.token);
+        let access_token = match authentication_res_body.token.access_token {
+            Some(string) => string,
+            None => panic!("authentication response access token not found"),
+        };
+
+        let vault: ApiClient = Vault::factory(access_token);
 
         let create_vault_res = generate_vault(&vault).await;
 
-        let store_secret_params = Some(serde_json::json!({
+        let store_secret_params = Some(json!({
             "type": "sample secret",
             "name": Name().fake::<String>(),
             "description": "this secret is being stored for demonstration purposes",
