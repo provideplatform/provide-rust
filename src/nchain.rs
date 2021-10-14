@@ -33,6 +33,36 @@ pub trait NChain {
     async fn get_contract(&self, contract_id: &str) -> Result<reqwest::Response, reqwest::Error>;
 
     async fn execute_contract(&self, contract_id: &str, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error>;
+
+    async fn get_wallets(&self) -> Result<reqwest::Response, reqwest::Error>;
+
+    async fn create_wallet(&self, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error>;
+
+    async fn get_wallet_accounts(&self, wallet_id: &str) -> Result<reqwest::Response, reqwest::Error>;
+
+    async fn get_networks(&self) -> Result<reqwest::Response, reqwest::Error>;
+
+    async fn create_network(&self, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error>;
+
+    async fn update_network(&self, network_id: &str, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error>;
+
+    async fn get_network(&self, network_id: &str) -> Result<reqwest::Response, reqwest::Error>;
+
+    async fn get_oracles(&self) -> Result<reqwest::Response, reqwest::Error>;
+
+    async fn create_oracle(&self, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error>;
+
+    async fn get_oracle(&self, oracle_id: &str) -> Result<reqwest::Response, reqwest::Error>;
+
+    async fn update_oracle(&self, oracle_id: &str, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error>;
+
+    async fn delete_oracle(&self, oracle_id: &str) -> Result<reqwest::Response, reqwest::Error>;
+
+    async fn get_transactions(&self) -> Result<reqwest::Response, reqwest::Error>;
+
+    async fn create_transaction(&self, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error>;
+
+    async fn get_transaction(&self, tx_id: &str) -> Result<reqwest::Response, reqwest::Error>;
 }
 
 #[async_trait]
@@ -93,6 +123,73 @@ impl NChain for ApiClient {
         let uri = format!("contracts/{}/execute", contract_id);
         return self.post(&uri, params, None).await
     }
+
+    async fn get_wallets(&self) -> Result<reqwest::Response, reqwest::Error> {
+        return self.get("wallets", None, None).await
+    }
+
+    async fn create_wallet(&self, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error> {
+        return self.post("wallets", params, None).await
+    }
+
+    async fn get_wallet_accounts(&self, wallet_id: &str) -> Result<reqwest::Response, reqwest::Error> {
+        let uri = format!("wallets/{}/accounts", wallet_id);
+        return self.get(&uri, None, None).await
+    }
+
+    async fn get_networks(&self) -> Result<reqwest::Response, reqwest::Error> {
+        return self.get("networks", None, None).await
+    }
+
+    async fn create_network(&self, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error> {
+        return self.post("networks", params, None).await
+    }
+
+    async fn update_network(&self, network_id: &str, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error> {
+        let uri = format!("networks/{}", network_id);
+        return self.put(&uri, params, None).await
+    }
+
+    async fn get_network(&self, network_id: &str) -> Result<reqwest::Response, reqwest::Error> {
+        let uri = format!("networks/{}", network_id);
+        return self.get(&uri, None, None).await
+    }
+
+    async fn get_oracles(&self) -> Result<reqwest::Response, reqwest::Error> {
+        return self.get("oracles", None, None).await
+    }
+
+    async fn create_oracle(&self, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error> {
+        return self.post("oracles", params, None).await
+    }
+
+    async fn get_oracle(&self, oracle_id: &str) -> Result<reqwest::Response, reqwest::Error> {
+        let uri = format!("oracles/{}", oracle_id);
+        return self.get(&uri, None, None).await
+    }
+
+    async fn update_oracle(&self, oracle_id: &str, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error> {
+        let uri = format!("oracles/{}", oracle_id);
+        return self.put(&uri, params, None).await
+    }
+
+    async fn delete_oracle(&self, oracle_id: &str) -> Result<reqwest::Response, reqwest::Error> {
+        let uri = format!("oracles/{}", oracle_id);
+        return self.delete(&uri, None, None).await
+    }
+
+    async fn get_transactions(&self) -> Result<reqwest::Response, reqwest::Error> {
+        return self.get("transactions", None, None).await
+    }
+
+    async fn create_transaction(&self, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error> {
+        return self.post("transactions", params, None).await
+    }
+
+    async fn get_transaction(&self, tx_id: &str) -> Result<reqwest::Response, reqwest::Error> {
+        let uri = format!("transactions/{}", tx_id);
+        return self.get(&uri, None, None).await
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
@@ -118,7 +215,6 @@ pub struct Connector {
     r#type: String,
     status: String,
     description: Option<String>,
-
 }
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
@@ -139,6 +235,17 @@ pub struct ConfigSecurity {
     ingress: Value, // FIXME
 }
 
+// #[derive(Serialize, Deserialize, Debug, Default, Clone)]
+// pub struct SecurityIngress {
+//     r"0.0.0.0/0": IngressParams,
+// }
+
+// #[derive(Serialize, Deserialize, Debug, Default, Clone)]
+// pub struct IngressParams {
+//     tcp: Vec<i64>,
+//     udp: Vec<i64>,
+// }
+
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
 pub struct Contract {
     id: String,
@@ -155,16 +262,48 @@ pub struct Contract {
     pubsub_prefix: String,
 }
 
-// #[derive(Serialize, Deserialize, Debug, Default, Clone)]
-// pub struct SecurityIngress {
-//     r"0.0.0.0/0": IngressParams,
-// }
+#[derive(Serialize, Deserialize, Debug, Default, Clone)]
+pub struct Wallet {
+    id: String,
+    created_at: String,
+    user_id: Option<String>,
+    vault_id: String,
+    key_id: String,
+    purpose: i64,
+    public_key: String,
+    application_id: Option<String>,
+}
 
-// #[derive(Serialize, Deserialize, Debug, Default, Clone)]
-// pub struct IngressParams {
-//     tcp: Vec<i64>,
-//     udp: Vec<i64>,
-// }
+#[derive(Serialize, Deserialize, Debug, Default, Clone)]
+pub struct Network {
+    id: String,
+    created_at: String,
+    user_id: Option<String>,
+    name: String,
+    description: Option<String>,
+    enabled: bool,
+    chain_id: String,
+    config: Value,
+}
+
+#[derive(Serialize, Deserialize, Debug, Default, Clone)]
+pub struct Transaction {
+    id: String,
+    created_at: String,
+    network_id: String,
+    user_id: String,
+    wallet_id: String,
+    hd_derivation_path: String,
+    to: String,
+    value: i64,
+    data: Option<Value>,
+    hash: String,
+    status: String,
+    r#ref: Option<Value>,
+    description: Option<String>,
+    block: Option<Value>,
+    broadcast_at: String,
+}
 
 #[cfg(test)]
 mod tests {
@@ -542,10 +681,410 @@ mod tests {
         assert_eq!(get_contract_res.status(), 200);
     }
 
+    #[tokio::test]
+    async fn execute_contract() {
+        let authentication_res_body = generate_new_user_and_token().await;
+        let access_token = match authentication_res_body.token.access_token {
+            Some(string) => string,
+            None => panic!("authentication response access token not found"),
+        };
+
+        let ident: ApiClient = Ident::factory(access_token);
+
+        let create_application_body = generate_new_application(&ident, &authentication_res_body.user.id).await;
+
+        let application_auth_body = generate_application_auth(&ident, &create_application_body.id).await;
+
+        let application_access_token = match application_auth_body.access_token {
+            Some(string) => string,
+            None => panic!("application authentication response access token not found"),
+        };
+
+        let nchain: ApiClient = NChain::factory(application_access_token);
+
+        let create_contract_params = Some(json!({
+            "application_id": &create_application_body.id,
+            "network_id": ROPSTEN_NETWORK_ID,
+            "name": format!("{} {}", Name().fake::<String>(), "Contract"),
+            "address": "0x"
+        }));
+
+        let create_contract_res = nchain.create_contract(create_contract_params).await.expect("create contract response");
+        assert_eq!(create_contract_res.status(), 201);
+
+        let create_contract_body = create_contract_res.json::<Contract>().await.expect("create contract body");
+
+        let create_wallet_params = Some(json!({
+            "application_id": &create_application_body.id,
+        }));
+
+        let create_wallet_res = nchain.create_wallet(create_wallet_params).await.expect("create wallet response");
+        assert_eq!(create_wallet_res.status(), 201);
+
+        let create_wallet_body = create_wallet_res.json::<Wallet>().await.expect("create wallet body");
+
+        let execute_contract_params = Some(json!({
+            "value": 0,
+            "wallet_id": create_wallet_body.id,
+        }));
+
+        let execute_contract_res = nchain.execute_contract(&create_contract_body.id, execute_contract_params).await.expect("execute contract response");
+        assert_eq!(execute_contract_res.status(), 202);
+    }
+
+    #[tokio::test]
+    async fn get_wallets() {
+        let authentication_res_body = generate_new_user_and_token().await;
+        let access_token = match authentication_res_body.token.access_token {
+            Some(string) => string,
+            None => panic!("authentication response access token not found"),
+        };
+
+        let nchain: ApiClient = NChain::factory(access_token);
+
+        let get_wallets_res = nchain.get_wallets().await.expect("get wallets response");
+        assert_eq!(get_wallets_res.status(), 200);
+    }
+
+    #[tokio::test]
+    async fn create_wallet() {
+        let authentication_res_body = generate_new_user_and_token().await;
+        let access_token = match authentication_res_body.token.access_token {
+            Some(string) => string,
+            None => panic!("authentication response access token not found"),
+        };
+
+        let nchain: ApiClient = NChain::factory(access_token);
+
+        let create_wallet_params = Some(json!({
+            "user_id": authentication_res_body.user.id,
+        }));
+
+        let create_wallet_res = nchain.create_wallet(create_wallet_params).await.expect("create wallet response");
+        assert_eq!(create_wallet_res.status(), 201);
+    }
+
+    #[tokio::test]
+    async fn get_wallet_accounts() {
+        let authentication_res_body = generate_new_user_and_token().await;
+        let access_token = match authentication_res_body.token.access_token {
+            Some(string) => string,
+            None => panic!("authentication response access token not found"),
+        };
+
+        let nchain: ApiClient = NChain::factory(access_token);
+
+        let create_wallet_params = Some(json!({
+            "user_id": authentication_res_body.user.id,
+        }));
+
+        let create_wallet_res = nchain.create_wallet(create_wallet_params).await.expect("create wallet response");
+        assert_eq!(create_wallet_res.status(), 201);
+
+        let create_wallet_body = create_wallet_res.json::<Wallet>().await.expect("create wallet body");
+
+        let get_wallet_accounts_res = nchain.get_wallet_accounts(&create_wallet_body.id).await.expect("get wallet accounts response");
+        assert_eq!(get_wallet_accounts_res.status(), 200);
+    }
+
+    #[tokio::test]
+    async fn get_networks() {
+        let authentication_res_body = generate_new_user_and_token().await;
+        let access_token = match authentication_res_body.token.access_token {
+            Some(string) => string,
+            None => panic!("authentication response access token not found"),
+        };
+
+        let nchain: ApiClient = NChain::factory(access_token);
+
+        let get_networks_res = nchain.get_networks().await.expect("get networks response");
+        assert_eq!(get_networks_res.status(), 200);
+    }
+
+    #[tokio::test]
+    async fn create_network() {
+        let authentication_res_body = generate_new_user_and_token().await;
+        let access_token = match authentication_res_body.token.access_token {
+            Some(string) => string,
+            None => panic!("authentication response access token not found"),
+        };
+
+        let ident: ApiClient = Ident::factory(access_token);
+
+        let create_application_body = generate_new_application(&ident, &authentication_res_body.user.id).await;
+
+        let application_auth_body = generate_application_auth(&ident, &create_application_body.id).await;
+
+        let application_access_token = match application_auth_body.access_token {
+            Some(string) => string,
+            None => panic!("application authentication response access token not found"),
+        };
+
+        let nchain: ApiClient = NChain::factory(application_access_token);
+
+        let create_network_params = Some(json!({
+            "Application_id": &create_application_body.id,
+            "name": format!("{} {}", Name().fake::<String>(), "Network"),
+            "enabled": true,
+            "chain_id": "0x1618585621",
+            "config": {
+                "chain": "test",
+                "chainspec": {
+                    "alloc": {},
+                    "coinbase": 0,
+                    "config": {
+                        "byzantiumBlock": 0,
+                        "constantinopleBlock": 0,
+                        "eip150Block": 0,
+                        "eip155Block": 0,
+                        "eip158Block": 0,
+                        "homesteadBlock": 0,
+                        "petersburgBlock": 0
+                    },
+                    "difficulty": 131072,
+                    "extraData": "",
+                    "gasLimit": 3141592,
+                    "mixhash": 0,
+                    "nonce": 66,
+                    "parentHash": 0,
+                    "timestamp": 0
+                },
+                "engine_id": "ethash",
+                "native_currency": "TEST",
+                "network_id": 1618585621,
+                "platform": "evm",
+                "protocol_id": "pow"
+            }
+        }));
+
+        let create_network_res = nchain.create_network(create_network_params).await.expect("create network response");
+        assert_eq!(create_network_res.status(), 201);
+    }
+
+    #[tokio::test]
+    async fn update_network() {
+        let authentication_res_body = generate_new_user_and_token().await;
+        let access_token = match authentication_res_body.token.access_token {
+            Some(string) => string,
+            None => panic!("authentication response access token not found"),
+        };
+
+        let access_clone = access_token.clone();
+
+        let ident: ApiClient = Ident::factory(access_token);
+
+        let create_application_body = generate_new_application(&ident, &authentication_res_body.user.id).await;
+
+        let nchain: ApiClient = NChain::factory(access_clone);
+
+        let create_network_params = Some(json!({
+            "application_id": &create_application_body.id,
+            "name": format!("{} {}", Name().fake::<String>(), "Network"),
+            "enabled": true,
+            "chain_id": "0x1618585621",
+            "config": {
+                "chain": "test",
+                "chainspec": {
+                    "alloc": {},
+                    "coinbase": 0,
+                    "config": {
+                        "byzantiumBlock": 0,
+                        "constantinopleBlock": 0,
+                        "eip150Block": 0,
+                        "eip155Block": 0,
+                        "eip158Block": 0,
+                        "homesteadBlock": 0,
+                        "petersburgBlock": 0
+                    },
+                    "difficulty": 131072,
+                    "extraData": "",
+                    "gasLimit": 3141592,
+                    "mixhash": 0,
+                    "nonce": 66,
+                    "parentHash": 0,
+                    "timestamp": 0
+                },
+                "engine_id": "ethash",
+                "native_currency": "TEST",
+                "network_id": 1618585621,
+                "platform": "evm",
+                "protocol_id": "pow"
+            }
+        }));
+
+        let create_network_res = nchain.create_network(create_network_params).await.expect("create network response");
+        assert_eq!(create_network_res.status(), 201);
+
+        let create_network_body = create_network_res.json::<Network>().await.expect("create network body");
+
+        let update_network_params = Some(json!({
+            "description": "some network description"
+        }));
+
+        let update_network_res = nchain.update_network(&create_network_body.id, update_network_params).await.expect("udpate network response");
+        assert_eq!(update_network_res.status(), 204);
+    }
+
+    #[tokio::test]
+    async fn get_network() {
+        let authentication_res_body = generate_new_user_and_token().await;
+        let access_token = match authentication_res_body.token.access_token {
+            Some(string) => string,
+            None => panic!("authentication response access token not found"),
+        };
+
+        let access_clone = access_token.clone();
+
+        let ident: ApiClient = Ident::factory(access_token);
+
+        let create_application_body = generate_new_application(&ident, &authentication_res_body.user.id).await;
+
+        let nchain: ApiClient = NChain::factory(access_clone);
+
+        let create_network_params = Some(json!({
+            "application_id": &create_application_body.id,
+            "name": format!("{} {}", Name().fake::<String>(), "Network"),
+            "enabled": true,
+            "chain_id": "0x1618585621",
+            "config": {
+                "chain": "test",
+                "chainspec": {
+                    "alloc": {},
+                    "coinbase": 0,
+                    "config": {
+                        "byzantiumBlock": 0,
+                        "constantinopleBlock": 0,
+                        "eip150Block": 0,
+                        "eip155Block": 0,
+                        "eip158Block": 0,
+                        "homesteadBlock": 0,
+                        "petersburgBlock": 0
+                    },
+                    "difficulty": 131072,
+                    "extraData": "",
+                    "gasLimit": 3141592,
+                    "mixhash": 0,
+                    "nonce": 66,
+                    "parentHash": 0,
+                    "timestamp": 0
+                },
+                "engine_id": "ethash",
+                "native_currency": "TEST",
+                "network_id": 1618585621,
+                "platform": "evm",
+                "protocol_id": "pow"
+            }
+        }));
+
+        let create_network_res = nchain.create_network(create_network_params).await.expect("create network response");
+        assert_eq!(create_network_res.status(), 201);
+
+        let create_network_body = create_network_res.json::<Network>().await.expect("create network body");
+
+        let get_network_res = nchain.get_network(&create_network_body.id).await.expect("get network response");
+        assert_eq!(get_network_res.status(), 200);
+    }
+
     // #[tokio::test]
-    // async fn execute_contract() {}
+    // async fn get_oracles() {
+    //     let authentication_res_body = generate_new_user_and_token().await;
+    //     let access_token = match authentication_res_body.token.access_token {
+    //         Some(string) => string,
+    //         None => panic!("authentication response access token not found"),
+    //     };
+
+    //     let nchain: ApiClient = NChain::factory(access_token);
+
+    //     let get_oracles_res = nchain.get_oracles().await.expect("get oracles response");
+    //     assert_eq!(get_oracles_res.status(), 200);
+    // }
+
+    #[tokio::test]
+    async fn get_transactions() {
+        let authentication_res_body = generate_new_user_and_token().await;
+        let access_token = match authentication_res_body.token.access_token {
+            Some(string) => string,
+            None => panic!("authentication response access token not found"),
+        };
+
+        let nchain: ApiClient = NChain::factory(access_token);
+
+        let get_transactions_res = nchain.get_transactions().await.expect("get transactions response");
+        assert_eq!(get_transactions_res.status(), 200);
+    }
+
+    #[tokio::test]
+    async fn create_transaction() {
+        let authentication_res_body = generate_new_user_and_token().await;
+        let access_token = match authentication_res_body.token.access_token {
+            Some(string) => string,
+            None => panic!("authentication response access token not found"),
+        };
+
+        let nchain: ApiClient = NChain::factory(access_token);
+
+        let create_wallet_params = Some(json!({
+            "user_id": authentication_res_body.user.id,
+        }));
+
+        let create_wallet_res = nchain.create_wallet(create_wallet_params).await.expect("create wallet response");
+        assert_eq!(create_wallet_res.status(), 201);
+
+        let create_wallet_body = create_wallet_res.json::<Wallet>().await.expect("create wallet body");
+
+        let create_transaction_params = Some(json!({
+            "network_id": ROPSTEN_NETWORK_ID,
+            "user_id": &authentication_res_body.user.id,
+            "wallet_id": &create_wallet_body.id,
+            "hd_derivation_path": "m/44'/60'/0'/0/0",
+            "to": "7c8fe6f1-38c3-4da1-b4b7-7591c6d0ca7c",
+            "value": 0
+        }));
+
+        let create_transaction_res = nchain.create_transaction(create_transaction_params).await.expect("create transaction response");
+        assert_eq!(create_transaction_res.status(), 201);
+    }
+
+    #[tokio::test]
+    async fn get_transaction() {
+        let authentication_res_body = generate_new_user_and_token().await;
+        let access_token = match authentication_res_body.token.access_token {
+            Some(string) => string,
+            None => panic!("authentication response access token not found"),
+        };
+
+        let nchain: ApiClient = NChain::factory(access_token);
+
+        let create_wallet_params = Some(json!({
+            "user_id": authentication_res_body.user.id,
+        }));
+
+        let create_wallet_res = nchain.create_wallet(create_wallet_params).await.expect("create wallet response");
+        assert_eq!(create_wallet_res.status(), 201);
+
+        let create_wallet_body = create_wallet_res.json::<Wallet>().await.expect("create wallet body");
+
+        let create_transaction_params = Some(json!({
+            "network_id": ROPSTEN_NETWORK_ID,
+            "user_id": &authentication_res_body.user.id,
+            "wallet_id": &create_wallet_body.id,
+            "hd_derivation_path": "m/44'/60'/0'/0/0",
+            "to": "7c8fe6f1-38c3-4da1-b4b7-7591c6d0ca7c",
+            "value": 0
+        }));
+
+        let create_transaction_res = nchain.create_transaction(create_transaction_params).await.expect("create transaction response");
+        assert_eq!(create_transaction_res.status(), 201);
+
+        let create_transaction_body = create_transaction_res.json::<Transaction>().await.expect("create transaction body");
+        
+        let get_transaction_res = nchain.get_transaction(&create_transaction_body.id).await.expect("get transaction response");
+        assert_eq!(get_transaction_res.status(), 200);
+    }
 }
 
 // ONLY USE GET IN PLACE OF RETRIEVE, LIST, etc
 // change all as_str() to &
 // for structs with org and app id they should both prolly be option
+// could consider 'nicer' naming ie list_multiple, get_single_detail, more deploy
+// load balancer details call?
