@@ -181,7 +181,7 @@ pub struct ApplicationConfig {
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
 pub struct Application {
-    id: String,
+    pub id: String,
     created_at: String,
     network_id: String,
     user_id: String,
@@ -194,7 +194,7 @@ pub struct Application {
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
 pub struct User {
-    id: String,
+    pub id: String,
     created_at: String,
     name: String,
     first_name: String,
@@ -209,7 +209,7 @@ pub struct User {
 pub struct Token {
     id: String,
     expires_in: Option<i64>,
-    token: Option<String>,
+    pub token: Option<String>,
     permissions: Option<i32>,
     pub access_token: Option<String>,
     refresh_token: Option<String>,
@@ -745,3 +745,4 @@ mod tests {
 // check my pattern w passing references / values through functions
 // basically all of these "optional" params (body) are not really optional - change them to required?
 // should add required data struct in fn call args, referencing ^
+// should factories take reference to token string? <---------- do that

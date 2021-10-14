@@ -120,7 +120,7 @@ impl Vault for ApiClient {
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
 pub struct VaultContainer {
-    id: String,
+    pub id: String,
     created_at: String,
     name: String,
     description: String,
@@ -134,7 +134,7 @@ pub struct UnsealerKey {
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
 pub struct VaultKey {
-    id: String,
+    pub id: String,
     created_at: String,
     vault_id: String,
     r#type: String,
