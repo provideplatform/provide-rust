@@ -1088,3 +1088,7 @@ mod tests {
 // for structs with org and app id they should both prolly be option
 // could consider 'nicer' naming ie list_multiple, get_single_detail, more deploy
 // load balancer details call?
+
+// how to add the comments that show on hover in vscode ie in TS it is @param, @return in /** **/ block
+
+// make them non optional

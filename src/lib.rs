@@ -6,3 +6,4 @@ pub mod ident;
 pub mod vault;
 pub mod privacy;
 pub mod nchain;
+pub mod baseline;
