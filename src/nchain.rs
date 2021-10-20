@@ -313,7 +313,6 @@ mod tests {
     use fake::{Fake};
     use crate::ident::{Ident, AuthenticateResponse, Application, Token};
     use serde_json::json;
-    use tokio::time::{self, Duration};
 
     const ROPSTEN_NETWORK_ID: &str = "66d44f30-9092-4182-a3c4-bc02736d6ae5";
 

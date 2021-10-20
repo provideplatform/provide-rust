@@ -410,8 +410,9 @@ services:
     restart: always
 
   baseline-proxy:
-    build: provide/baseline
+    image: provide/baseline
     entrypoint: ./ops/run_api.sh
+    container_name: baseline-proxy
     depends_on:
       - nats
       - postgres
@@ -460,10 +461,11 @@ services:
     ports:
       - 8085:8080
     restart: always
-​
+
   baseline-proxy-consumer:
-    build: provide/baseline
+    image: provide/baseline
     entrypoint: ./ops/run_consumer.sh
+    container_name: baseline-proxy-consumer
     depends_on:
       - nats
       - postgres
