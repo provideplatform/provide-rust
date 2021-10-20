@@ -4,9 +4,9 @@ use serde::{Deserialize, Serialize};
 use async_trait::async_trait;
 use serde_json::{Value};
 
-const DEFAULT_SCHEME: &str = "";
-const DEFAULT_HOST: &str = "";
-const DEFAULT_PATH: &str = "";
+const DEFAULT_SCHEME: &str = "https";
+const DEFAULT_HOST: &str = "baseline.provide.network";
+const DEFAULT_PATH: &str = "api/v1";
 
 #[async_trait]
 pub trait Baseline {
