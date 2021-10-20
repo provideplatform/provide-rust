@@ -746,3 +746,4 @@ mod tests {
 // basically all of these "optional" params (body) are not really optional - change them to required?
 // should add required data struct in fn call args, referencing ^
 // should factories take reference to token string? <---------- do that
+// is it necessary to specifically handle errors differently if req fails?
