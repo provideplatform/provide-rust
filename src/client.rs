@@ -16,11 +16,7 @@ pub struct AdditionalHeader {
     pub value: http::HeaderValue
 }
 
-// const DEFAULT_API_SCHEME: &str = "https";
-// const DEFAULT_API_HOST: &str = "provide.services";
 const DEFAULT_API_USER_AGENT: &str = "provide-rust client library";
-// const DEFAULT_API_MAX_ATTEMPTS: &i32 = &5;
-// const DEFAULT_API_TIMEOUT: &i32 = &120;
 
 impl ApiClient {
     pub fn new(scheme: String, host: String, path: String, token: String) -> Self {
@@ -158,3 +154,5 @@ mod tests {
         assert_eq!(client.base_url, "https://provide.services/api/")
     }
 }
+
+// token should be reference, as with that pattern of passings refs

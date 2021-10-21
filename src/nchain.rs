@@ -194,10 +194,10 @@ impl NChain for ApiClient {
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
 pub struct Account {
-    id: String,
+    pub id: String,
     created_at: String,
     network_id: String,
-    user_id: String,
+    user_id: Option<String>,
     vault_id: String,
     key_id: String,
     public_key: String,
@@ -248,7 +248,7 @@ pub struct ConfigSecurity {
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
 pub struct Contract {
-    id: String,
+    pub id: String,
     created_at: String,
     application_id: String,
     organization_id: Option<String>,
@@ -256,7 +256,7 @@ pub struct Contract {
     contract_id: Option<String>,
     transaction_id: Option<String>,
     name: String,
-    address: String,
+    pub address: String,
     r#type: Option<String>,
     accessed_at: Option<String>,
     pubsub_prefix: String,
@@ -1083,7 +1083,6 @@ mod tests {
 }
 
 // ONLY USE GET IN PLACE OF RETRIEVE, LIST, etc
-// change all as_str() to &
 // for structs with org and app id they should both prolly be option
 // could consider 'nicer' naming ie list_multiple, get_single_detail, more deploy
 // load balancer details call?

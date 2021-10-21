@@ -179,7 +179,7 @@ mod tests {
         let privacy: ApiClient = Privacy::factory(access_token);
         let deploy_circuit_body = deploy_circuit(&privacy).await;
 
-        let get_circuit_res = privacy.get_circuit(deploy_circuit_body.id.as_str()).await.expect("get circuit response");
+        let get_circuit_res = privacy.get_circuit(&deploy_circuit_body.id).await.expect("get circuit response");
         assert_eq!(get_circuit_res.status(), 200);
     }
 
@@ -232,7 +232,7 @@ mod tests {
         while circuit_status != "provisioned" {
             interval.tick().await;
 
-            let get_circuit_res = privacy.get_circuit(deploy_circuit_body.id.as_str()).await.expect("get circuit response");
+            let get_circuit_res = privacy.get_circuit(&deploy_circuit_body.id).await.expect("get circuit response");
             assert_eq!(get_circuit_res.status(), 200);
 
             let get_circuit_body = get_circuit_res.json::<Circuit>().await.expect("get circuit body");
@@ -255,7 +255,7 @@ mod tests {
             }
         }));
 
-        let generate_proof_res = privacy.generate_proof(deploy_circuit_body.id.as_str(), generate_proof_param).await.expect("generate proof response");
+        let generate_proof_res = privacy.generate_proof(&deploy_circuit_body.id, generate_proof_param).await.expect("generate proof response");
         assert_eq!(generate_proof_res.status(), 200);
     }
 
@@ -308,7 +308,7 @@ mod tests {
         while circuit_status != "provisioned" {
             interval.tick().await;
 
-            let get_circuit_res = privacy.get_circuit(deploy_circuit_body.id.as_str()).await.expect("get circuit response");
+            let get_circuit_res = privacy.get_circuit(&deploy_circuit_body.id).await.expect("get circuit response");
             assert_eq!(get_circuit_res.status(), 200);
 
             let get_circuit_body = get_circuit_res.json::<Circuit>().await.expect("get circuit body");
@@ -331,7 +331,7 @@ mod tests {
             },
         }));
 
-        let generate_proof_res = privacy.generate_proof(deploy_circuit_body.id.as_str(), generate_proof_param).await.expect("generate proof response");
+        let generate_proof_res = privacy.generate_proof(&deploy_circuit_body.id, generate_proof_param).await.expect("generate proof response");
         assert_eq!(generate_proof_res.status(), 200);
 
         let create_proof_body = generate_proof_res.json::<Proof>().await.expect("create proof body");
@@ -344,7 +344,7 @@ mod tests {
             "proof": create_proof_body.proof,
         }));
 
-        let verify_proof_res = privacy.verify_proof(deploy_circuit_body.id.as_str(), verify_proof_params).await.expect("verify proof response");
+        let verify_proof_res = privacy.verify_proof(&deploy_circuit_body.id, verify_proof_params).await.expect("verify proof response");
         assert_eq!(verify_proof_res.status(), 200);
     }
 
@@ -397,7 +397,7 @@ mod tests {
         while circuit_status != "provisioned" {
             interval.tick().await;
 
-            let get_circuit_res = privacy.get_circuit(deploy_circuit_body.id.as_str()).await.expect("get circuit response");
+            let get_circuit_res = privacy.get_circuit(&deploy_circuit_body.id).await.expect("get circuit response");
             assert_eq!(get_circuit_res.status(), 200);
 
             let get_circuit_body = get_circuit_res.json::<Circuit>().await.expect("get circuit body");
@@ -420,10 +420,10 @@ mod tests {
             },
         }));
 
-        let generate_proof_res = privacy.generate_proof(deploy_circuit_body.id.as_str(), generate_proof_param).await.expect("generate proof response");
+        let generate_proof_res = privacy.generate_proof(&deploy_circuit_body.id, generate_proof_param).await.expect("generate proof response");
         assert_eq!(generate_proof_res.status(), 200);
 
-        let retrieve_store_value_res = privacy.retrieve_store_value(deploy_circuit_body.id.as_str(), "0").await.expect("retrieve store value response");
+        let retrieve_store_value_res = privacy.retrieve_store_value(&deploy_circuit_body.id, "0").await.expect("retrieve store value response");
         assert_eq!(retrieve_store_value_res.status(), 200);
     }
 }

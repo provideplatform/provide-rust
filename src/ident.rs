@@ -185,7 +185,7 @@ pub struct Application {
     created_at: String,
     network_id: String,
     user_id: String,
-    name: String,
+    pub name: String,
     description: Option<String>,
     r#type: Option<String>,
     config: ApplicationConfig,
@@ -212,7 +212,7 @@ pub struct Token {
     pub token: Option<String>,
     permissions: Option<i32>,
     pub access_token: Option<String>,
-    refresh_token: Option<String>,
+    pub refresh_token: Option<String>,
     created_at: Option<String>,
 }
 
@@ -225,15 +225,13 @@ pub struct AuthenticateResponse {
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
 pub struct Organization {
-    id: String,
+    pub id: String,
     created_at: String,
-    name: String,
+    pub name: String,
     user_id: String,
     description: String,
     metadata: serde_json::Value,
 }
-
-
 
 #[cfg(test)]
 mod tests {
@@ -251,37 +249,37 @@ mod tests {
         let email = FreeEmail().fake::<String>();
         let password = Password(8..15).fake::<String>();
 
-        let user_data = Some(json!({
+        let user_data = json!({
             "first_name": FirstName().fake::<String>(),
             "last_name": LastName().fake::<String>(),
             "email": &email,
             "password": &password,
-        }));
-        let create_user_res = ident.create_user(user_data).await.expect("create user response");
+        });
+        let create_user_res = ident.create_user(Some(user_data)).await.expect("create user response");
         assert_eq!(create_user_res.status(), 201);
 
-        let params = Some(json!({
+        let params = json!({
             "email": &email,
             "password": &password,
             "scope": "offline_access",
-        }));
-        let authenticate_res = ident.authenticate(params).await.expect("authenticate response");
+        });
+        let authenticate_res = ident.authenticate(Some(params)).await.expect("authenticate response");
         assert_eq!(authenticate_res.status(), 201);
 
         return authenticate_res.json::<AuthenticateResponse>().await.expect("authentication response body");
     }
 
     async fn generate_new_application(ident: &ApiClient, user_id: &str) -> Application {
-        let application_data = Some(json!({
+        let application_data = json!({
             "network_id": ROPSTEN_NETWORK_ID,
             "user_id": user_id,
             "name": format!("{} {}", Name().fake::<String>(), "Application"),
             "description": "Some application description",
             "type": "baseline",
             "hidden": false
-        }));
+        });
 
-        let create_application_res = ident.create_application(application_data).await.expect("generate application response");
+        let create_application_res = ident.create_application(Some(application_data)).await.expect("generate application response");
         assert_eq!(create_application_res.status(), 201);
 
         return create_application_res.json::<Application>().await.expect("create application body")
@@ -302,7 +300,7 @@ mod tests {
 
         let ident: ApiClient = Ident::factory(access_token);
 
-        let get_user_res = ident.get_user(authentication_res_body.user.id.as_str(), authentication_res_body.user.name.as_str(), None).await.expect("get user response");
+        let get_user_res = ident.get_user(&authentication_res_body.user.id, &authentication_res_body.user.name, None).await.expect("get user response");
         assert_eq!(get_user_res.status(), 200);
     }
 
@@ -330,10 +328,10 @@ mod tests {
 
         let ident: ApiClient = Ident::factory(access_token);
 
-        let update_params = Some(json!({
+        let update_params = json!({
             "name": Name().fake::<String>(),
-        }));
-        let update_user_res = ident.update_user(authentication_res_body.user.id.as_str(), authentication_res_body.user.name.as_str(), update_params).await.expect("update user response");
+        });
+        let update_user_res = ident.update_user(&authentication_res_body.user.id, &authentication_res_body.user.name, Some(update_params)).await.expect("update user response");
         assert_eq!(update_user_res.status(), 204);
     }
 
@@ -347,7 +345,7 @@ mod tests {
 
         let ident: ApiClient = Ident::factory(access_token);
 
-        let delete_user_res = ident.delete_user(authentication_res_body.user.id.as_str()).await.expect("delete user response");
+        let delete_user_res = ident.delete_user(&authentication_res_body.user.id).await.expect("delete user response");
         assert_eq!(delete_user_res.status(), 403);
     }
 
@@ -361,16 +359,16 @@ mod tests {
 
         let ident: ApiClient = Ident::factory(access_token);
 
-        let create_organization_params = Some(json!({
+        let create_organization_params = json!({
             "name": "ACME Inc.",
             "description": "Organization for testing",
-            "user_id": authentication_res_body.user.id.as_str(),
+            "user_id": &authentication_res_body.user.id,
             "metadata": {
                 "hello": "world",
                 "arbitrary": "input"
             }
-        }));
-        let create_organization_res = ident.create_organization(create_organization_params).await.expect("create organization response");
+        });
+        let create_organization_res = ident.create_organization(Some(create_organization_params)).await.expect("create organization response");
         assert_eq!(create_organization_res.status(), 201)
     }
 
@@ -398,21 +396,21 @@ mod tests {
 
         let ident: ApiClient = Ident::factory(access_token);
 
-        let create_organization_params = Some(json!({
-            "name": "ACME Inc.",
+        let create_organization_params = json!({
+            "name": "ACME Inc.", // TODO: use faker
             "description": "Organization for testing",
-            "user_id": authentication_res_body.user.id.as_str(),
+            "user_id": &authentication_res_body.user.id,
             "metadata": {
                 "hello": "world",
                 "arbitrary": "input"
             }
-        }));
-        let create_organization_res = ident.create_organization(create_organization_params).await.expect("create organization response");
+        });
+        let create_organization_res = ident.create_organization(Some(create_organization_params)).await.expect("create organization response");
         assert_eq!(create_organization_res.status(), 201);
 
         let create_organization_body = create_organization_res.json::<Organization>().await.expect("create organization body");
 
-        let get_organization_res = ident.get_organization(create_organization_body.id.as_str()).await.expect("get organization response");
+        let get_organization_res = ident.get_organization(&create_organization_body.id).await.expect("get organization response");
         assert_eq!(get_organization_res.status(), 200);
     }
 
@@ -426,26 +424,26 @@ mod tests {
 
         let ident: ApiClient = Ident::factory(access_token);
 
-        let create_organization_params = Some(json!({
+        let create_organization_params = json!({
             "name": "ACME Inc.",
             "description": "Organization for testing",
-            "user_id": authentication_res_body.user.id.as_str(),
+            "user_id": &authentication_res_body.user.id,
             "metadata": {
                 "hello": "world",
                 "arbitrary": "input"
             }
-        }));
-        let create_organization_res = ident.create_organization(create_organization_params).await.expect("create organization response");
+        });
+        let create_organization_res = ident.create_organization(Some(create_organization_params)).await.expect("create organization response");
         assert_eq!(create_organization_res.status(), 201);
         
         let create_organization_body = create_organization_res.json::<Organization>().await.expect("create organization body");
 
-        let update_organization_params = Some(json!({
+        let update_organization_params = json!({
             "name": "ACME Inc.",
             "description": "Updated description",
-            "user_id": authentication_res_body.user.id.as_str(),
-        }));
-        let update_organization_res = ident.update_organization(create_organization_body.id.as_str(), update_organization_params).await.expect("update organization response");
+            "user_id": &authentication_res_body.user.id,
+        });
+        let update_organization_res = ident.update_organization(&create_organization_body.id, Some(update_organization_params)).await.expect("update organization response");
         assert_eq!(update_organization_res.status(), 204);
     }
 
@@ -459,25 +457,25 @@ mod tests {
 
         let ident: ApiClient = Ident::factory(access_token);
 
-        let create_organization_params = Some(json!({
+        let create_organization_params = json!({
             "name": "ACME Inc.",
             "description": "Organization for testing",
-            "user_id": authentication_res_body.user.id.as_str(),
+            "user_id": &authentication_res_body.user.id,
             "metadata": {
                 "hello": "world",
                 "arbitrary": "input"
             }
-        }));
-        let create_organization_res = ident.create_organization(create_organization_params).await.expect("create organization response");
+        });
+        let create_organization_res = ident.create_organization(Some(create_organization_params)).await.expect("create organization response");
         assert_eq!(create_organization_res.status(), 201);
         
         let create_organization_body = create_organization_res.json::<Organization>().await.expect("create organization body");
 
-        let organization_authorization_params = Some(json!({
+        let organization_authorization_params = json!({
             "organization_id": create_organization_body.id,
             "scope": "offline_access"
-        }));
-        let organization_authorization_res = ident.organization_authorization(organization_authorization_params).await.expect("organization authorization response");
+        });
+        let organization_authorization_res = ident.organization_authorization(Some(organization_authorization_params)).await.expect("organization authorization response");
         assert_eq!(organization_authorization_res.status(), 201)
     }
 
@@ -492,33 +490,33 @@ mod tests {
 
         let ident: ApiClient = Ident::factory(access_token);
 
-        let create_organization_params = Some(json!({
+        let create_organization_params = json!({
             "name": "ACME Inc.",
             "description": "Organization for testing",
-            "user_id": authentication_res_body.user.id.as_str(),
+            "user_id": &authentication_res_body.user.id,
             "metadata": {
                 "hello": "world",
                 "arbitrary": "input"
             }
-        }));
-        let create_organization_res = ident.create_organization(create_organization_params).await.expect("create organization response");
+        });
+        let create_organization_res = ident.create_organization(Some(create_organization_params)).await.expect("create organization response");
         assert_eq!(create_organization_res.status(), 201);
         
         let create_organization_body = create_organization_res.json::<Organization>().await.expect("create organization body");
 
-        let organization_authorization_params = Some(json!({
+        let organization_authorization_params = json!({
             "organization_id": create_organization_body.id,
             "scope": "offline_access"
-        }));
-        let organization_authorization_res = ident.organization_authorization(organization_authorization_params).await.expect("organization authorization response");
+        });
+        let organization_authorization_res = ident.organization_authorization(Some(organization_authorization_params)).await.expect("organization authorization response");
         assert_eq!(organization_authorization_res.status(), 201);
 
         let organization_authorization_body = organization_authorization_res.json::<Token>().await.expect("organization authorization body");
 
-        let list_tokens_params = Some(json!({
+        let list_tokens_params = json!({
             "refresh_token": organization_authorization_body.refresh_token
-        }));
-        let list_tokens_res = ident.list_tokens(list_tokens_params).await.expect("list tokens res");
+        });
+        let list_tokens_res = ident.list_tokens(Some(list_tokens_params)).await.expect("list tokens res");
         assert_eq!(list_tokens_res.status(), 200);
     }
 
@@ -546,7 +544,7 @@ mod tests {
 
         let ident: ApiClient = Ident::factory(access_token);
 
-        let _ = generate_new_application(&ident, authentication_res_body.user.id.as_str()).await;
+        let _ = generate_new_application(&ident, &authentication_res_body.user.id).await;
     }
 
     #[tokio::test]
@@ -559,9 +557,9 @@ mod tests {
 
         let ident: ApiClient = Ident::factory(access_token);
 
-        let create_application_body = generate_new_application(&ident, authentication_res_body.user.id.as_str()).await;
+        let create_application_body = generate_new_application(&ident, &authentication_res_body.user.id).await;
 
-        let get_application_res = ident.get_application(create_application_body.id.as_str()).await.expect("get application response");
+        let get_application_res = ident.get_application(&create_application_body.id).await.expect("get application response");
         assert_eq!(get_application_res.status(), 200);
     }
 
@@ -575,12 +573,12 @@ mod tests {
 
         let ident: ApiClient = Ident::factory(access_token);
 
-        let create_application_body = generate_new_application(&ident, authentication_res_body.user.id.as_str()).await;
+        let create_application_body = generate_new_application(&ident, &authentication_res_body.user.id).await;
 
-        let update_application_params = Some(json!({
+        let update_application_params = json!({
             "description": "An updated description"
-        }));
-        let update_application_res = ident.update_application(create_application_body.id.as_str(), update_application_params).await.expect("update application response");
+        });
+        let update_application_res = ident.update_application(&create_application_body.id, Some(update_application_params)).await.expect("update application response");
         assert_eq!(update_application_res.status(), 204);
     }
 
@@ -594,9 +592,9 @@ mod tests {
 
         let ident: ApiClient = Ident::factory(access_token);
 
-        let create_application_body = generate_new_application(&ident, authentication_res_body.user.id.as_str()).await;
+        let create_application_body = generate_new_application(&ident, &authentication_res_body.user.id).await;
 
-        let delete_application_res = ident.delete_application(create_application_body.id.as_str()).await.expect("delete application response");
+        let delete_application_res = ident.delete_application(&create_application_body.id).await.expect("delete application response");
         assert_eq!(delete_application_res.status(), 501);
     }
 
@@ -610,9 +608,9 @@ mod tests {
 
         let ident: ApiClient = Ident::factory(access_token);
 
-        let create_application_body = generate_new_application(&ident, authentication_res_body.user.id.as_str()).await;
+        let create_application_body = generate_new_application(&ident, &authentication_res_body.user.id).await;
 
-        let list_application_users_res = ident.list_application_users(create_application_body.id.as_str()).await.expect("list application users res");
+        let list_application_users_res = ident.list_application_users(&create_application_body.id).await.expect("list application users res");
         assert_eq!(list_application_users_res.status(), 200);
     }
 
@@ -626,13 +624,13 @@ mod tests {
 
         let mut ident: ApiClient = Ident::factory(access_token);
 
-        let create_application_body = generate_new_application(&ident, authentication_res_body.user.id.as_str()).await;
+        let create_application_body = generate_new_application(&ident, &authentication_res_body.user.id).await;
         
-        let application_authorization_params = Some(json!({
+        let application_authorization_params = json!({
             "application_id": create_application_body.id,
             "scope": "offline_access"
-        }));
-        let application_authorization_res = ident.application_authorization(application_authorization_params).await.expect("application authorization response");
+        });
+        let application_authorization_res = ident.application_authorization(Some(application_authorization_params)).await.expect("application authorization response");
         assert_eq!(application_authorization_res.status(), 201);
 
         let application_authorization_body = application_authorization_res.json::<Token>().await.expect("organization authorization body");
@@ -641,21 +639,21 @@ mod tests {
             None => panic!("application authentication response access token not found"),
         };
 
-        let another_user_params = Some(json!({
+        let another_user_params = json!({
             "first_name": FirstName().fake::<String>(),
             "last_name": LastName().fake::<String>(),
             "email": FreeEmail().fake::<String>(),
             "password": Password(std::ops::Range { start: 8, end: 15 }).fake::<String>(),
-        }));
-        let create_another_user_res = ident.create_user(another_user_params).await.expect("create another user response");
+        });
+        let create_another_user_res = ident.create_user(Some(another_user_params)).await.expect("create another user response");
         assert_eq!(create_another_user_res.status(), 201);
 
         let another_user_body = create_another_user_res.json::<User>().await.expect("another user body");
-        let associate_application_user_params = Some(json!({
+        let associate_application_user_params = json!({
             "user_id": another_user_body.id
-        }));
+        });
 
-        let associate_application_user_res = ident.associate_application_user(create_application_body.id.as_str(), associate_application_user_params).await.expect("associate application user response");
+        let associate_application_user_res = ident.associate_application_user(&create_application_body.id, Some(associate_application_user_params)).await.expect("associate application user response");
         assert_eq!(associate_application_user_res.status(), 204);
     }
 
@@ -669,13 +667,13 @@ mod tests {
 
         let ident: ApiClient = Ident::factory(access_token);
 
-        let create_application_body = generate_new_application(&ident, authentication_res_body.user.id.as_str()).await;
+        let create_application_body = generate_new_application(&ident, &authentication_res_body.user.id).await;
 
-        let application_authorization_params = Some(json!({
+        let application_authorization_params = json!({
             "application_id": create_application_body.id,
             "scope": "offline_access"
-        }));
-        let application_authorization_res = ident.application_authorization(application_authorization_params).await.expect("application authorization response");
+        });
+        let application_authorization_res = ident.application_authorization(Some(application_authorization_params)).await.expect("application authorization response");
         assert_eq!(application_authorization_res.status(), 201);
     }
 
@@ -689,49 +687,20 @@ mod tests {
 
         let ident: ApiClient = Ident::factory(access_token);
 
-        let create_application_body = generate_new_application(&ident, authentication_res_body.user.id.as_str()).await;
+        let create_application_body = generate_new_application(&ident, &authentication_res_body.user.id).await;
 
-        let application_authorization_params = Some(json!({
+        let application_authorization_params = json!({
             "application_id": create_application_body.id
-        }));
-        let application_authorization_res = ident.application_authorization(application_authorization_params).await.expect("application authorization response");
+        });
+        let application_authorization_res = ident.application_authorization(Some(application_authorization_params)).await.expect("application authorization response");
         assert_eq!(application_authorization_res.status(), 201);
 
         let application_authorization_body = application_authorization_res.json::<Token>().await.expect("application authorization body");
 
-        let revoke_token_res = ident.revoke_token(application_authorization_body.id.as_str()).await.expect("revoke token response");
+        let revoke_token_res = ident.revoke_token(&application_authorization_body.id).await.expect("revoke token response");
         assert_eq!(revoke_token_res.status(), 204);
     }
 }
-
-// users
-//  create user - done
-//  list users - done
-//  get user detail - done (403)
-//  update user - done
-//  delete user - done (403)
-
-// organizations
-//  create organization - done
-//  list organizations - done
-//  get organization details - done
-//  update organization details - done
-
-// applications
-//  create application - done
-//  list applications - done
-//  get application details - done
-//  update application - done
-//  delete application - done (501)
-//  list application users - done
-//  associate application user - done
-
-// authentication / authorization
-//  user authentication - done
-//  list revocable tokens - done
-//  application authorization - done
-//  organization authorization - done
-//  revoke token - done
 
 // TODO
 // seperate application / organization authorization calls are unnecessary
@@ -747,3 +716,4 @@ mod tests {
 // should add required data struct in fn call args, referencing ^
 // should factories take reference to token string? <---------- do that
 // is it necessary to specifically handle errors differently if req fails?
+// probably combine categories into 1 test ie organizations(), applications(), etc
