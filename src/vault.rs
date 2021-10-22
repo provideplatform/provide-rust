@@ -141,7 +141,9 @@ pub struct VaultKey {
     usage: String,
     spec: String,
     name: String,
-    description: String
+    description: String,
+    pub address: Option<String>,
+    public_key: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]

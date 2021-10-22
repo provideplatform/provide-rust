@@ -54,6 +54,8 @@ pub trait Ident {
     async fn list_application_users(&self, application_id: &str)  -> Result<reqwest::Response, reqwest::Error>;
 
     async fn associate_application_user(&self, application_id: &str, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error>;
+
+    async fn associate_application_organization(&self, application_id: &str, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error>;
 }
 
 #[async_trait]
@@ -168,6 +170,11 @@ impl Ident for ApiClient {
         let uri = format!("tokens/{}", token_id);
         return self.delete(&uri, None, None).await
     }
+
+    async fn associate_application_organization(&self, application_id: &str, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error> {
+        let uri = format!("applications/{}/organizations", application_id);
+        return self.post(&uri, params, None).await
+    }
 }
 
 // change to enums, ex application should be enum with application::applicationresponse and applicationparams
@@ -222,7 +229,6 @@ pub struct AuthenticateResponse {
     pub token: Token,
 }
 
-
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
 pub struct Organization {
     pub id: String,
@@ -273,7 +279,7 @@ mod tests {
         let application_data = json!({
             "network_id": ROPSTEN_NETWORK_ID,
             "user_id": user_id,
-            "name": format!("{} {}", Name().fake::<String>(), "Application"),
+            "name": format!("{} application", Name().fake::<String>()),
             "description": "Some application description",
             "type": "baseline",
             "hidden": false
@@ -283,6 +289,22 @@ mod tests {
         assert_eq!(create_application_res.status(), 201);
 
         return create_application_res.json::<Application>().await.expect("create application body")
+    }
+
+    async fn generate_organization(ident: &ApiClient, user_id: &str) -> Organization {
+        let create_organization_params = Some(json!({
+            "name": format!("{} organization", Name().fake::<String>()),
+            "description": "Organization for testing",
+            "user_id": user_id,
+            "metadata": {
+                "hello": "world",
+                "arbitrary": "input"
+            },
+        }));
+        let create_organization_res = ident.create_organization(create_organization_params).await.expect("create organization response");
+        assert_eq!(create_organization_res.status(), 201);
+
+        return create_organization_res.json::<Organization>().await.expect("generate organization body")
     }
 
     #[tokio::test]
@@ -359,17 +381,7 @@ mod tests {
 
         let ident: ApiClient = Ident::factory(access_token);
 
-        let create_organization_params = json!({
-            "name": "ACME Inc.",
-            "description": "Organization for testing",
-            "user_id": &authentication_res_body.user.id,
-            "metadata": {
-                "hello": "world",
-                "arbitrary": "input"
-            }
-        });
-        let create_organization_res = ident.create_organization(Some(create_organization_params)).await.expect("create organization response");
-        assert_eq!(create_organization_res.status(), 201)
+        let _ = generate_organization(&ident, &authentication_res_body.user.id).await;
     }
 
     #[tokio::test]
@@ -396,19 +408,7 @@ mod tests {
 
         let ident: ApiClient = Ident::factory(access_token);
 
-        let create_organization_params = json!({
-            "name": "ACME Inc.", // TODO: use faker
-            "description": "Organization for testing",
-            "user_id": &authentication_res_body.user.id,
-            "metadata": {
-                "hello": "world",
-                "arbitrary": "input"
-            }
-        });
-        let create_organization_res = ident.create_organization(Some(create_organization_params)).await.expect("create organization response");
-        assert_eq!(create_organization_res.status(), 201);
-
-        let create_organization_body = create_organization_res.json::<Organization>().await.expect("create organization body");
+        let create_organization_body = generate_organization(&ident, &authentication_res_body.user.id).await;
 
         let get_organization_res = ident.get_organization(&create_organization_body.id).await.expect("get organization response");
         assert_eq!(get_organization_res.status(), 200);
@@ -424,19 +424,7 @@ mod tests {
 
         let ident: ApiClient = Ident::factory(access_token);
 
-        let create_organization_params = json!({
-            "name": "ACME Inc.",
-            "description": "Organization for testing",
-            "user_id": &authentication_res_body.user.id,
-            "metadata": {
-                "hello": "world",
-                "arbitrary": "input"
-            }
-        });
-        let create_organization_res = ident.create_organization(Some(create_organization_params)).await.expect("create organization response");
-        assert_eq!(create_organization_res.status(), 201);
-        
-        let create_organization_body = create_organization_res.json::<Organization>().await.expect("create organization body");
+        let create_organization_body = generate_organization(&ident, &authentication_res_body.user.id).await;
 
         let update_organization_params = json!({
             "name": "ACME Inc.",
@@ -457,19 +445,7 @@ mod tests {
 
         let ident: ApiClient = Ident::factory(access_token);
 
-        let create_organization_params = json!({
-            "name": "ACME Inc.",
-            "description": "Organization for testing",
-            "user_id": &authentication_res_body.user.id,
-            "metadata": {
-                "hello": "world",
-                "arbitrary": "input"
-            }
-        });
-        let create_organization_res = ident.create_organization(Some(create_organization_params)).await.expect("create organization response");
-        assert_eq!(create_organization_res.status(), 201);
-        
-        let create_organization_body = create_organization_res.json::<Organization>().await.expect("create organization body");
+        let create_organization_body = generate_organization(&ident, &authentication_res_body.user.id).await;
 
         let organization_authorization_params = json!({
             "organization_id": create_organization_body.id,
@@ -700,6 +676,41 @@ mod tests {
         let revoke_token_res = ident.revoke_token(&application_authorization_body.id).await.expect("revoke token response");
         assert_eq!(revoke_token_res.status(), 204);
     }
+
+    #[tokio::test]
+    async fn associate_application_organization() {
+        let authentication_res_body = generate_new_user_and_token().await;
+        let access_token = match authentication_res_body.token.access_token {
+            Some(string) => string,
+            None => panic!("authentication response access token not found"),
+        };
+
+        let mut ident: ApiClient = Ident::factory(access_token);
+
+        let create_application_body = generate_new_application(&ident, &authentication_res_body.user.id).await;
+        
+        let application_authorization_params = json!({
+            "application_id": create_application_body.id,
+            "scope": "offline_access"
+        });
+        let application_authorization_res = ident.application_authorization(Some(application_authorization_params)).await.expect("application authorization response");
+        assert_eq!(application_authorization_res.status(), 201);
+
+        let application_authorization_body = application_authorization_res.json::<Token>().await.expect("organization authorization body");
+        ident.token = match application_authorization_body.access_token {
+            Some(string) => string,
+            None => panic!("application authentication response access token not found"),
+        };
+
+        let create_organization_body = generate_organization(&ident, &authentication_res_body.user.id).await;
+
+        let associate_application_org_params = json!({
+            "organization_id": &create_organization_body.id,
+        });
+
+        let associate_application_org_res = ident.associate_application_organization(&create_application_body.id, Some(associate_application_org_params)).await.expect("associate application user response");
+        assert_eq!(associate_application_org_res.status(), 204);
+    }
 }
 
 // TODO
@@ -717,3 +728,5 @@ mod tests {
 // should factories take reference to token string? <---------- do that
 // is it necessary to specifically handle errors differently if req fails?
 // probably combine categories into 1 test ie organizations(), applications(), etc
+
+// how to make these parallel again
