@@ -273,25 +273,25 @@ mod tests {
     use std::io::Write;
 
     const ROPSTEN_NETWORK_ID: &str = "66d44f30-9092-4182-a3c4-bc02736d6ae5";
-
-    async fn generate_baseline_user_and_token() -> AuthenticateResponse {
+    
+    async unsafe fn init_baseline_user_and_token() -> AuthenticateResponse {
         let ident: ApiClient = Ident::factory("".to_string());
 
-        let email = "baselineuser@example.come";
-        let password = "baselinepassword123";
+        let user_email = Some(FreeEmail().fake::<String>());
+        let user_password = Some(Password(8..15).fake::<String>());
 
         let user_data = Some(json!({
             "first_name": FirstName().fake::<String>(),
             "last_name": LastName().fake::<String>(),
-            "email": &email,
-            "password": &password,
+            "email": &user_email,
+            "password": &user_password,
         }));
         let create_user_res = ident.create_user(user_data).await.expect("create user response");
         assert_eq!(create_user_res.status(), 201);
 
         let params = Some(json!({
-            "email": &email,
-            "password": &password,
+            "email": &user_email,
+            "password": &user_password,
             "scope": "offline_access",
         }));
         let authenticate_res = ident.authenticate(params).await.expect("authenticate response");
@@ -317,7 +317,7 @@ mod tests {
 
         let authenticate_user_body = authenticate_res.json::<AuthenticateResponse>().await.expect("authenticate baseline user resposne body");
 
-        ident.token = match authenticate_user_body.clone().token.access_token {
+        ident.token = match authenticate_user_body.token.access_token {
             Some(string) => string,
             None => panic!("authenticate user access token not found"),
         };
@@ -353,7 +353,7 @@ mod tests {
 
     async fn generate_baseline_organization(ident: &ApiClient, user_id: &str) -> Organization {
         let create_organization_params = Some(json!({
-            "name": "baseline test org",
+            "name": format!("{} organization", Name().fake::<String>()).chars().filter(|c| !c.is_whitespace()).collect::<String>(),
             "description": "Organization for testing",
             "user_id": user_id,
             "metadata": {
@@ -386,17 +386,38 @@ mod tests {
 
     #[tokio::test]
     async fn _setup() {
-        let authentication_res_body = generate_baseline_user_and_token().await;
+        // create user
+        let mut ident: ApiClient = Ident::factory("".to_string());
+        let user_email = Some(FreeEmail().fake::<String>());
+        let user_password = Some(Password(8..15).fake::<String>());
+        let user_data = Some(json!({
+            "first_name": FirstName().fake::<String>(),
+            "last_name": LastName().fake::<String>(),
+            "email": &user_email,
+            "password": &user_password,
+        }));
+        let create_user_res = ident.create_user(user_data).await.expect("create user response");
+        assert_eq!(create_user_res.status(), 201);
+
+        // authenticate user
+        let params = Some(json!({
+            "email": &user_email,
+            "password": &user_password,
+            "scope": "offline_access",
+        }));
+        let authenticate_res = ident.authenticate(params).await.expect("authenticate response");
+        assert_eq!(authenticate_res.status(), 201);
+        let authentication_res_body = authenticate_res.json::<AuthenticateResponse>().await.expect("authentication response body");
         let user_access_token = match authentication_res_body.token.access_token {
-            Some(string) => string,
-            None => panic!("user authentication response access token not found"),
+            Some(tkn) => tkn,
+            None => panic!("user access token not found"),
         };
         let user_refresh_token = match authentication_res_body.token.refresh_token {
-            Some(string) => string,
-            None => panic!("user authentication response refresh token not found"),
+            Some(tkn) => tkn,
+            None => panic!("user refresh token not found"),
         };
 
-        let mut ident: ApiClient = Ident::factory(user_access_token.clone());
+        ident.token = user_access_token.clone();
 
         // create organization
         let create_organization_body = generate_baseline_organization(&ident, &authentication_res_body.user.id).await;
@@ -407,9 +428,13 @@ mod tests {
         let organization_authorization_res = ident.organization_authorization(Some(organization_authorization_params)).await.expect("organization authorization response");
         assert_eq!(organization_authorization_res.status(), 201);
         let organization_auth_body = organization_authorization_res.json::<Token>().await.expect("organization authorization body");
+        let org_access_token = match organization_auth_body.access_token {
+            Some(tkn) => tkn,
+            None => panic!("organization access token not found"),
+        };
         let org_refresh_token = match organization_auth_body.refresh_token {
-            Some(string) => string,
-            None => panic!("organization authorization refresh token not found"),
+            Some(tkn) => tkn,
+            None => panic!("organization refresh token not found"),
         };
 
         // create application
@@ -422,8 +447,8 @@ mod tests {
         assert_eq!(application_authorization_res.status(), 201);
         let application_auth_body = application_authorization_res.json::<Token>().await.expect("application authorization body");
         let app_access_token = match application_auth_body.access_token {
-            Some(string) => string,
-            None => panic!("application authorization access token not found"),
+            Some(tkn) => tkn,
+            None => panic!("application access toke not found"),
         };
 
         // associate application organization
@@ -440,7 +465,7 @@ mod tests {
         let registry_contracts = registry_contracts_res.json::<Value>().await.expect("registry contracts body");
         let shuttle_contract = &registry_contracts["baseline"]["contracts"][2];
         
-        let nchain: ApiClient = NChain::factory(app_access_token.clone());
+        let nchain: ApiClient = NChain::factory(app_access_token.clone()); // FIXMEEEE no clone
         
         // deploy workgroup contract
         let create_account_params = json!({
@@ -496,9 +521,20 @@ mod tests {
             Some(string) => string,
             None => panic!("address from organization key not found"),
         };
+
+        // json config file
+        let json_config_params = json!({
+            "user_access_token": &user_access_token,
+            "user_refresh_token": &user_refresh_token,
+            "org_access_token": &org_access_token,
+            "org_refresh_token": &org_refresh_token,
+            "org_name": &create_organization_body.name,
+            "app_access_token": &app_access_token,
+        });
+        serde_json::to_writer_pretty(std::fs::File::create("test-config.json").expect("baseline json config"), &json_config_params).expect("write json");
         
-        // config file
-        let config_file_contents = format!("access-token: {}\nrefresh-token: {}\n{}:\n  api-token: {}\n", user_access_token, user_refresh_token, &create_application_body.id, app_access_token);
+        // yaml config file
+        let config_file_contents = format!("access-token: {}\nrefresh-token: {}\n{}:\n  api-token: {}\n", &user_access_token, &user_refresh_token, &create_application_body.id, &app_access_token);
         let cwd = match std::env::current_dir() {
             Ok(path) => path.into_os_string().into_string().expect("current working directory"),
             Err(v) => panic!("{:?}", v),
@@ -508,7 +544,7 @@ mod tests {
         write!(config_file, "{}", config_file_contents).expect("config contents");
 
         // start command & environment
-        let run_env = format!("LOG_LEVEL=TRACE IDENT_API_HOST=localhost:8081 IDENT_API_SCHEME=http NCHAIN_API_HOST=localhost:8084 NCHAIN_API_SCHEME=http VAULT_API_HOST=localhost:8082 VAULT_API_SCHEME=http PROVIDE_ORGANIZATION_REFRESH_TOKEN={}", org_refresh_token);
+        let run_env = format!("LOG_LEVEL=TRACE IDENT_API_HOST=localhost:8081 IDENT_API_SCHEME=http NCHAIN_API_HOST=localhost:8084 NCHAIN_API_SCHEME=http VAULT_API_HOST=localhost:8082 VAULT_API_SCHEME=http PROVIDE_ORGANIZATION_REFRESH_TOKEN={}", &org_refresh_token);
 
         let mut run_cmd = String::from("prvd baseline stack start");
         run_cmd += &format!(" --api-endpoint={}", "http://localhost:8086");
@@ -545,7 +581,7 @@ mod tests {
         // attach to some sort of log level?
         match baseline_process.stderr {
             Some(string) => panic!("{:?}", string),
-            None => assert_eq!(true, true),
+            None => assert!(true),
         };
 
         sleep(Duration::from_millis(10000)).await
@@ -758,13 +794,13 @@ mod tests {
 
     // #[tokio::test]
     // async fn get_subject_accounts() {
-        // let authentication_res_body = generate_new_user_and_token().await;
-        // let access_token = match authentication_res_body.token.access_token {
-        //     Some(string) => string,
-        //     None => panic!("authentication response access token not found"),
-        // };
+    //     let authentication_res_body = generate_new_user_and_token().await;
+    //     let access_token = match authentication_res_body.token.access_token {
+    //         Some(string) => string,
+    //         None => panic!("authentication response access token not found"),
+    //     };
 
-        // let baseline: ApiClient = Baseline::factory(access_token);
+    //     let baseline: ApiClient = Baseline::factory(access_token);
 
     //     // FIXME: need to make generate wallet helper
     //     let create_subject_params = Some(json!({
@@ -895,36 +931,36 @@ mod tests {
 
     #[tokio::test]
     async fn get_workflows() {
-        let authentication_res_body = authenticate_workgroup().await;
-        let access_token = match authentication_res_body.access_token {
-            Some(string) => string,
-            None => panic!("authentication response access token not found"),
-        };
+        let json_config = std::fs::File::open("test-config.json").expect("json config file");
+        let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
+        
+        let org_access_token_json = config_vals["org_access_token"].to_string();
+        let org_access_token = serde_json::from_str::<String>(&org_access_token_json).expect("organzation access token");
 
-        let baseline: ApiClient = Baseline::factory(access_token);
-
+        let baseline: ApiClient = Baseline::factory(org_access_token);
+    
         let get_workflows_res = baseline.get_workflows().await.expect("get workflows response");
         assert_eq!(get_workflows_res.status(), 200);
     }
 
-    #[tokio::test]
-    async fn create_workflow() {
-        let authentication_res_body = authenticate_workgroup().await;
-        let access_token = match authentication_res_body.access_token {
-            Some(string) => string,
-            None => panic!("authentication response access token not found"),
-        };
+    // #[tokio::test]
+    // async fn create_workflow() {
+    //     let authentication_res_body = authenticate_workgroup().await;
+    //     let access_token = match authentication_res_body.access_token {
+    //         Some(string) => string,
+    //         None => panic!("authentication response access token not found"),
+    //     };
 
-        let baseline: ApiClient = Baseline::factory(access_token);
+    //     let baseline: ApiClient = Baseline::factory(access_token);
 
-        let create_workflow_params = json!({
-            "name": "Procure to Pay",
-            "type": "procure_to_pay",
-        });
+    //     let create_workflow_params = json!({
+    //         "name": "Procure to Pay",
+    //         "type": "general_consistency",
+    //     });
 
-        let create_workflow_res = baseline.create_workflow(Some(create_workflow_params)).await.expect("create workflow response");
-        assert_eq!(create_workflow_res.status(), 201);
-    }
+    //     let create_workflow_res = baseline.create_workflow(Some(create_workflow_params)).await.expect("create workflow response");
+    //     assert_eq!(create_workflow_res.status(), 201);
+    // }
 
     // #[tokio::test]
     // async fn get_workflow() {
@@ -979,45 +1015,45 @@ mod tests {
 
     #[tokio::test]
     async fn get_workgroups() {
-        let authentication_res_body = authenticate_workgroup().await;
-        let access_token = match authentication_res_body.access_token {
-            Some(string) => string,
-            None => panic!("authentication response access token not found"),
-        };
+        let json_config = std::fs::File::open("test-config.json").expect("json config file");
+        let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
+        
+        let org_access_token_json = config_vals["org_access_token"].to_string();
+        let org_access_token = serde_json::from_str::<String>(&org_access_token_json).expect("organzation access token");
 
-        let baseline: ApiClient = Baseline::factory(access_token);
-
+        let baseline: ApiClient = Baseline::factory(org_access_token);
+    
         let get_workgroups_res = baseline.get_workgroups().await.expect("get workgroups response");
         assert_eq!(get_workgroups_res.status(), 200);
     }
 
-    #[tokio::test]
-    async fn create_workgroup() {
-        let authentication_res_body = generate_new_user_and_token().await;
-        let access_token = match authentication_res_body.token.access_token {
-            Some(string) => string,
-            None => panic!("authentication response access token not found"),
-        };
+    // #[tokio::test]
+    // async fn create_workgroup() {
+    //     let authentication_res_body = generate_new_user_and_token().await;
+    //     let access_token = match authentication_res_body.token.access_token {
+    //         Some(string) => string,
+    //         None => panic!("authentication response access token not found"),
+    //     };
 
-        let baseline: ApiClient = Baseline::factory(access_token);
+    //     let baseline: ApiClient = Baseline::factory(access_token);
 
-        let create_subject_body = generate_subject(&baseline).await;
+    //     let create_subject_body = generate_subject(&baseline).await;
 
-        let create_workgroup_params = Some(json!({
-            "subject_id": format!("did:prvd:{}", &create_subject_body.id),
-            "description": "An example of the request body for workgroup creation",
-            "name": "Example workgroup",
-            "network_id": "07102258-5e49-480e-86af-6d0c3260827d",
-            "type": "baseline",
-            "security_policies": [],
-            "admins": [
-                format!("did:prvd:{}", &create_subject_body.id),
-            ],
-        }));
+    //     let create_workgroup_params = Some(json!({
+    //         "subject_id": format!("did:prvd:{}", &create_subject_body.id),
+    //         "description": "An example of the request body for workgroup creation",
+    //         "name": "Example workgroup",
+    //         "network_id": "07102258-5e49-480e-86af-6d0c3260827d",
+    //         "type": "baseline",
+    //         "security_policies": [],
+    //         "admins": [
+    //             format!("did:prvd:{}", &create_subject_body.id),
+    //         ],
+    //     }));
 
-        let create_workgroup_res = baseline.create_workgroup(create_workgroup_params).await.expect("create workgroup response");
-        assert_eq!(create_workgroup_res.status(), 201);
-    }
+    //     let create_workgroup_res = baseline.create_workgroup(create_workgroup_params).await.expect("create workgroup response");
+    //     assert_eq!(create_workgroup_res.status(), 201);
+    // }
 
     // #[tokio::test]
     // async fn get_workgroup() {
