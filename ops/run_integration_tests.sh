@@ -9,7 +9,7 @@ rm .local-baseline-test-config.yaml
 docker-compose -f ./ops/docker-compose.yml down
 docker volume rm ops_provide-db
 prvd baseline stack stop --name $(jq '.org_name' test-config.json | xargs)
-rm test-config.json # make this dotfile?
+rm .test-config.json # make this dotfile?
 # docker network rm $(jq '.org_name' test-config.json | xargs)
 # remove baseline db?
 # how to handle sometimes having to docker network prune

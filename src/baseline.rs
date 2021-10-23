@@ -531,7 +531,7 @@ mod tests {
             "org_name": &create_organization_body.name,
             "app_access_token": &app_access_token,
         });
-        serde_json::to_writer_pretty(std::fs::File::create("test-config.json").expect("baseline json config"), &json_config_params).expect("write json");
+        serde_json::to_writer_pretty(std::fs::File::create(".test-config.json").expect("baseline json config"), &json_config_params).expect("write json");
         
         // yaml config file
         let config_file_contents = format!("access-token: {}\nrefresh-token: {}\n{}:\n  api-token: {}\n", &user_access_token, &user_refresh_token, &create_application_body.id, &app_access_token);
@@ -931,7 +931,7 @@ mod tests {
 
     #[tokio::test]
     async fn get_workflows() {
-        let json_config = std::fs::File::open("test-config.json").expect("json config file");
+        let json_config = std::fs::File::open(".test-config.json").expect("json config file");
         let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
         
         let org_access_token_json = config_vals["org_access_token"].to_string();
@@ -1015,7 +1015,7 @@ mod tests {
 
     #[tokio::test]
     async fn get_workgroups() {
-        let json_config = std::fs::File::open("test-config.json").expect("json config file");
+        let json_config = std::fs::File::open(".test-config.json").expect("json config file");
         let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
         
         let org_access_token_json = config_vals["org_access_token"].to_string();
