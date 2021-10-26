@@ -9,5 +9,8 @@ Cargo.lock
 /examples/rust-demo/Cargo.lock
 
 # wasm demo
-/examples/wasm-demo/node_modules
-/examples/wasm-demo/yarn.lock
+/examples/wasm-demo/Cargo.lock
+/examples/wasm-demo/target
+
+/examples/wasm-demo/client/node_modules
+/examples/wasm-demo/client/yarn.lock

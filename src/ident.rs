@@ -728,3 +728,4 @@ mod tests {
 // is it necessary to specifically handle errors differently if req fails?
 
 // how to make these parallel again
+// would be nice to use the ? operator instead of unwrapping everything

@@ -12,5 +12,9 @@ serde_json = "1.0.68"
 http = "0.2.5"
 serde = { version = "1.0.114", features = ["derive"] }
 async-trait = "0.1.51"
-fake = { version = "2.4", features = ['derive'] }
+fake = { version = "2.4", features = ["derive"] }
 regex = "1.5.4"
+
+getrandom = { version = "0.2.3", features = ["js"] }
+
+# NEEDS APACHE LICENSE

@@ -7,6 +7,7 @@ async fn main() {
     // initialize ident client with empty access token
     let ident: ApiClient = Ident::factory("");
 
+    // create user request body
     let create_user_params = json!({
         "first_name": "example",
         "last_name": "user",
@@ -15,7 +16,8 @@ async fn main() {
     });
 
     let create_user_res = ident.create_user(Some(create_user_params)).await.expect("create user response");
-    let body = create_user_res.json::<User>().await.expect("create user body");
 
+    // deserialize into Ident User struct
+    let body = create_user_res.json::<User>().await.expect("create user body");
     println!("{:?}", body);
 }

@@ -1,7 +1,15 @@
+import { useEffect } from "react"
 import logo from './logo.svg';
 import './App.css';
 
 function App() {
+  useEffect(() => {
+    (async () => {
+      const wasm = await import("wasm-demo");
+      wasm.greet()
+    })()
+  }, [])
+
   return (
     <div className="App">
       <header className="App-header">
