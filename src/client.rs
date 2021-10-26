@@ -19,14 +19,14 @@ pub struct AdditionalHeader {
 const DEFAULT_API_USER_AGENT: &str = "provide-rust client library";
 
 impl ApiClient {
-    pub fn new(scheme: String, host: String, path: String, token: String) -> Self {
+    pub fn new(scheme: &str, host: &str, path: &str, token: &str) -> Self {
         let client = reqwest::Client::new();
         let base_url = format!("{}://{}/{}", scheme, host, path);
 
         Self {
             client,
             base_url,
-            token,
+            token: token.to_string(),
         }
     }
 
@@ -145,10 +145,10 @@ mod tests {
 
     #[test]
     fn new_api_client() {
-        let scheme = String::from("https");
-        let host = String::from("provide.services");
-        let path = String::from("api/");
-        let token = String::from("");
+        let scheme = "https";
+        let host = "provide.services";
+        let path = "api/";
+        let token = "";
 
         let client = ApiClient::new(scheme, host, path, token);
         assert_eq!(client.base_url, "https://provide.services/api/")

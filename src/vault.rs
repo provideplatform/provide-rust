@@ -10,7 +10,7 @@ const DEFAULT_PATH: &str = "api/v1";
 
 #[async_trait]
 pub trait Vault {
-    fn factory(token: String) -> Self;
+    fn factory(token: &str) -> Self;
 
     async fn create_vault(&self, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error>;
 
@@ -43,12 +43,12 @@ pub trait Vault {
 
 #[async_trait]
 impl Vault for ApiClient {
-    fn factory(token: String) -> Self {
+    fn factory(token: &str) -> Self {
         let scheme = std::env::var("VAULT_API_SCHEME").unwrap_or(String::from(DEFAULT_SCHEME));
         let host = std::env::var("VAULT_API_HOST").unwrap_or(String::from(DEFAULT_HOST));
         let path = std::env::var("VAULT_API_PATH").unwrap_or(String::from(DEFAULT_PATH));
 
-        return ApiClient::new(scheme, host, path, token);
+        return ApiClient::new(&scheme, &host, &path, token);
     }
 
     async fn create_vault(&self, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error> {
@@ -171,7 +171,7 @@ mod tests {
     use serde_json::json;
 
     async fn generate_new_user_and_token() -> AuthenticateResponse {
-        let ident: ApiClient = Ident::factory("".to_string());
+        let ident: ApiClient = Ident::factory("");
 
         let email = FreeEmail().fake::<String>();
         let password = Password(8..15).fake::<String>();
@@ -230,7 +230,7 @@ mod tests {
             None => panic!("authentication response access token not found"),
         };
 
-        let vault: ApiClient = Vault::factory(access_token);
+        let vault: ApiClient = Vault::factory(&access_token);
 
         let _ = generate_vault(&vault);
     }
@@ -243,7 +243,7 @@ mod tests {
             None => panic!("authentication response access token not found"),
         };
 
-        let vault: ApiClient = Vault::factory(access_token);
+        let vault: ApiClient = Vault::factory(&access_token);
 
         let list_vaults_response = vault.list_vaults().await.expect("list vaults response");
         assert_eq!(list_vaults_response.status(), 200);
@@ -257,7 +257,7 @@ mod tests {
             None => panic!("authentication response access token not found"),
         };
 
-        let vault: ApiClient = Vault::factory(access_token);
+        let vault: ApiClient = Vault::factory(&access_token);
 
         let create_seal_unseal_key_response = vault.create_seal_unseal_key().await.expect("create seal unseal key response");
         assert_eq!(create_seal_unseal_key_response.status(), 201);
@@ -271,7 +271,7 @@ mod tests {
             None => panic!("authentication response access token not found"),
         };
 
-        let vault: ApiClient = Vault::factory(access_token);
+        let vault: ApiClient = Vault::factory(&access_token);
 
         let create_seal_unseal_key_response = vault.create_seal_unseal_key().await.expect("create seal unseal key response");
         assert_eq!(create_seal_unseal_key_response.status(), 201);
@@ -293,7 +293,7 @@ mod tests {
             None => panic!("authentication response access token not found"),
         };
 
-        let vault: ApiClient = Vault::factory(access_token);
+        let vault: ApiClient = Vault::factory(&access_token);
 
         let create_vault_res = generate_vault(&vault).await;
 
@@ -308,7 +308,7 @@ mod tests {
             None => panic!("authentication response access token not found"),
         };
 
-        let vault: ApiClient = Vault::factory(access_token);
+        let vault: ApiClient = Vault::factory(&access_token);
 
         let create_vault_res = generate_vault(&vault).await;
         let create_key_res = generate_key(&vault, &create_vault_res.id).await;
@@ -325,7 +325,7 @@ mod tests {
             None => panic!("authentication response access token not found"),
         };
 
-        let vault: ApiClient = Vault::factory(access_token);
+        let vault: ApiClient = Vault::factory(&access_token);
 
         let create_vault_res = generate_vault(&vault).await;
         let create_key_res = generate_key(&vault, &create_vault_res.id).await;
@@ -348,7 +348,7 @@ mod tests {
             None => panic!("authentication response access token not found"),
         };
 
-        let vault: ApiClient = Vault::factory(access_token);
+        let vault: ApiClient = Vault::factory(&access_token);
 
         let create_vault_res = generate_vault(&vault).await;
         let create_key_res = generate_key(&vault, &create_vault_res.id).await;
@@ -368,7 +368,7 @@ mod tests {
             None => panic!("authentication response access token not found"),
         };
 
-        let vault: ApiClient = Vault::factory(access_token);
+        let vault: ApiClient = Vault::factory(&access_token);
 
         let create_vault_res = generate_vault(&vault).await;
         let create_key_res = generate_key(&vault, &create_vault_res.id).await;
@@ -396,7 +396,7 @@ mod tests {
             None => panic!("authentication response access token not found"),
         };
 
-        let vault: ApiClient = Vault::factory(access_token);
+        let vault: ApiClient = Vault::factory(&access_token);
 
         let create_vault_res = generate_vault(&vault).await;
 
@@ -412,7 +412,7 @@ mod tests {
             None => panic!("authentication response access token not found"),
         };
 
-        let vault: ApiClient = Vault::factory(access_token);
+        let vault: ApiClient = Vault::factory(&access_token);
 
         let create_vault_res = generate_vault(&vault).await;
 
@@ -428,7 +428,7 @@ mod tests {
             None => panic!("authentication response access token not found"),
         };
 
-        let vault: ApiClient = Vault::factory(access_token);
+        let vault: ApiClient = Vault::factory(&access_token);
 
         let create_vault_res = generate_vault(&vault).await;
 
@@ -451,7 +451,7 @@ mod tests {
             None => panic!("authentication response access token not found"),
         };
 
-        let vault: ApiClient = Vault::factory(access_token);
+        let vault: ApiClient = Vault::factory(&access_token);
 
         let create_vault_res = generate_vault(&vault).await;
 
@@ -479,7 +479,7 @@ mod tests {
             None => panic!("authentication response access token not found"),
         };
 
-        let vault: ApiClient = Vault::factory(access_token);
+        let vault: ApiClient = Vault::factory(&access_token);
 
         let create_vault_res = generate_vault(&vault).await;
 

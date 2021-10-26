@@ -11,7 +11,7 @@ const DEFAULT_PATH: &str = "api/v1";
 
 #[async_trait]
 pub trait Ident {
-    fn factory(token: String) -> Self;
+    fn factory(token: &str) -> Self;
     
     async fn create_user(&self, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error>;
 
@@ -60,12 +60,12 @@ pub trait Ident {
 
 #[async_trait]
 impl Ident for ApiClient {
-    fn factory(token: String) -> Self {
+    fn factory(token: &str) -> Self {
         let scheme = std::env::var("IDENT_API_SCHEME").unwrap_or(String::from(DEFAULT_SCHEME));
         let host = std::env::var("IDENT_API_HOST").unwrap_or(String::from(DEFAULT_HOST));
         let path = std::env::var("IDENT_API_PATH").unwrap_or(String::from(DEFAULT_PATH));
 
-        return ApiClient::new(scheme, host, path, token);
+        return ApiClient::new(&scheme, &host, &path, token);
     }
 
     async fn create_user(&self, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error> {
@@ -250,7 +250,7 @@ mod tests {
     const ROPSTEN_NETWORK_ID: &str = "66d44f30-9092-4182-a3c4-bc02736d6ae5";
 
     async fn generate_new_user_and_token() -> AuthenticateResponse {
-        let ident: ApiClient = Ident::factory("".to_string());
+        let ident: ApiClient = Ident::factory("");
 
         let email = FreeEmail().fake::<String>();
         let password = Password(8..15).fake::<String>();
@@ -320,7 +320,7 @@ mod tests {
             None => panic!("authentication response access token not found"),
         };
 
-        let ident: ApiClient = Ident::factory(access_token);
+        let ident: ApiClient = Ident::factory(&access_token);
 
         let get_user_res = ident.get_user(&authentication_res_body.user.id, &authentication_res_body.user.name, None).await.expect("get user response");
         assert_eq!(get_user_res.status(), 200);
@@ -334,7 +334,7 @@ mod tests {
             None => panic!("authentication response access token not found"),
         };
 
-        let ident: ApiClient = Ident::factory(access_token);
+        let ident: ApiClient = Ident::factory(&access_token);
 
         let get_users_res = ident.get_users().await.expect("get users response");
         assert_eq!(get_users_res.status(), 403)
@@ -348,7 +348,7 @@ mod tests {
             None => panic!("authentication response access token not found"),
         };
 
-        let ident: ApiClient = Ident::factory(access_token);
+        let ident: ApiClient = Ident::factory(&access_token);
 
         let update_params = json!({
             "name": Name().fake::<String>(),
@@ -365,7 +365,7 @@ mod tests {
             None => panic!("authentication response access token not found"),
         };
 
-        let ident: ApiClient = Ident::factory(access_token);
+        let ident: ApiClient = Ident::factory(&access_token);
 
         let delete_user_res = ident.delete_user(&authentication_res_body.user.id).await.expect("delete user response");
         assert_eq!(delete_user_res.status(), 403);
@@ -379,7 +379,7 @@ mod tests {
             None => panic!("authentication response access token not found"),
         };
 
-        let ident: ApiClient = Ident::factory(access_token);
+        let ident: ApiClient = Ident::factory(&access_token);
 
         let _ = generate_organization(&ident, &authentication_res_body.user.id).await;
     }
@@ -392,7 +392,7 @@ mod tests {
             None => panic!("authentication response access token not found"),
         };
 
-        let ident: ApiClient = Ident::factory(access_token);
+        let ident: ApiClient = Ident::factory(&access_token);
 
         let list_organizations_res = ident.list_organizations().await.expect("list organizations response");
         assert_eq!(list_organizations_res.status(), 200);
@@ -406,7 +406,7 @@ mod tests {
             None => panic!("authentication response access token not found"),
         };
 
-        let ident: ApiClient = Ident::factory(access_token);
+        let ident: ApiClient = Ident::factory(&access_token);
 
         let create_organization_body = generate_organization(&ident, &authentication_res_body.user.id).await;
 
@@ -422,7 +422,7 @@ mod tests {
             None => panic!("authentication response access token not found"),
         };
 
-        let ident: ApiClient = Ident::factory(access_token);
+        let ident: ApiClient = Ident::factory(&access_token);
 
         let create_organization_body = generate_organization(&ident, &authentication_res_body.user.id).await;
 
@@ -443,7 +443,7 @@ mod tests {
             None => panic!("authentication response access token not found"),
         };
 
-        let ident: ApiClient = Ident::factory(access_token);
+        let ident: ApiClient = Ident::factory(&access_token);
 
         let create_organization_body = generate_organization(&ident, &authentication_res_body.user.id).await;
 
@@ -464,7 +464,7 @@ mod tests {
             None => panic!("authentication response access token not found"),
         };
 
-        let ident: ApiClient = Ident::factory(access_token);
+        let ident: ApiClient = Ident::factory(&access_token);
 
         let create_organization_params = json!({
             "name": "ACME Inc.",
@@ -504,7 +504,7 @@ mod tests {
             None => panic!("authentication response access token not found"),
         };
 
-        let ident: ApiClient = Ident::factory(access_token);
+        let ident: ApiClient = Ident::factory(&access_token);
 
         let list_applications_res = ident.list_applications().await.expect("list applications response");
         assert_eq!(list_applications_res.status(), 200);
@@ -518,7 +518,7 @@ mod tests {
             None => panic!("authentication response access token not found"),
         };
 
-        let ident: ApiClient = Ident::factory(access_token);
+        let ident: ApiClient = Ident::factory(&access_token);
 
         let _ = generate_new_application(&ident, &authentication_res_body.user.id).await;
     }
@@ -531,7 +531,7 @@ mod tests {
             None => panic!("authentication response access token not found"),
         };
 
-        let ident: ApiClient = Ident::factory(access_token);
+        let ident: ApiClient = Ident::factory(&access_token);
 
         let create_application_body = generate_new_application(&ident, &authentication_res_body.user.id).await;
 
@@ -547,7 +547,7 @@ mod tests {
             None => panic!("authentication response access token not found"),
         };
 
-        let ident: ApiClient = Ident::factory(access_token);
+        let ident: ApiClient = Ident::factory(&access_token);
 
         let create_application_body = generate_new_application(&ident, &authentication_res_body.user.id).await;
 
@@ -566,7 +566,7 @@ mod tests {
             None => panic!("authentication response access token not found"),
         };
 
-        let ident: ApiClient = Ident::factory(access_token);
+        let ident: ApiClient = Ident::factory(&access_token);
 
         let create_application_body = generate_new_application(&ident, &authentication_res_body.user.id).await;
 
@@ -582,7 +582,7 @@ mod tests {
             None => panic!("authentication response access token not found"),
         };
 
-        let ident: ApiClient = Ident::factory(access_token);
+        let ident: ApiClient = Ident::factory(&access_token);
 
         let create_application_body = generate_new_application(&ident, &authentication_res_body.user.id).await;
 
@@ -598,7 +598,7 @@ mod tests {
             None => panic!("authentication response access token not found"),
         };
 
-        let mut ident: ApiClient = Ident::factory(access_token);
+        let mut ident: ApiClient = Ident::factory(&access_token);
 
         let create_application_body = generate_new_application(&ident, &authentication_res_body.user.id).await;
         
@@ -641,7 +641,7 @@ mod tests {
             None => panic!("authentication response access token not found"),
         };
 
-        let ident: ApiClient = Ident::factory(access_token);
+        let ident: ApiClient = Ident::factory(&access_token);
 
         let create_application_body = generate_new_application(&ident, &authentication_res_body.user.id).await;
 
@@ -661,7 +661,7 @@ mod tests {
             None => panic!("authentication response access token not found"),
         };
 
-        let ident: ApiClient = Ident::factory(access_token);
+        let ident: ApiClient = Ident::factory(&access_token);
 
         let create_application_body = generate_new_application(&ident, &authentication_res_body.user.id).await;
 
@@ -685,7 +685,7 @@ mod tests {
             None => panic!("authentication response access token not found"),
         };
 
-        let mut ident: ApiClient = Ident::factory(access_token);
+        let mut ident: ApiClient = Ident::factory(&access_token);
 
         let create_application_body = generate_new_application(&ident, &authentication_res_body.user.id).await;
         

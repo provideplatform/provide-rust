@@ -10,7 +10,7 @@ const DEFAULT_PATH: &str = "api/v1";
 
 #[async_trait]
 pub trait NChain {
-    fn factory(token: String) -> Self;
+    fn factory(token: &str) -> Self;
 
     async fn list_accounts(&self) -> Result<reqwest::Response, reqwest::Error>;
 
@@ -67,12 +67,12 @@ pub trait NChain {
 
 #[async_trait]
 impl NChain for ApiClient {
-    fn factory(token: String) -> Self {
+    fn factory(token: &str) -> Self {
         let scheme = std::env::var("NCHAIN_API_SCHEME").unwrap_or(String::from(DEFAULT_SCHEME));
         let host = std::env::var("NCHAIN_API_HOST").unwrap_or(String::from(DEFAULT_HOST));
         let path = std::env::var("NCHAIN_API_PATH").unwrap_or(String::from(DEFAULT_PATH));
     
-        return ApiClient::new(scheme, host, path, token);
+        return ApiClient::new(&scheme, &host, &path, token);
     }
 
     async fn list_accounts(&self) -> Result<reqwest::Response, reqwest::Error> {
@@ -317,7 +317,7 @@ mod tests {
     const ROPSTEN_NETWORK_ID: &str = "66d44f30-9092-4182-a3c4-bc02736d6ae5";
 
     async fn generate_new_user_and_token() -> AuthenticateResponse {
-        let ident: ApiClient = Ident::factory("".to_string());
+        let ident: ApiClient = Ident::factory("");
 
         let email = FreeEmail().fake::<String>();
         let password = Password(8..15).fake::<String>();
@@ -378,7 +378,7 @@ mod tests {
             None => panic!("authentication response access token not found"),
         };
 
-        let nchain: ApiClient = NChain::factory(access_token);
+        let nchain: ApiClient = NChain::factory(&access_token);
 
         let get_accounts_res = nchain.list_accounts().await.expect("list accounts response");
         assert_eq!(get_accounts_res.status(), 200);
@@ -392,7 +392,7 @@ mod tests {
             None => panic!("authentication response access token not found"),
         };
 
-        let nchain: ApiClient = NChain::factory(access_token);
+        let nchain: ApiClient = NChain::factory(&access_token);
 
         let create_account_params = Some(json!({
             "network_id": ROPSTEN_NETWORK_ID,
@@ -410,7 +410,7 @@ mod tests {
             None => panic!("authentication response access token not found"),
         };
 
-        let nchain: ApiClient = NChain::factory(access_token);
+        let nchain: ApiClient = NChain::factory(&access_token);
 
         let create_account_params = Some(json!({
             "network_id": ROPSTEN_NETWORK_ID,
@@ -433,7 +433,7 @@ mod tests {
             None => panic!("authentication response access token not found"),
         };
 
-        let ident: ApiClient = Ident::factory(access_token);
+        let ident: ApiClient = Ident::factory(&access_token);
 
         let create_application_body = generate_new_application(&ident, &authentication_res_body.user.id).await;
 
@@ -444,7 +444,7 @@ mod tests {
             None => panic!("application authentication response access token not found"),
         };
 
-        let nchain: ApiClient = NChain::factory(application_access_token);
+        let nchain: ApiClient = NChain::factory(&application_access_token);
 
         let get_connectors_res = nchain.get_connectors().await.expect("get connectors response");
         assert_eq!(get_connectors_res.status(), 200);
@@ -458,7 +458,7 @@ mod tests {
             None => panic!("authentication response access token not found"),
         };
 
-        let ident: ApiClient = Ident::factory(access_token);
+        let ident: ApiClient = Ident::factory(&access_token);
 
         let create_application_body = generate_new_application(&ident, &authentication_res_body.user.id).await;
 
@@ -469,7 +469,7 @@ mod tests {
             None => panic!("application authentication response access token not found"),
         };
 
-        let nchain: ApiClient = NChain::factory(application_access_token);
+        let nchain: ApiClient = NChain::factory(&application_access_token);
 
         let create_connector_params = Some(json!({
             "application_id": create_application_body.id,
@@ -500,7 +500,7 @@ mod tests {
             None => panic!("authentication response access token not found"),
         };
 
-        let ident: ApiClient = Ident::factory(access_token);
+        let ident: ApiClient = Ident::factory(&access_token);
 
         let create_application_body = generate_new_application(&ident, &authentication_res_body.user.id).await;
 
@@ -511,7 +511,7 @@ mod tests {
             None => panic!("application authentication response access token not found"),
         };
 
-        let nchain: ApiClient = NChain::factory(application_access_token);
+        let nchain: ApiClient = NChain::factory(&application_access_token);
 
         let create_connector_params = Some(json!({
             "application_id": create_application_body.id,
@@ -547,7 +547,7 @@ mod tests {
             None => panic!("authentication response access token not found"),
         };
 
-        let ident: ApiClient = Ident::factory(access_token);
+        let ident: ApiClient = Ident::factory(&access_token);
 
         let create_application_body = generate_new_application(&ident, &authentication_res_body.user.id).await;
 
@@ -558,7 +558,7 @@ mod tests {
             None => panic!("application authentication response access token not found"),
         };
 
-        let nchain: ApiClient = NChain::factory(application_access_token);
+        let nchain: ApiClient = NChain::factory(&application_access_token);
 
         let create_connector_params = Some(json!({
             "application_id": create_application_body.id,
@@ -594,7 +594,7 @@ mod tests {
             None => panic!("authentication response access token not found"),
         };
 
-        let ident: ApiClient = Ident::factory(access_token);
+        let ident: ApiClient = Ident::factory(&access_token);
 
         let create_application_body = generate_new_application(&ident, &authentication_res_body.user.id).await;
 
@@ -605,7 +605,7 @@ mod tests {
             None => panic!("application authentication response access token not found"),
         };
 
-        let nchain: ApiClient = NChain::factory(application_access_token);
+        let nchain: ApiClient = NChain::factory(&application_access_token);
 
         let get_contracts_res = nchain.get_contracts().await.expect("get contracts response");
         assert_eq!(get_contracts_res.status(), 200);
@@ -619,7 +619,7 @@ mod tests {
             None => panic!("authentication response access token not found"),
         };
 
-        let ident: ApiClient = Ident::factory(access_token);
+        let ident: ApiClient = Ident::factory(&access_token);
 
         let create_application_body = generate_new_application(&ident, &authentication_res_body.user.id).await;
 
@@ -630,7 +630,7 @@ mod tests {
             None => panic!("application authentication response access token not found"),
         };
 
-        let nchain: ApiClient = NChain::factory(application_access_token);
+        let nchain: ApiClient = NChain::factory(&application_access_token);
 
         let create_contract_params = Some(json!({
             "application_id": &create_application_body.id,
@@ -651,7 +651,7 @@ mod tests {
             None => panic!("authentication response access token not found"),
         };
 
-        let ident: ApiClient = Ident::factory(access_token);
+        let ident: ApiClient = Ident::factory(&access_token);
 
         let create_application_body = generate_new_application(&ident, &authentication_res_body.user.id).await;
 
@@ -662,7 +662,7 @@ mod tests {
             None => panic!("application authentication response access token not found"),
         };
 
-        let nchain: ApiClient = NChain::factory(application_access_token);
+        let nchain: ApiClient = NChain::factory(&application_access_token);
 
         let create_contract_params = Some(json!({
             "application_id": &create_application_body.id,
@@ -688,7 +688,7 @@ mod tests {
             None => panic!("authentication response access token not found"),
         };
 
-        let ident: ApiClient = Ident::factory(access_token);
+        let ident: ApiClient = Ident::factory(&access_token);
 
         let create_application_body = generate_new_application(&ident, &authentication_res_body.user.id).await;
 
@@ -699,7 +699,7 @@ mod tests {
             None => panic!("application authentication response access token not found"),
         };
 
-        let nchain: ApiClient = NChain::factory(application_access_token);
+        let nchain: ApiClient = NChain::factory(&application_access_token);
 
         let create_contract_params = Some(json!({
             "application_id": &create_application_body.id,
@@ -739,7 +739,7 @@ mod tests {
             None => panic!("authentication response access token not found"),
         };
 
-        let nchain: ApiClient = NChain::factory(access_token);
+        let nchain: ApiClient = NChain::factory(&access_token);
 
         let get_wallets_res = nchain.get_wallets().await.expect("get wallets response");
         assert_eq!(get_wallets_res.status(), 200);
@@ -753,7 +753,7 @@ mod tests {
             None => panic!("authentication response access token not found"),
         };
 
-        let nchain: ApiClient = NChain::factory(access_token);
+        let nchain: ApiClient = NChain::factory(&access_token);
 
         let create_wallet_params = Some(json!({
             "user_id": authentication_res_body.user.id,
@@ -771,7 +771,7 @@ mod tests {
             None => panic!("authentication response access token not found"),
         };
 
-        let nchain: ApiClient = NChain::factory(access_token);
+        let nchain: ApiClient = NChain::factory(&access_token);
 
         let create_wallet_params = Some(json!({
             "user_id": authentication_res_body.user.id,
@@ -794,7 +794,7 @@ mod tests {
             None => panic!("authentication response access token not found"),
         };
 
-        let nchain: ApiClient = NChain::factory(access_token);
+        let nchain: ApiClient = NChain::factory(&access_token);
 
         let get_networks_res = nchain.get_networks().await.expect("get networks response");
         assert_eq!(get_networks_res.status(), 200);
@@ -808,7 +808,7 @@ mod tests {
             None => panic!("authentication response access token not found"),
         };
 
-        let ident: ApiClient = Ident::factory(access_token);
+        let ident: ApiClient = Ident::factory(&access_token);
 
         let create_application_body = generate_new_application(&ident, &authentication_res_body.user.id).await;
 
@@ -819,7 +819,7 @@ mod tests {
             None => panic!("application authentication response access token not found"),
         };
 
-        let nchain: ApiClient = NChain::factory(application_access_token);
+        let nchain: ApiClient = NChain::factory(&application_access_token);
 
         let create_network_params = Some(json!({
             "Application_id": &create_application_body.id,
@@ -868,13 +868,11 @@ mod tests {
             None => panic!("authentication response access token not found"),
         };
 
-        let access_clone = access_token.clone();
-
-        let ident: ApiClient = Ident::factory(access_token);
+        let ident: ApiClient = Ident::factory(&access_token);
 
         let create_application_body = generate_new_application(&ident, &authentication_res_body.user.id).await;
 
-        let nchain: ApiClient = NChain::factory(access_clone);
+        let nchain: ApiClient = NChain::factory(&access_token);
 
         let create_network_params = Some(json!({
             "application_id": &create_application_body.id,
@@ -932,13 +930,11 @@ mod tests {
             None => panic!("authentication response access token not found"),
         };
 
-        let access_clone = access_token.clone();
-
-        let ident: ApiClient = Ident::factory(access_token);
+        let ident: ApiClient = Ident::factory(&access_token);
 
         let create_application_body = generate_new_application(&ident, &authentication_res_body.user.id).await;
 
-        let nchain: ApiClient = NChain::factory(access_clone);
+        let nchain: ApiClient = NChain::factory(&access_token);
 
         let create_network_params = Some(json!({
             "application_id": &create_application_body.id,
@@ -992,7 +988,7 @@ mod tests {
     //         None => panic!("authentication response access token not found"),
     //     };
 
-    //     let nchain: ApiClient = NChain::factory(access_token);
+    //     let nchain: ApiClient = NChain::factory(&access_token);
 
     //     let get_oracles_res = nchain.get_oracles().await.expect("get oracles response");
     //     assert_eq!(get_oracles_res.status(), 200);
@@ -1006,7 +1002,7 @@ mod tests {
             None => panic!("authentication response access token not found"),
         };
 
-        let nchain: ApiClient = NChain::factory(access_token);
+        let nchain: ApiClient = NChain::factory(&access_token);
 
         let get_transactions_res = nchain.get_transactions().await.expect("get transactions response");
         assert_eq!(get_transactions_res.status(), 200);
@@ -1020,7 +1016,7 @@ mod tests {
             None => panic!("authentication response access token not found"),
         };
 
-        let nchain: ApiClient = NChain::factory(access_token);
+        let nchain: ApiClient = NChain::factory(&access_token);
 
         let create_wallet_params = Some(json!({
             "user_id": authentication_res_body.user.id,
@@ -1052,7 +1048,7 @@ mod tests {
             None => panic!("authentication response access token not found"),
         };
 
-        let nchain: ApiClient = NChain::factory(access_token);
+        let nchain: ApiClient = NChain::factory(&access_token);
 
         let create_wallet_params = Some(json!({
             "user_id": authentication_res_body.user.id,

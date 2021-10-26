@@ -10,7 +10,7 @@ const DEFAULT_PATH: &str = "api/v1";
 
 #[async_trait]
 pub trait Baseline {
-    fn factory(token: String) -> Self;
+    fn factory(token: &str) -> Self;
 
     async fn get_bpi_accounts(&self) -> Result<reqwest::Response, reqwest::Error>;
 
@@ -67,12 +67,12 @@ pub trait Baseline {
 
 #[async_trait]
 impl Baseline for ApiClient {
-    fn factory(token: String) -> Self {
+    fn factory(token: &str) -> Self {
         let scheme = std::env::var("BASELINE_API_SCHEME").unwrap_or(String::from(DEFAULT_SCHEME));
         let host = std::env::var("BASELINE_API_HOST").unwrap_or(String::from(DEFAULT_HOST));
         let path = std::env::var("BASELINE_API_PATH").unwrap_or(String::from(DEFAULT_PATH));
     
-        return ApiClient::new(scheme, host, path, token);
+        return ApiClient::new(&scheme, &host, &path, token);
     }
 
     async fn get_bpi_accounts(&self) -> Result<reqwest::Response, reqwest::Error> {
@@ -275,7 +275,7 @@ mod tests {
     const ROPSTEN_NETWORK_ID: &str = "66d44f30-9092-4182-a3c4-bc02736d6ae5";
     
     async unsafe fn init_baseline_user_and_token() -> AuthenticateResponse {
-        let ident: ApiClient = Ident::factory("".to_string());
+        let ident: ApiClient = Ident::factory("");
 
         let user_email = Some(FreeEmail().fake::<String>());
         let user_password = Some(Password(8..15).fake::<String>());
@@ -301,7 +301,7 @@ mod tests {
     }
 
     async fn authenticate_workgroup() -> Token {
-        let mut ident: ApiClient = Ident::factory("".to_string());
+        let mut ident: ApiClient = Ident::factory("");
 
         let email = "baselineuser@example.come";
         let password = "baselinepassword123";
@@ -387,7 +387,7 @@ mod tests {
     #[tokio::test]
     async fn _setup() {
         // create user
-        let mut ident: ApiClient = Ident::factory("".to_string());
+        let mut ident: ApiClient = Ident::factory("");
         let user_email = Some(FreeEmail().fake::<String>());
         let user_password = Some(Password(8..15).fake::<String>());
         let user_data = Some(json!({
@@ -417,7 +417,7 @@ mod tests {
             None => panic!("user refresh token not found"),
         };
 
-        ident.token = user_access_token.clone();
+        ident.token = user_access_token.to_string();
 
         // create organization
         let create_organization_body = generate_baseline_organization(&ident, &authentication_res_body.user.id).await;
@@ -452,7 +452,7 @@ mod tests {
         };
 
         // associate application organization
-        ident.token = app_access_token.clone();
+        ident.token = app_access_token.to_string();
 
         let associate_application_org_params = json!({
             "organization_id": &create_organization_body.id,
@@ -465,7 +465,7 @@ mod tests {
         let registry_contracts = registry_contracts_res.json::<Value>().await.expect("registry contracts body");
         let shuttle_contract = &registry_contracts["baseline"]["contracts"][2];
         
-        let nchain: ApiClient = NChain::factory(app_access_token.clone()); // FIXMEEEE no clone
+        let nchain: ApiClient = NChain::factory(&app_access_token);
         
         // deploy workgroup contract
         let create_account_params = json!({
@@ -497,7 +497,7 @@ mod tests {
         };
         let registry_contract_address = registry_contract.address;
 
-        let vault: ApiClient = Vault::factory(app_access_token.clone());
+        let vault: ApiClient = Vault::factory(&app_access_token);
 
         // organization address
         let create_vault_params = json!({
@@ -937,7 +937,7 @@ mod tests {
         let org_access_token_json = config_vals["org_access_token"].to_string();
         let org_access_token = serde_json::from_str::<String>(&org_access_token_json).expect("organzation access token");
 
-        let baseline: ApiClient = Baseline::factory(org_access_token);
+        let baseline: ApiClient = Baseline::factory(&org_access_token);
     
         let get_workflows_res = baseline.get_workflows().await.expect("get workflows response");
         assert_eq!(get_workflows_res.status(), 200);
@@ -1021,7 +1021,7 @@ mod tests {
         let org_access_token_json = config_vals["org_access_token"].to_string();
         let org_access_token = serde_json::from_str::<String>(&org_access_token_json).expect("organzation access token");
 
-        let baseline: ApiClient = Baseline::factory(org_access_token);
+        let baseline: ApiClient = Baseline::factory(&org_access_token);
     
         let get_workgroups_res = baseline.get_workgroups().await.expect("get workgroups response");
         assert_eq!(get_workgroups_res.status(), 200);
@@ -1204,3 +1204,5 @@ mod tests {
 // create workgroup helper
 // should have check to see if provide cli is install and panic with link to repo if not
 // gotta make sure all the containers are shut down after tests 
+// check issue kyle had
+// add examples dir with examples for each feature (standard, WASM, pure-rust?)

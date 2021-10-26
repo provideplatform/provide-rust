@@ -10,7 +10,7 @@ const DEFAULT_PATH: &str = "api/v1";
 
 #[async_trait]
 pub trait Privacy {
-    fn factory(token: String) -> Self;
+    fn factory(token: &str) -> Self;
 
     async fn list_circuits(&self) -> Result<reqwest::Response, reqwest::Error>;
 
@@ -27,12 +27,12 @@ pub trait Privacy {
 
 #[async_trait]
 impl Privacy for ApiClient {
-    fn factory(token: String) -> Self {
+    fn factory(token: &str) -> Self {
         let scheme = std::env::var("PRIVACY_API_SCHEME").unwrap_or(String::from(DEFAULT_SCHEME));
         let host = std::env::var("PRIVACY_API_HOST").unwrap_or(String::from(DEFAULT_HOST));
         let path = std::env::var("PRIVACY_API_PATH").unwrap_or(String::from(DEFAULT_PATH));
     
-        return ApiClient::new(scheme, host, path, token);
+        return ApiClient::new(&scheme, &host, &path, token);
     }
 
     async fn list_circuits(&self) -> Result<reqwest::Response, reqwest::Error> {
@@ -102,7 +102,7 @@ mod tests {
     const ROPSTEN_NETWORK_ID: &str = "66d44f30-9092-4182-a3c4-bc02736d6ae5";
 
     async fn generate_new_user_and_token() -> AuthenticateResponse {
-        let ident: ApiClient = Ident::factory("".to_string());
+        let ident: ApiClient = Ident::factory("");
 
         let email = FreeEmail().fake::<String>();
         let password = Password(8..15).fake::<String>();
@@ -150,7 +150,7 @@ mod tests {
             None => panic!("authentication response access token not found"),
         };
 
-        let privacy: ApiClient = Privacy::factory(access_token);
+        let privacy: ApiClient = Privacy::factory(&access_token);
 
         let list_circuits_res = privacy.list_circuits().await.expect("list circuits response");
         assert_eq!(list_circuits_res.status(), 200);
@@ -164,7 +164,7 @@ mod tests {
             None => panic!("authentication response access token not found"),
         };
 
-        let privacy: ApiClient = Privacy::factory(access_token);
+        let privacy: ApiClient = Privacy::factory(&access_token);
         let _ = deploy_circuit(&privacy).await;
     }
 
@@ -176,7 +176,7 @@ mod tests {
             None => panic!("authentication response access token not found"),
         };
 
-        let privacy: ApiClient = Privacy::factory(access_token);
+        let privacy: ApiClient = Privacy::factory(&access_token);
         let deploy_circuit_body = deploy_circuit(&privacy).await;
 
         let get_circuit_res = privacy.get_circuit(&deploy_circuit_body.id).await.expect("get circuit response");
@@ -191,7 +191,7 @@ mod tests {
             None => panic!("authentication response access token not found"),
         };
 
-        let ident: ApiClient = Ident::factory(access_token);
+        let ident: ApiClient = Ident::factory(&access_token);
 
         let application_data = Some(json!({
             "network_id": ROPSTEN_NETWORK_ID,
@@ -219,7 +219,7 @@ mod tests {
             None => panic!("application authentication response access token not found"),
         };
 
-        let privacy: ApiClient = Privacy::factory(application_access_token);
+        let privacy: ApiClient = Privacy::factory(&application_access_token);
 
         let deploy_circuit_body = deploy_circuit(&privacy).await;
 
@@ -267,7 +267,7 @@ mod tests {
             None => panic!("authentication response access token not found"),
         };
 
-        let ident: ApiClient = Ident::factory(access_token);
+        let ident: ApiClient = Ident::factory(&access_token);
 
         let application_data = Some(json!({
             "network_id": ROPSTEN_NETWORK_ID,
@@ -295,7 +295,7 @@ mod tests {
             None => panic!("application authentication response access token not found"),
         };
 
-        let privacy: ApiClient = Privacy::factory(application_access_token);
+        let privacy: ApiClient = Privacy::factory(&application_access_token);
 
         let deploy_circuit_body = deploy_circuit(&privacy).await;
 
@@ -356,7 +356,7 @@ mod tests {
             None => panic!("authentication response access token not found"),
         };
 
-        let ident: ApiClient = Ident::factory(access_token);
+        let ident: ApiClient = Ident::factory(&access_token);
 
         let application_data = Some(json!({
             "network_id": ROPSTEN_NETWORK_ID,
@@ -384,7 +384,7 @@ mod tests {
             None => panic!("application authentication response access token not found"),
         };
 
-        let privacy: ApiClient = Privacy::factory(application_access_token);
+        let privacy: ApiClient = Privacy::factory(&application_access_token);
 
         let deploy_circuit_body = deploy_circuit(&privacy).await;
 
