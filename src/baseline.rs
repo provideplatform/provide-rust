@@ -1208,7 +1208,5 @@ mod tests {
 }
 
 // create workgroup helper
-// should have check to see if provide cli is install and panic with link to repo if not
-// gotta make sure all the containers are shut down after tests 
 // check issue kyle had
 // add examples dir with examples for each feature (standard, WASM, pure-rust?)

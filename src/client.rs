@@ -154,5 +154,3 @@ mod tests {
         assert_eq!(client.base_url, "https://provide.services/api/")
     }
 }
-
-// token should be reference, as with that pattern of passings refs

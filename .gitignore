@@ -3,3 +3,11 @@ Cargo.lock
 .DS_Store
 .config-test.json
 .local-baseline-test-config.yaml
+
+# rust demo
+/examples/rust-demo/target
+/examples/rust-demo/Cargo.lock
+
+# wasm demo
+/examples/wasm-demo/node_modules
+/examples/wasm-demo/yarn.lock
