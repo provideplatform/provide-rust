@@ -386,6 +386,12 @@ mod tests {
 
     #[tokio::test]
     async fn _setup() {
+        // check if prvd cli is installed
+        let prvd_cli_cmd = Command::new("sh").arg("-c").arg("prvd").output().expect("provide cli install check");
+        if !prvd_cli_cmd.status.success() {
+            panic!("Provide cli not installed. Please install to run the baseline integration test suite") // link to cli?
+        }
+
         // create user
         let mut ident: ApiClient = Ident::factory("");
         let user_email = Some(FreeEmail().fake::<String>());
