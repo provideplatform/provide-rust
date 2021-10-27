@@ -1,7 +1,8 @@
 [package]
 name = "wasm-demo"
 version = "0.1.0"
-edition = "2021"
+authors = ["Alex Dunne <alex12dunne@gmail.com>"]
+edition = "2018"
 
 [lib]
 crate-type = ["cdylib", "rlib"]

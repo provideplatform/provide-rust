@@ -17,4 +17,4 @@ regex = "1.5.4"
 
 getrandom = { version = "0.2.3", features = ["js"] }
 
-# NEEDS APACHE LICENSE
+# do i need a README in the examples?

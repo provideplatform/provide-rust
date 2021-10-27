@@ -21,3 +21,5 @@ async fn main() {
     let body = create_user_res.json::<User>().await.expect("create user body");
     println!("{:?}", body);
 }
+
+// add tests
