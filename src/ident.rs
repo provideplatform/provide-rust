@@ -610,10 +610,11 @@ mod tests {
         assert_eq!(application_authorization_res.status(), 201);
 
         let application_authorization_body = application_authorization_res.json::<Token>().await.expect("organization authorization body");
-        ident.token = match application_authorization_body.access_token {
+        let app_access_token = match application_authorization_body.access_token {
             Some(string) => string,
             None => panic!("application authentication response access token not found"),
         };
+        ident.set_bearer_token(&app_access_token);
 
         let another_user_params = json!({
             "first_name": FirstName().fake::<String>(),
@@ -697,10 +698,11 @@ mod tests {
         assert_eq!(application_authorization_res.status(), 201);
 
         let application_authorization_body = application_authorization_res.json::<Token>().await.expect("organization authorization body");
-        ident.token = match application_authorization_body.access_token {
+        let app_access_token = match application_authorization_body.access_token {
             Some(string) => string,
             None => panic!("application authentication response access token not found"),
         };
+        ident.set_bearer_token(&app_access_token);
 
         let create_organization_body = generate_organization(&ident, &authentication_res_body.user.id).await;
 
@@ -729,3 +731,24 @@ mod tests {
 
 // how to make these parallel again
 // would be nice to use the ? operator instead of unwrapping everything
+
+// how to handle accessing struct keys without making them public
+// set function to change client token?
+// theres definitely some way to make apiclient a trait and the services a struct, or to implement the services as traits with default method implementations instead of "for ApiClient" (?)
+// figure out how to use "?" operator to unwrap
+
+// use this pattern to get val from Option ?
+// if let Some(state) = self.state.take() {
+// self.state = Some(state.request_review());
+// }
+
+// make token optional?
+
+// return futures from service methods?
+
+// type semantics in question
+// returning futures from service methods
+// making services a struct that wraps client vs traits
+// making service arg params structs vs Value, optional?
+
+// add way to run tests that takes a service input and runs only that service vs all

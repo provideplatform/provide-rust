@@ -534,8 +534,10 @@ mod tests {
             "user_refresh_token": &user_refresh_token,
             "org_access_token": &org_access_token,
             "org_refresh_token": &org_refresh_token,
+            "org_id": &create_organization_body.id,
             "org_name": &create_organization_body.name,
             "app_access_token": &app_access_token,
+            "app_id": &create_application_body.id,
         });
         serde_json::to_writer_pretty(std::fs::File::create(".test-config.json").expect("baseline json config"), &json_config_params).expect("write json");
         
@@ -572,7 +574,7 @@ mod tests {
         run_cmd += &format!(" --privacy-host={}", "localhost:8083");
 		run_cmd += &format!(" --privacy-scheme={}", "http");
 		run_cmd += &format!(" --registry-contract-address={}", &registry_contract_address);
-        run_cmd += &format!(" --redis-hostname={}", "redis");
+        run_cmd += &format!(" --redis-hostname={}-redis", &create_organization_body.name);
         run_cmd += &format!(" --redis-port={}", "6380");
         run_cmd += &format!(" --sor={}", "ephemeral");
         run_cmd += &format!(" --vault-host={}", "localhost:8082");
@@ -590,20 +592,18 @@ mod tests {
             None => assert!(true),
         };
 
-        sleep(Duration::from_millis(10000)).await
+        sleep(Duration::from_millis(10000)).await // change this to wait for the baseline stack log that says its up and running (msg = "NAME" local baseline instance started)
     }
     
     // #[tokio::test]
     // async fn get_bpi_accounts() {
-    //     setup().await; // this would be better if it were a formal before hook
+    //     let json_config = std::fs::File::open(".test-config.json").expect("json config file");
+    //     let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
         
-    //     let authentication_res_body = authenticate_workgroup().await;
-    //     let access_token = match authentication_res_body.access_token {
-    //         Some(string) => string,
-    //         None => panic!("authentication response access token not found"),
-    //     };
+    //     let org_access_token_json = config_vals["org_access_token"].to_string();
+    //     let org_access_token = serde_json::from_str::<String>(&org_access_token_json).expect("organzation access token");
 
-    //     let baseline: ApiClient = Baseline::factory(access_token);
+    //     let baseline: ApiClient = Baseline::factory(&org_access_token);
 
     //     let get_bpi_acconts_res = baseline.get_bpi_accounts().await.expect("get bpi accounts response");
     //     assert_eq!(get_bpi_acconts_res.status(), 200);
@@ -951,13 +951,13 @@ mod tests {
 
     // #[tokio::test]
     // async fn create_workflow() {
-    //     let authentication_res_body = authenticate_workgroup().await;
-    //     let access_token = match authentication_res_body.access_token {
-    //         Some(string) => string,
-    //         None => panic!("authentication response access token not found"),
-    //     };
+    //     let json_config = std::fs::File::open(".test-config.json").expect("json config file");
+    //     let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
+        
+    //     let org_access_token_json = config_vals["org_access_token"].to_string();
+    //     let org_access_token = serde_json::from_str::<String>(&org_access_token_json).expect("organzation access token");
 
-    //     let baseline: ApiClient = Baseline::factory(access_token);
+    //     let baseline: ApiClient = Baseline::factory(&org_access_token);
 
     //     let create_workflow_params = json!({
     //         "name": "Procure to Pay",
@@ -979,6 +979,7 @@ mod tests {
     //     let baseline: ApiClient = Baseline::factory(access_token);
 
     //     let create_workflow_params = Some(json!({
+    //         ""
     //         "name": "Procure to Pay",
     //         "type": "procure_to_pay",
     //     }));
@@ -1195,10 +1196,86 @@ mod tests {
     // }
 
     // #[tokio::test]
-    // async fn create_object() {}
+    // async fn create_object() {
+    //     let json_config = std::fs::File::open(".test-config.json").expect("json config file");
+    //     let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
+        
+    //     let org_access_token_json = config_vals["org_access_token"].to_string();
+    //     let org_access_token = serde_json::from_str::<String>(&org_access_token_json).expect("organzation access token");
+
+    //     let baseline: ApiClient = Baseline::factory(&org_access_token);
+
+    //     let workgroup_id_json = config_vals["app_id"].to_string();
+    //     let workgroup_id = serde_json::from_str::<String>(&workgroup_id_json).expect("workgroup id");
+    //     println!("APP ID {}", &workgroup_id);
+
+    //     let organization_id_json = config_vals["org_id"].to_string();
+    //     let organization_id = serde_json::from_str::<String>(&organization_id_json).expect("organization id");
+    //     println!("ORG ID {}", &organization_id);
+
+    //     let create_object_params = json!({
+    //         // "workgroup_id": &workgroup_id,
+    //         // "organization_id": &organization_id,_id,
+    //         "id": "asdfg",
+    //         // "baseline_id": null,
+    //         "identifier": "abcd", // USE FAKER lorem::Word()
+    //         "payload": {
+    //             "hello": "world",
+    //         },
+    //         "type": "general_consistency",
+    //     });
+
+    //     // select workgroup
+    //     // select organization
+    //     // type
+    //     // id
+    //     // baseline_id
+    //     // payload
+
+    //     println!("CREATE OBJ PARAMS {:?}", &create_object_params);
+
+    //     let create_object_res = baseline.create_object(Some(create_object_params)).await.expect("create object response");
+
+    //     println!("RES STATUS {:?}", &create_object_res.status());
+    //     println!("RES BODY {:?}", &create_object_res.json::<Value>().await.unwrap());
+
+    //     assert_eq!(422, 201);
+    // }
 
     // #[tokio::test]
-    // async fn update_object() {}
+    // async fn create_object_baseline_id_infinte() {
+    // }
+
+    // #[tokio::test]
+    // async fn create_protocol_message {
+    // }
+
+    // #[tokio::test]
+    // async fn update_object() {
+    //     let json_config = std::fs::File::open(".test-config.json").expect("json config file");
+    //     let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
+        
+    //     let org_access_token_json = config_vals["org_access_token"].to_string();
+    //     let org_access_token = serde_json::from_str::<String>(&org_access_token_json).expect("organzation access token");
+
+    //     let baseline: ApiClient = Baseline::factory(&org_access_token);
+
+    //     let create_object_params = json!({
+    //         "id": "",
+    //         "type": "",
+    //     });
+
+    //     let create_object_res = baseline.create_object(Some(create_object_params)).await.expect("create object response");
+    //     assert_eq!(create_object_res.status(), 201);
+
+    //     let update_object_params = json!({
+    //         "id": "",
+    //         "type": "",
+    //     });
+
+    //     let update_object_res = baseline.update_object(Some(update_object_params)).await.expect("update object response");
+    //     assert_eq!(update_object_res.status(), 201);
+    // }
 
     // #[tokio::test]
     // async fn get_state() {}
@@ -1210,3 +1287,35 @@ mod tests {
 // create workgroup helper
 // check issue kyle had
 // add examples dir with examples for each feature (standard, WASM, pure-rust?)
+
+// [GIN-debug] GET    /status                   --> main.statusHandler (4 handlers)
+// [GIN-debug] POST   /api/v1/credentials       --> github.com/provideplatform/baseline-proxy/baseline.issueVerifiableCredentialHandler (4 handlers)
+// [GIN-debug] POST   /api/v1/pub/invite        --> github.com/provideplatform/baseline-proxy/baseline.createPublicWorkgroupInviteHandler (4 handlers)
+// [GIN-debug] GET    /api/v1/bpi_accounts      --> github.com/provideplatform/baseline-proxy/baseline.listBPIAccountsHandler (7 handlers)
+// [GIN-debug] GET    /api/v1/bpi_accounts/:id  --> github.com/provideplatform/baseline-proxy/baseline.bpiAccountDetailsHandler (7 handlers)
+// [GIN-debug] POST   /api/v1/bpi_accounts      --> github.com/provideplatform/baseline-proxy/baseline.createBPIAccountHandler (7 handlers)
+// [GIN-debug] POST   /api/v1/protocol_messages --> github.com/provideplatform/baseline-proxy/baseline.createProtocolMessageHandler (7 handlers)
+// [GIN-debug] GET    /api/v1/subjects          --> github.com/provideplatform/baseline-proxy/baseline.listSubjectsHandler (7 handlers)
+// [GIN-debug] GET    /api/v1/subjects/:id      --> github.com/provideplatform/baseline-proxy/baseline.subjectDetailsHandler (7 handlers)
+// [GIN-debug] POST   /api/v1/subjects          --> github.com/provideplatform/baseline-proxy/baseline.createSubjectHandler (7 handlers)
+// [GIN-debug] PUT    /api/v1/subjects/:id      --> github.com/provideplatform/baseline-proxy/baseline.updateSubjectHandler (7 handlers)
+// [GIN-debug] GET    /api/v1/subjects/:id/accounts --> github.com/provideplatform/baseline-proxy/baseline.listSubjectAccountsHandler (7 handlers)
+// [GIN-debug] GET    /api/v1/subjects/:id/accounts/:accountId --> github.com/provideplatform/baseline-proxy/baseline.subjectAccountDetailsHandler (7 handlers)
+// [GIN-debug] POST   /api/v1/subjects/:id/accounts --> github.com/provideplatform/baseline-proxy/baseline.createSubjectAccountsHandler (7 handlers)
+// [GIN-debug] PUT    /api/v1/subjects/:id/accounts/:accountId --> github.com/provideplatform/baseline-proxy/baseline.updateSubjectAccountsHandler (7 handlers)
+// [GIN-debug] POST   /api/v1/objects           --> github.com/provideplatform/baseline-proxy/baseline.createObjectHandler (7 handlers)
+// [GIN-debug] PUT    /api/v1/objects/:id       --> github.com/provideplatform/baseline-proxy/baseline.updateObjectHandler (7 handlers)
+// [GIN-debug] PUT    /api/v1/config            --> github.com/provideplatform/baseline-proxy/baseline.configurationHandler (7 handlers)
+// [GIN-debug] POST   /api/v1/business_objects  --> github.com/provideplatform/baseline-proxy/baseline.createObjectHandler (7 handlers)
+// [GIN-debug] PUT    /api/v1/business_objects/:id --> github.com/provideplatform/baseline-proxy/baseline.updateObjectHandler (7 handlers)
+// [GIN-debug] GET    /api/v1/workflows         --> github.com/provideplatform/baseline-proxy/baseline.listWorkflowsHandler (7 handlers)
+// [GIN-debug] GET    /api/v1/workflows/:id     --> github.com/provideplatform/baseline-proxy/baseline.workflowDetailsHandler (7 handlers)
+// [GIN-debug] POST   /api/v1/workflows         --> github.com/provideplatform/baseline-proxy/baseline.createWorkflowHandler (7 handlers)
+// [GIN-debug] GET    /api/v1/workgroups        --> github.com/provideplatform/baseline-proxy/baseline.listWorkgroupsHandler (7 handlers)
+// [GIN-debug] GET    /api/v1/workgroups/:id    --> github.com/provideplatform/baseline-proxy/baseline.workgroupDetailsHandler (7 handlers)
+// [GIN-debug] POST   /api/v1/workgroups        --> github.com/provideplatform/baseline-proxy/baseline.createWorkgroupHandler (7 handlers)
+// [GIN-debug] GET    /api/v1/workflows/:id/worksteps --> github.com/provideplatform/baseline-proxy/baseline.listWorkstepsHandler (7 handlers)
+// [GIN-debug] GET    /api/v1/workflows/:id/worksteps/:workstepId --> github.com/provideplatform/baseline-proxy/baseline.workstepDetailsHandler (7 handlers)
+// [GIN-debug] POST   /api/v1/workflows/:id/worksteps --> github.com/provideplatform/baseline-proxy/baseline.createWorkstepHandler (7 handlers)
+// [GIN-debug] POST   /api/v1/stats             --> github.com/provideplatform/baseline-proxy/stats.statsLogHandler (7 handlers)
+

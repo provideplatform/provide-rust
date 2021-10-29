@@ -100,7 +100,9 @@ impl ApiClient {
             .send()
     }
 
-    
+    pub fn set_bearer_token(&mut self, token: &str) {
+        self.token = token.to_string();
+    }
 
     pub fn construct_headers(&self, additional_headers: Option<Vec<AdditionalHeader>>) -> http::HeaderMap {
         let mut headers = http::HeaderMap::new();
