@@ -13,4 +13,3 @@ Cargo.lock
 /examples/wasm-demo/target
 
 /examples/wasm-demo/client/node_modules
-/examples/wasm-demo/client/package-lock.json
