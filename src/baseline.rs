@@ -539,7 +539,7 @@ mod tests {
             "app_access_token": &app_access_token,
             "app_id": &create_application_body.id,
         });
-        serde_json::to_writer_pretty(std::fs::File::create(".test-config.json").expect("baseline json config"), &json_config_params).expect("write json");
+        serde_json::to_writer_pretty(std::fs::File::create(".test-config.tmp.json").expect("baseline json config"), &json_config_params).expect("write json");
         
         // yaml config file
         let config_file_contents = format!("access-token: {}\nrefresh-token: {}\n{}:\n  api-token: {}\n", &user_access_token, &user_refresh_token, &create_application_body.id, &app_access_token);
@@ -547,7 +547,7 @@ mod tests {
             Ok(path) => path.into_os_string().into_string().expect("current working directory"),
             Err(v) => panic!("{:?}", v),
         };
-        let config_file_name = format!("{}/.local-baseline-test-config.yaml", cwd);
+        let config_file_name = format!("{}/.local-baseline-test-config.tmp.yaml", cwd);
         let mut config_file = std::fs::File::create(&config_file_name).expect("config file name");
         write!(config_file, "{}", config_file_contents).expect("config contents");
 
@@ -599,7 +599,7 @@ mod tests {
     
     // #[tokio::test]
     // async fn get_bpi_accounts() {
-    //     let json_config = std::fs::File::open(".test-config.json").expect("json config file");
+    //     let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
     //     let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
         
     //     let org_access_token_json = config_vals["org_access_token"].to_string();
@@ -939,7 +939,7 @@ mod tests {
 
     #[tokio::test]
     async fn get_workflows() {
-        let json_config = std::fs::File::open(".test-config.json").expect("json config file");
+        let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
         let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
         
         let org_access_token_json = config_vals["org_access_token"].to_string();
@@ -953,7 +953,7 @@ mod tests {
 
     // #[tokio::test]
     // async fn create_workflow() {
-    //     let json_config = std::fs::File::open(".test-config.json").expect("json config file");
+    //     let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
     //     let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
         
     //     let org_access_token_json = config_vals["org_access_token"].to_string();
@@ -1027,7 +1027,7 @@ mod tests {
 
     #[tokio::test]
     async fn get_workgroups() {
-        let json_config = std::fs::File::open(".test-config.json").expect("json config file");
+        let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
         let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
         
         let org_access_token_json = config_vals["org_access_token"].to_string();
@@ -1202,7 +1202,7 @@ mod tests {
 
     #[tokio::test]
     async fn create_object() {
-        let json_config = std::fs::File::open(".test-config.json").expect("json config file");
+        let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
         let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
         
         let org_access_token_json = config_vals["org_access_token"].to_string();
@@ -1257,7 +1257,7 @@ mod tests {
 
     // #[tokio::test]
     // async fn update_object() {
-    //     let json_config = std::fs::File::open(".test-config.json").expect("json config file");
+    //     let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
     //     let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
         
     //     let org_access_token_json = config_vals["org_access_token"].to_string();

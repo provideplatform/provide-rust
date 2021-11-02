@@ -1,8 +1,8 @@
 /target
 Cargo.lock
 .DS_Store
-.test-config.json
-.local-baseline-test-config.yaml
+.test-config.tmp.json
+.local-baseline-test-config.tmp.yaml
 
 # rust demo
 /examples/rust-demo/target
