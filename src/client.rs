@@ -6,7 +6,7 @@ use serde_json;
 #[derive(Debug)]
 pub struct ApiClient {
     pub client: reqwest::Client,
-    pub base_url: String,
+    pub base_url: String, // string vs &'a str - prolly not because we want these to have static lifetimes
     pub token: String,
 }
 
@@ -104,7 +104,7 @@ impl ApiClient {
         self.token = token.to_string();
     }
 
-    pub fn construct_headers(&self, additional_headers: Option<Vec<AdditionalHeader>>) -> http::HeaderMap {
+    pub fn construct_headers(&self, additional_headers: Option<Vec<AdditionalHeader>>) -> http::HeaderMap { // make additiona headers reference?
         let mut headers = http::HeaderMap::new();
 
         // make conditional

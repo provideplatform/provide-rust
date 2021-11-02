@@ -384,7 +384,7 @@ mod tests {
         return create_subject_res.json::<Subject>().await.expect("generate subject response");
     }
 
-    #[tokio::test]
+    // #[tokio::test]
     async fn _setup() {
         // check if prvd cli is installed
         let prvd_cli_cmd = Command::new("sh").arg("-c").arg("prvd").output().expect("provide cli install check");

@@ -1,7 +1,7 @@
 /target
 Cargo.lock
 .DS_Store
-.config-test.json
+.test-config.json
 .local-baseline-test-config.yaml
 
 # rust demo
