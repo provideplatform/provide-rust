@@ -9,4 +9,4 @@ build: clean
 	cargo build
 
 integration:
-	mode="$(MODE)" ./ops/run_integration_tests.sh
+	mode="$(MODE)" container_name="$(CONTAINER_NAME)" ./ops/run_integration_tests.sh

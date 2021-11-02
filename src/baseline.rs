@@ -384,7 +384,7 @@ mod tests {
         return create_subject_res.json::<Subject>().await.expect("generate subject response");
     }
 
-    // #[tokio::test]
+    #[tokio::test]
     async fn _setup() {
         // check if prvd cli is installed
         let prvd_cli_cmd = Command::new("sh").arg("-c").arg("prvd").output().expect("provide cli install check");
@@ -585,6 +585,7 @@ mod tests {
         let localhost_regex = regex::Regex::new(r"localhost").expect("localhost regex expression");
         run_cmd = localhost_regex.replace_all(&run_cmd, "host.docker.internal").to_string();
         let baseline_cmd = format!("{} {}", run_env, run_cmd);
+
         let baseline_process = Command::new("sh").arg("-c").arg(&baseline_cmd).spawn().expect("baseline tests init process");
         // attach to some sort of log level?
         match baseline_process.stderr {
@@ -593,6 +594,7 @@ mod tests {
         };
 
         sleep(Duration::from_millis(10000)).await // change this to wait for the baseline stack log that says its up and running (msg = "NAME" local baseline instance started)
+        // these logs probably shouldn't show unless container name is specified
     }
     
     // #[tokio::test]
@@ -965,7 +967,10 @@ mod tests {
     //     });
 
     //     let create_workflow_res = baseline.create_workflow(Some(create_workflow_params)).await.expect("create workflow response");
-    //     assert_eq!(create_workflow_res.status(), 201);
+
+    //     println!("create workflow res msg {:?}", create_workflow_res.json::<Value>().await.unwrap());
+    //     // assert_eq!(create_workflow_res.status(), 201);
+    //     assert!(false)
     // }
 
     // #[tokio::test]
@@ -1195,52 +1200,52 @@ mod tests {
     //     // then probably pass that as a param in body - the swaggerhub is incomplete
     // }
 
-    // #[tokio::test]
-    // async fn create_object() {
-    //     let json_config = std::fs::File::open(".test-config.json").expect("json config file");
-    //     let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
+    #[tokio::test]
+    async fn create_object() {
+        let json_config = std::fs::File::open(".test-config.json").expect("json config file");
+        let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
         
-    //     let org_access_token_json = config_vals["org_access_token"].to_string();
-    //     let org_access_token = serde_json::from_str::<String>(&org_access_token_json).expect("organzation access token");
+        let org_access_token_json = config_vals["org_access_token"].to_string();
+        let org_access_token = serde_json::from_str::<String>(&org_access_token_json).expect("organzation access token");
 
-    //     let baseline: ApiClient = Baseline::factory(&org_access_token);
+        let baseline: ApiClient = Baseline::factory(&org_access_token);
 
-    //     let workgroup_id_json = config_vals["app_id"].to_string();
-    //     let workgroup_id = serde_json::from_str::<String>(&workgroup_id_json).expect("workgroup id");
-    //     println!("APP ID {}", &workgroup_id);
+        let workgroup_id_json = config_vals["app_id"].to_string();
+        let workgroup_id = serde_json::from_str::<String>(&workgroup_id_json).expect("workgroup id");
+        println!("APP ID {}", &workgroup_id);
 
-    //     let organization_id_json = config_vals["org_id"].to_string();
-    //     let organization_id = serde_json::from_str::<String>(&organization_id_json).expect("organization id");
-    //     println!("ORG ID {}", &organization_id);
+        let organization_id_json = config_vals["org_id"].to_string();
+        let organization_id = serde_json::from_str::<String>(&organization_id_json).expect("organization id");
+        println!("ORG ID {}", &organization_id);
 
-    //     let create_object_params = json!({
-    //         // "workgroup_id": &workgroup_id,
-    //         // "organization_id": &organization_id,_id,
-    //         "id": "asdfg",
-    //         // "baseline_id": null,
-    //         "identifier": "abcd", // USE FAKER lorem::Word()
-    //         "payload": {
-    //             "hello": "world",
-    //         },
-    //         "type": "general_consistency",
-    //     });
+        let create_object_params = json!({
+            // "workgroup_id": &workgroup_id,
+            // "organization_id": &organization_id,_id,
+            "id": "asdfg",
+            // "baseline_id": null,
+            "identifier": "abcd", // USE FAKER lorem::Word()
+            "payload": {
+                "hello": "world",
+            },
+            "type": "general_consistency",
+        });
 
-    //     // select workgroup
-    //     // select organization
-    //     // type
-    //     // id
-    //     // baseline_id
-    //     // payload
+        // select workgroup
+        // select organization
+        // type
+        // id
+        // baseline_id
+        // payload
 
-    //     println!("CREATE OBJ PARAMS {:?}", &create_object_params);
+        println!("CREATE OBJ PARAMS {:?}", &create_object_params);
 
-    //     let create_object_res = baseline.create_object(Some(create_object_params)).await.expect("create object response");
+        let create_object_res = baseline.create_object(Some(create_object_params)).await.expect("create object response");
 
-    //     println!("RES STATUS {:?}", &create_object_res.status());
-    //     println!("RES BODY {:?}", &create_object_res.json::<Value>().await.unwrap());
+        println!("RES STATUS {:?}", &create_object_res.status());
+        println!("RES BODY {:?}", &create_object_res.json::<Value>().await.unwrap());
 
-    //     assert_eq!(422, 201);
-    // }
+        assert_eq!(422, 201);
+    }
 
     // #[tokio::test]
     // async fn create_object_baseline_id_infinte() {
