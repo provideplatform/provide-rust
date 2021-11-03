@@ -18,8 +18,8 @@ handle_shutdown() {
     docker-compose -f ./ops/docker-compose.yml down
     docker volume rm ops_provide-db
 
-    if [[ -f ".test-config.tmp.json" ]]; then
-        if [[ "$SUITE" == "" || "$SUITE" == "baseline" ]]; then
+    if [[ "$SUITE" == "" || "$SUITE" == "baseline" ]]; then
+        if [[ -f ".test-config.tmp.json" ]]; then
             prvd baseline stack stop --name $(jq '.org_name' .test-config.tmp.json | xargs)
             rm .local-baseline-test-config.tmp.yaml
             rm .test-config.tmp.json

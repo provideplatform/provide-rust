@@ -557,29 +557,29 @@ mod tests {
         let mut run_cmd = String::from("prvd baseline stack start");
         run_cmd += &format!(" --api-endpoint={}", "http://localhost:8086");
         run_cmd += &format!(" --config={}", &config_file_name); 
-        run_cmd += &format!(" --ident-host={}", "localhost:8081"); // TODO: use env
-        run_cmd += &format!(" --ident-scheme={}", "http");
+        run_cmd += &format!(" --ident-host={}", std::env::var("IDENT_API_HOST").unwrap_or(String::from("localhost:8081"))); // TODO: use env
+        run_cmd += &format!(" --ident-scheme={}", std::env::var("IDENT_API_SCHEME").unwrap_or(String::from("http")));
         run_cmd += &format!(" --messaging-endpoint={}", "nats://localhost:4223");
         run_cmd += &format!(" --name=\"{}\"", &create_organization_body.name);
         run_cmd += &format!(" --nats-auth-token={}", "testtoken");
         run_cmd += &format!(" --nats-port={}", "4223");
         run_cmd += &format!(" --nats-ws-port={}", "4224");
-        run_cmd += &format!(" --nchain-host={}", "localhost:8084");
-        run_cmd += &format!(" --nchain-scheme={}", "http");
+        run_cmd += &format!(" --nchain-host={}", std::env::var("NCHAIN_API_HOST").unwrap_or(String::from("localhost:8084")));
+        run_cmd += &format!(" --nchain-scheme={}", std::env::var("NCHAIN_API_SCHEME").unwrap_or(String::from("http")));
         run_cmd += &format!(" --nchain-network-id={}", ROPSTEN_NETWORK_ID);
         run_cmd += &format!(" --organization={}", &create_organization_body.id);
         run_cmd += &format!(" --organization-address={}", &org_address);
         run_cmd += &format!(" --organization-refresh-token={}", &org_refresh_token);
         run_cmd += &format!(" --port={}", "8085");
-        run_cmd += &format!(" --privacy-host={}", "localhost:8083");
-		run_cmd += &format!(" --privacy-scheme={}", "http");
+        run_cmd += &format!(" --privacy-host={}", std::env::var("PRIVACY_API_HOST").unwrap_or(String::from("localhost:8083")));
+		run_cmd += &format!(" --privacy-scheme={}", std::env::var("PRIVACY_API_SCHEME").unwrap_or(String::from("http")));
 		run_cmd += &format!(" --registry-contract-address={}", &registry_contract_address);
         run_cmd += &format!(" --redis-hostname={}-redis", &create_organization_body.name);
         run_cmd += &format!(" --redis-port={}", "6380");
         run_cmd += &format!(" --sor={}", "ephemeral");
-        run_cmd += &format!(" --vault-host={}", "localhost:8082");
+        run_cmd += &format!(" --vault-host={}", std::env::var("VAULT_API_HOST").unwrap_or(String::from("localhost:8082")));
 		run_cmd += &format!(" --vault-refresh-token={}", &org_refresh_token);
-		run_cmd += &format!(" --vault-scheme={}", "http");
+		run_cmd += &format!(" --vault-scheme={}", std::env::var("VAULT_API_SCHEME").unwrap_or(String::from("http")));
 		run_cmd += &format!(" --workgroup={}", &create_application_body.id);
 
         let localhost_regex = regex::Regex::new(r"localhost").expect("localhost regex expression");
