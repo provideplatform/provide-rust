@@ -3,7 +3,7 @@
 # you could dump them in tmp file
 dump_container_logs() {
     if [[ "$container_regex" != "" ]]; then
-        echo "Dumping logs for $1"
+        echo "Dumping logs..."
         container_id=$(docker ps --filter "name=$1" | awk 'NR == 2 { print $1; exit }')
         docker logs $container_id
     fi

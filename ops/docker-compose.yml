@@ -88,7 +88,7 @@ services:
 
   ident:
     image: provide/ident
-    container_name: ident
+    container_name: ident-api
     depends_on:
       - nats
       - postgres
@@ -166,7 +166,7 @@ services:
   vault:
     image: provide/vault
     entrypoint: ./ops/run_api.sh
-    container_name: vault
+    container_name: vault-api
     depends_on:
       - ident
       - postgres
@@ -200,7 +200,7 @@ services:
 
   privacy:
     image: provide/privacy
-    container_name: privacy
+    container_name: privacy-api
     depends_on:
       - ident
       - nats
@@ -278,7 +278,7 @@ services:
   nchain:
     image: provide/nchain
     entrypoint: ./ops/run_api.sh
-    container_name: nchain
+    container_name: nchain-api
     depends_on:
       - ident
       - nats
