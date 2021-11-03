@@ -389,7 +389,7 @@ mod tests {
         // check if prvd cli is installed
         let prvd_cli_cmd = Command::new("sh").arg("-c").arg("prvd").output().expect("provide cli install check");
         if !prvd_cli_cmd.status.success() {
-            panic!("Provide cli not installed. Please install to run the baseline integration test suite") // link to cli?
+            panic!("Provide cli not installed. Please install to run the baseline integration test SUITE") // link to cli?
         }
 
         // create user
@@ -593,7 +593,7 @@ mod tests {
             None => assert!(true),
         };
 
-        sleep(Duration::from_millis(10000)).await // change this to wait for the baseline stack log that says its up and running (msg = "NAME" local baseline instance started)
+        sleep(Duration::from_secs(15)).await // change this to wait for the baseline stack log that says its up and running (msg = "NAME" local baseline instance started)
         // these logs probably shouldn't show unless container name is specified
     }
     
