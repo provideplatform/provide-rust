@@ -1223,7 +1223,7 @@ mod tests {
             // "organization_id": &organization_id,_id,
             "id": "asdfg",
             // "baseline_id": null,
-            "identifier": "abcd", // USE FAKER lorem::Word()
+            // "identifier": "abcd", // USE FAKER lorem::Word()
             "payload": {
                 "hello": "world",
             },
