@@ -2,7 +2,7 @@
 
 trap handle_shutdown INT
 
-# you could dump them in tmp file
+# could dump logs into tmp file
 dump_container_logs() {
     if [[ "$CONTAINER_REGEX" != "" ]]; then
         printf "\nDumping logs...\n"
@@ -29,6 +29,55 @@ handle_shutdown() {
     exit
 }
 
+wait_for_ident_container() {
+    ident_status=false
+
+    while [[ "$ident_status" == "false" ]]; do
+        ident_status_code=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8081/status)
+        [[ "$ident_status_code" == "200" ]] && ident_status=true
+
+        sleep 1
+    done
+    echo "ident api container is ready"
+}
+
+wait_for_vault_container() {
+    vault_status=false
+
+    while [[ "$vault_status" == "false" ]]; do
+        vault_status_code=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8082/status)
+        [[ "$vault_status_code" == "204" ]] && vault_status=true
+
+        sleep 1
+    done
+    echo "vault api container is ready"
+}
+
+wait_for_privacy_container() {
+    privacy_status=false
+
+    while [[ "$privacy_status" == "false" ]]; do
+        privacy_status_code=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8083/status)
+        [[ "$privacy_status_code" == "204" ]] && privacy_status=true
+
+        sleep 1
+    done
+    echo "privacy api container is ready"
+
+}
+
+wait_for_nchain_container() {
+    nchain_status=false
+
+    while [[ "$nchain_status" == "false" ]]; do
+        nchain_status_code=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8084/status)
+        [[ "$nchain_status_code" == "204" ]] && nchain_status=true
+
+        sleep 1
+    done
+    echo "nchain container is ready"
+}
+
 # SUITE = ident, baseline, vault, etc
 if [[ "$SUITE" != "" ]]; then
     echo "Running tests for $SUITE..."
@@ -36,9 +85,15 @@ else
     echo "No SUITE set. Running all tests..."
 fi
 
-docker-compose -f ./ops/docker-compose.yml build --no-cache
-docker-compose -f ./ops/docker-compose.yml up -d
-sleep 20
+wait_for_ident_container &
+wait_for_vault_container &
+wait_for_privacy_container &
+wait_for_nchain_container &
+
+docker-compose -f ./ops/docker-compose.yml build --no-cache &
+docker-compose -f ./ops/docker-compose.yml up -d &
+wait
+
 IDENT_API_HOST=localhost:8081 IDENT_API_SCHEME=http VAULT_API_HOST=localhost:8082 VAULT_API_SCHEME=http PRIVACY_API_HOST=localhost:8083 PRIVACY_API_SCHEME=http NCHAIN_API_HOST=localhost:8084 NCHAIN_API_SCHEME=http BASELINE_API_HOST=localhost:8085 BASELINE_API_SCHEME=http cargo test $SUITE -- --test-threads=1
 
 handle_shutdown
