@@ -75,7 +75,7 @@ wait_for_nchain_container() {
 
         sleep 1
     done
-    echo "nchain container is ready"
+    echo "nchain api container is ready"
 }
 
 # SUITE = ident, baseline, vault, etc

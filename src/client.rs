@@ -100,8 +100,12 @@ impl ApiClient {
             .send()
     }
 
-    pub fn set_bearer_token(&mut self, token: &str) {
+    pub fn set_bearer_token(&mut self, token: &str) { // could simply have general prop setter method instead of seperate bearer and baseurl
         self.token = token.to_string();
+    }
+
+    pub fn set_base_url(&mut self, base_url: &str) {
+        self.base_url = base_url.to_string();
     }
 
     pub fn construct_headers(&self, additional_headers: Option<Vec<AdditionalHeader>>) -> http::HeaderMap { // make additiona headers reference?

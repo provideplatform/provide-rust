@@ -268,7 +268,7 @@ mod tests {
     use crate::nchain::{NChain, Account, Contract};
     use crate::vault::{Vault, VaultContainer, VaultKey};
     use serde_json::json;
-    use tokio::time::{self, Duration, sleep};
+    use tokio::time::{self, Duration};
     use std::process::Command;
     use std::io::Write;
 
@@ -586,15 +586,23 @@ mod tests {
         run_cmd = localhost_regex.replace_all(&run_cmd, "host.docker.internal").to_string();
         let baseline_cmd = format!("{} {}", run_env, run_cmd);
 
-        let baseline_process = Command::new("sh").arg("-c").arg(&baseline_cmd).spawn().expect("baseline tests init process");
-        // attach to some sort of log level?
-        match baseline_process.stderr {
-            Some(string) => panic!("{:?}", string),
-            None => assert!(true),
-        };
+        Command::new("sh").arg("-c").arg(&baseline_cmd).spawn().expect("baseline tests init process"); // attach to some sort of log level?
+        
+        let mut baseline_status_client = ApiClient::new("", "", "", "");
+        baseline_status_client.set_base_url(&format!("{}://{}", std::env::var("BASELINE_API_SCHEME").expect("baseline api scheme"), std::env::var("BASELINE_API_HOST").expect("baseline api host")));
 
-        sleep(Duration::from_secs(15)).await // change this to wait for the baseline stack log that says its up and running (msg = "NAME" local baseline instance started)
-        // these logs probably shouldn't show unless container name is specified
+        let mut baseline_container_status = String::from("");
+
+        while baseline_container_status == "" {
+            baseline_container_status = match baseline_status_client.get("status", None, None).await {
+                Ok(res) => res.status().to_string(),
+                Err(_) => String::from(""),
+            };
+
+            interval.tick().await;
+        };
+        
+        assert_eq!(baseline_container_status, "204 No Content"); // these logs probably shouldn't show unless baseline suite is specified
     }
     
     // #[tokio::test]
