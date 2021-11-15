@@ -11,63 +11,67 @@ const DEFAULT_PATH: &str = "api/v1";
 pub trait Baseline {
     fn factory(token: &str) -> Self;
 
+    async fn issue_verifiable_credential(&self, params: Params) -> Response;
+
+    async fn create_public_workgroup_invite(&self, params: Params) -> Response;
+
     async fn get_bpi_accounts(&self) -> Response;
 
-    async fn create_bpi_account(&self, params: Params) -> Response;
-
     async fn get_bpi_account(&self, account_id: &str) -> Response;
+    
+    async fn create_bpi_account(&self, params: Params) -> Response;
 
     async fn create_message(&self, params: Params) -> Response;
 
     async fn get_subjects(&self) -> Response;
 
-    async fn create_subject(&self, params: Params) -> Response;
-
     async fn get_subject(&self, subject_id: &str) -> Response;
+    
+    async fn create_subject(&self, params: Params) -> Response;
 
     async fn update_subject(&self, subject_id: &str, params: Params) -> Response;
 
     async fn get_subject_accounts(&self, subject_id: &str) -> Response;
 
+    async fn get_subject_account(&self, subject_id: &str, account_id: &str) -> Response;
+    
     async fn create_subject_account(&self, subject_id: &str, params: Params) -> Response;
 
-    async fn get_subject_account(&self, subject_id: &str, account_id: &str) -> Response;
-
-    async fn get_workflows(&self) -> Response;
-        
-    async fn create_workflow(&self, params: Params) -> Response;
-
-    async fn get_workflow(&self, workflow_id: &str) -> Response;
-
-    async fn get_workflow_worksteps(&self, workflow_id: &str) -> Response;
-
-    async fn get_workflow_workstep(&self, workflow_id: &str, workstep_id: &str) -> Response;
-
-    async fn get_workgroups(&self) -> Response;
-
-    async fn create_workgroup(&self, params: Params) -> Response;
-    
-    async fn get_workgroup(&self, workgroup_id: &str) -> Response;
-
-    async fn update_workgroup(&self, workgroup_id: &str, params: Params) -> Response;
-
-    async fn get_workgroup_subjects(&self, workgroup_id: &str) -> Response;
-
-    async fn associate_workgroup_subject(&self, workgroup_id: &str, params: Params) -> Response;
+    async fn update_subject_account(&self, subject_id: &str, account_id: &str, params: Params) -> Response;
 
     async fn create_object(&self, params: Params) -> Response;
 
     async fn update_object(&self, object_id: &str, params: Params) -> Response;
+    
+    async fn update_config(&self, params: Params) -> Response;
 
-    async fn get_state(&self, state_id: &str) -> Response;
+    async fn create_business_object(&self, params: Params) -> Response;
 
-    async fn get_state_objects(&self) -> Response;
+    async fn update_business_object(&self, business_object_id: &str, params: Params) -> Response;
 
+    async fn get_workflows(&self) -> Response;
+
+    async fn get_workflow(&self, workflow_id: &str) -> Response;
+    
+    async fn create_workflow(&self, params: Params) -> Response;
+
+    async fn get_workgroups(&self) -> Response;
+
+    async fn get_workgroup(&self, workgroup_id: &str) -> Response;
+    
+    async fn create_workgroup(&self, params: Params) -> Response;
+    
     async fn get_workgroup_mappings(&self, workgroup_id: &str) -> Response;
     
     async fn create_workgroup_mappings(&self, workgroup_id: &str, params: Params) -> Response;
     
     async fn update_workgroup_mappings(&self, workgroup_id: &str, params: Params) -> Response;
+    
+    async fn get_workflow_worksteps(&self, workflow_id: &str) -> Response;
+
+    async fn get_workflow_workstep(&self, workflow_id: &str, workstep_id: &str) -> Response;
+
+    async fn create_workflow_workstep(&self, workflow_id: &str, workstep_id: &str, params: Params) -> Response;
 }
 
 #[async_trait]
@@ -80,17 +84,25 @@ impl Baseline for ApiClient {
         return ApiClient::new(&scheme, &host, &path, token);
     }
 
-    async fn get_bpi_accounts(&self) -> Response {
-        return self.get("bpi_accounts", None, None).await
+    async fn issue_verifiable_credential(&self, params: Params) -> Response {
+        return self.post("credentials", params, None).await
     }
 
-    async fn create_bpi_account(&self, params: Params) -> Response {
-        return self.post("bpi_accounts", params, None).await
+    async fn create_public_workgroup_invite(&self, params: Params) -> Response {
+        return self.post("pub/invite", params, None).await
+    }
+
+    async fn get_bpi_accounts(&self) -> Response {
+        return self.get("bpi_accounts", None, None).await
     }
 
     async fn get_bpi_account(&self, account_id: &str) -> Response {
         let uri = format!("bpi_accounts/{}", account_id);
         return self.get(&uri, None, None).await
+    }
+    
+    async fn create_bpi_account(&self, params: Params) -> Response {
+        return self.post("bpi_accounts", params, None).await
     }
 
     async fn create_message(&self, params: Params) -> Response {
@@ -101,13 +113,13 @@ impl Baseline for ApiClient {
         return self.get("subjects", None, None).await
     }
 
-    async fn create_subject(&self, params: Params) -> Response {
-        return self.post("subjects", params, None).await
-    }
-
     async fn get_subject(&self, subject_id: &str) -> Response {
         let uri = format!("subjects/{}", subject_id);
         return self.get(&uri, None, None).await
+    }
+    
+    async fn create_subject(&self, params: Params) -> Response {
+        return self.post("subjects", params, None).await
     }
 
     async fn update_subject(&self, subject_id: &str, params: Params) -> Response {
@@ -120,39 +132,56 @@ impl Baseline for ApiClient {
         return self.get(&uri, None, None).await
     }
 
+    async fn get_subject_account(&self, subject_id: &str, account_id: &str) -> Response {
+        let uri = format!("subjects/{}/accounts/{}", subject_id, account_id);
+        return self.get(&uri, None, None).await
+    }
+    
     async fn create_subject_account(&self, subject_id: &str, params: Params) -> Response {
         let uri = format!("subjects/{}/accounts", subject_id);
         return self.post(&uri, params, None).await
     }
 
-    async fn get_subject_account(&self, subject_id: &str, account_id: &str) -> Response {
+    async fn update_subject_account(&self, subject_id: &str, account_id: &str, params: Params) -> Response {
         let uri = format!("subjects/{}/accounts/{}", subject_id, account_id);
-        return self.get(&uri, None, None).await
+        return self.put(&uri, params, None).await
     }
 
+    async fn create_object(&self, params: Params) -> Response {
+        return self.post("objects", params, None).await
+    }
+
+    async fn update_object(&self, object_id: &str, params: Params) -> Response {
+        let uri = format!("objects/{}", object_id);
+        return self.put(&uri, params, None).await
+    }
+
+    async fn update_config(&self, params: Params) -> Response {
+        return self.put("config", params, None).await
+    }
+
+    async fn create_business_object(&self, params: Params) -> Response {
+        return self.post("business_objects", params, None).await
+    }
+
+    async fn update_business_object(&self, business_object_id: &str, params: Params) -> Response {
+        let uri = format!("business_objects/{}", business_object_id);
+        return self.put(&uri, params, None).await
+    }
+    
     async fn get_workflows(&self) -> Response {
         return self.get("workflows", None, None).await
-    }
-
-    async fn create_workflow(&self, params: Params) -> Response {
-        return self.post("workflows", params, None).await
     }
 
     async fn get_workflow(&self, workflow_id: &str) -> Response {
         let uri = format!("workflows/{}", workflow_id);
         return self.get(&uri, None, None).await
     }
-
-    async fn get_workflow_worksteps(&self, workflow_id: &str) -> Response {
-        let uri = format!("workflows/{}/worksteps", workflow_id);
-        return self.get(&uri, None, None).await
+    
+    async fn create_workflow(&self, params: Params) -> Response {
+        return self.post("workflows", params, None).await
     }
-
-    async fn get_workflow_workstep(&self, workflow_id: &str, workstep_id: &str) -> Response {
-        let uri = format!("workflows/{}/worksteps/{}", workflow_id, workstep_id);
-        return self.get(&uri, None, None).await
-    }
-
+    
     async fn get_workgroups(&self) -> Response {
         return self.get("workgroups", None, None).await
     }
@@ -165,41 +194,7 @@ impl Baseline for ApiClient {
         let uri = format!("workgroups/{}", workgroup_id);
         return self.get(&uri, None, None).await
     }
-
-    async fn update_workgroup(&self, workgroup_id: &str, params: Params) -> Response {
-        let uri = format!("workgroups/{}", workgroup_id);
-        return self.put(&uri, params, None).await
-    }
-
-    async fn get_workgroup_subjects(&self, workgroup_id: &str) -> Response {
-        let uri = format!("workgroups/{}/subjects", workgroup_id);
-        return self.get(&uri, None, None).await
-    }
-
-    // change params to subject id
-    async fn associate_workgroup_subject(&self, workgroup_id: &str, params: Params) -> Response {
-        let uri = format!("workgroups/{}/subjects", workgroup_id);
-        return self.post(&uri, params, None).await
-    }
-
-    async fn create_object(&self, params: Params) -> Response {
-        return self.post("objects", params, None).await
-    }
-
-    async fn update_object(&self, object_id: &str, params: Params) -> Response {
-        let uri = format!("objects/{}", object_id);
-        return self.put(&uri, params, None).await
-    }
-
-    async fn get_state(&self, state_id: &str) -> Response {
-        let uri = format!("states/{}", state_id);
-        return self.get(&uri, None, None).await
-    }
-
-    async fn get_state_objects(&self) -> Response {
-        return self.get("states", None, None).await
-    }
-
+    
     async fn get_workgroup_mappings(&self, workgroup_id: &str) -> Response {
         let uri = format!("workgroups/{}/mappings", workgroup_id);
         return self.get(&uri, None, None).await
@@ -213,6 +208,21 @@ impl Baseline for ApiClient {
     async fn update_workgroup_mappings(&self, workgroup_id: &str, params: Params) -> Response {
         let uri = format!("workgroups/{}/mappings", workgroup_id);
         return self.put(&uri, params, None).await
+    }
+    
+    async fn get_workflow_worksteps(&self, workflow_id: &str) -> Response {
+        let uri = format!("workflows/{}/worksteps", workflow_id);
+        return self.get(&uri, None, None).await
+    }
+
+    async fn get_workflow_workstep(&self, workflow_id: &str, workstep_id: &str) -> Response {
+        let uri = format!("workflows/{}/worksteps/{}", workflow_id, workstep_id);
+        return self.get(&uri, None, None).await
+    }
+
+    async fn create_workflow_workstep(&self, workflow_id: &str, workstep_id: &str, params: Params) -> Response {
+        let uri = format!("workflows/{}/worksteps/{}", workflow_id, workstep_id);
+        return self.get(&uri, params, None).await
     }
 }
 
@@ -1342,13 +1352,26 @@ mod tests {
         let baseline: ApiClient = Baseline::factory(&org_access_token);
 
         let create_mappings_params = json!({
-            "description": "",
-            "primaryKey": "",
-            "type": "",
+            "name": format!("{} mapping", Name().fake::<String>()),
+            "models": [
+                {
+                    "type": "PurchaseOrder",
+                    "fields": [
+                        {
+                            "name": "id",
+                            "is_primary_key": true,
+                        },
+                    ],
+                    "primary_key": "id",
+                },
+            ],
         });
 
         let create_workgroup_mappings_res = baseline.create_workgroup_mappings(&app_id, Some(create_mappings_params)).await.expect("create workgroup mappings response");
-        assert_eq!(create_workgroup_mappings_res.status(), 201);
+        println!("{:?}", create_workgroup_mappings_res.json::<Value>().await.unwrap());
+        
+        // assert_eq!(create_workgroup_mappings_res.status(), 201);
+        assert_eq!(400, 201);
     }
 
     #[tokio::test]
@@ -1365,9 +1388,19 @@ mod tests {
         let baseline: ApiClient = Baseline::factory(&org_access_token);
 
         let create_mappings_params = json!({
-            "description": "",
-            "primaryKey": "",
-            "type": "",
+            "name": format!("{} mapping", Name().fake::<String>()),
+            "models": [
+                {
+                    "type": "PurchaseOrder",
+                    "fields": [
+                        {
+                            "name": "id",
+                            "is_primary_key": true,
+                        },
+                    ],
+                    "primary_key": "id",
+                },
+            ],
         });
 
         let create_workgroup_mappings_res = baseline.create_workgroup_mappings(&app_id, Some(create_mappings_params)).await.expect("create workgroup mappings response");
@@ -1378,10 +1411,15 @@ mod tests {
         });
 
         let update_workgroup_mappings_res = baseline.update_workgroup_mappings(&app_id, Some(update_mappings_params)).await.expect("update workgroup mappings response");
-        assert_eq!(update_workgroup_mappings_res.status(), 404); // FIXME: is this supposed to return a 404?
+        assert_eq!(update_workgroup_mappings_res.status(), 404); // FIXME: not supposed to return 404
     }
 }
 
 // create workgroup helper
 // check issue kyle had
 // add examples dir with examples for each feature (standard, WASM, pure-rust?)
+
+// TODO: when status code assertions fail, the res code AND res body err message should be logged
+// response body types as well as request body type ofc
+
+// 31 methods total
