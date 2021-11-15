@@ -1,6 +1,6 @@
 use http;
 use reqwest;
-use serde_json;
+use serde_json::Value;
 
 // TODO: make properties private?
 #[derive(Debug)]
@@ -9,6 +9,9 @@ pub struct ApiClient {
     pub base_url: String, // string vs &'a str - prolly not because we want these to have static lifetimes
     pub token: String,
 }
+
+pub type Response = Result<reqwest::Response, reqwest::Error>;
+pub type Params = Option<Value>;
 
 #[derive(Debug)]
 pub struct AdditionalHeader {
@@ -33,9 +36,9 @@ impl ApiClient {
     pub fn get(
         &self,
         uri: &str,
-        params: Option<serde_json::Value>,
+        params: Params,
         additional_headers: Option<Vec<AdditionalHeader>>
-    ) -> impl std::future::Future<Output = Result<reqwest::Response, reqwest::Error>> {
+    ) -> impl std::future::Future<Output = Response> {
         let url = format!("{}/{}", self.base_url, uri);
         self.client
             .get(url)
@@ -47,9 +50,9 @@ impl ApiClient {
     pub fn patch(
         &self,
         uri: &str,
-        params: Option<serde_json::Value>,
+        params: Params,
         additional_headers: Option<Vec<AdditionalHeader>>
-    ) -> impl std::future::Future<Output = Result<reqwest::Response, reqwest::Error>> {
+    ) -> impl std::future::Future<Output = Response> {
         let url = format!("{}/{}", self.base_url, uri);
         self.client
             .patch(url)
@@ -61,9 +64,9 @@ impl ApiClient {
     pub fn put(
         &self,
         uri: &str,
-        params: Option<serde_json::Value>,
+        params: Params,
         additional_headers: Option<Vec<AdditionalHeader>>
-    ) -> impl std::future::Future<Output = Result<reqwest::Response, reqwest::Error>> {
+    ) -> impl std::future::Future<Output = Response> {
         let url = format!("{}/{}", self.base_url, uri);
         self.client
             .put(url)
@@ -75,9 +78,9 @@ impl ApiClient {
     pub fn post(
         &self,
         uri: &str,
-        params: Option<serde_json::Value>,
+        params: Params,
         additional_headers: Option<Vec<AdditionalHeader>>
-    ) -> impl std::future::Future<Output = Result<reqwest::Response, reqwest::Error>> {
+    ) -> impl std::future::Future<Output = Response> {
         let url = format!("{}/{}", self.base_url, uri);
         self.client
             .post(url)
@@ -89,9 +92,9 @@ impl ApiClient {
     pub fn delete(
         &self,
         uri: &str,
-        params: Option<serde_json::Value>,
+        params: Params,
         additional_headers: Option<Vec<AdditionalHeader>>
-    ) -> impl std::future::Future<Output = Result<reqwest::Response, reqwest::Error>> {
+    ) -> impl std::future::Future<Output = Response> {
         let url = format!("{}/{}", self.base_url, uri);
         self.client
             .delete(url)
@@ -104,7 +107,7 @@ impl ApiClient {
         self.token = token.to_string();
     }
 
-    pub fn set_base_url(&mut self, base_url: &str) {
+    pub fn set_base_url(&mut self, base_url: &str) { // TODO: this should not be necessary
         self.base_url = base_url.to_string();
     }
 

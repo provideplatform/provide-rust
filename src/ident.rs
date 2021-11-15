@@ -1,8 +1,6 @@
-pub use crate::client::{ApiClient, AdditionalHeader};
-use std::result::{Result};
+pub use crate::client::{ApiClient, AdditionalHeader, Response, Params};
 use serde::{Deserialize, Serialize};
 use async_trait::async_trait;
-use serde_json::{Value};
 use http::HeaderValue;
 
 const DEFAULT_SCHEME: &str = "https";
@@ -13,49 +11,49 @@ const DEFAULT_PATH: &str = "api/v1";
 pub trait Ident {
     fn factory(token: &str) -> Self;
     
-    async fn create_user(&self, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error>;
+    async fn create_user(&self, params: Params) -> Response;
 
-    async fn get_user(&self, user_id: &str, name: &str, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error>;
+    async fn get_user(&self, user_id: &str, name: &str, params: Params) -> Response;
 
-    async fn get_users(&self) -> Result<reqwest::Response, reqwest::Error>;
+    async fn get_users(&self) -> Response;
 
-    async fn update_user(&self, user_id: &str, name: &str, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error>;
+    async fn update_user(&self, user_id: &str, name: &str, params: Params) -> Response;
 
-    async fn delete_user(&self, user_id: &str) -> Result<reqwest::Response, reqwest::Error>;
+    async fn delete_user(&self, user_id: &str) -> Response;
     
-    async fn authenticate(&self, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error>;
+    async fn authenticate(&self, params: Params) -> Response;
 
-    async fn application_authorization(&self, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error>;
+    async fn application_authorization(&self, params: Params) -> Response;
 
-    async fn organization_authorization(&self, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error>;
+    async fn organization_authorization(&self, params: Params) -> Response;
     
-    async fn list_tokens(&self, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error>;
+    async fn list_tokens(&self, params: Params) -> Response;
 
-    async fn revoke_token(&self, token_id: &str) -> Result<reqwest::Response, reqwest::Error>;
+    async fn revoke_token(&self, token_id: &str) -> Response;
 
-    async fn create_organization(&self, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error>;
+    async fn create_organization(&self, params: Params) -> Response;
 
-    async fn get_organization(&self, organization_id: &str) -> Result<reqwest::Response, reqwest::Error>;
+    async fn get_organization(&self, organization_id: &str) -> Response;
     
-    async fn list_organizations(&self) -> Result<reqwest::Response, reqwest::Error>;
+    async fn list_organizations(&self) -> Response;
 
-    async fn update_organization(&self, organization_id: &str, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error>;
+    async fn update_organization(&self, organization_id: &str, params: Params) -> Response;
 
-    async fn create_application(&self, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error>;
+    async fn create_application(&self, params: Params) -> Response;
     
-    async fn get_application(&self, application_id: &str) -> Result<reqwest::Response, reqwest::Error>;
+    async fn get_application(&self, application_id: &str) -> Response;
     
-    async fn list_applications(&self) -> Result<reqwest::Response, reqwest::Error>;
+    async fn list_applications(&self) -> Response;
 
-    async fn update_application(&self, application_id: &str, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error>;
+    async fn update_application(&self, application_id: &str, params: Params) -> Response;
 
-    async fn delete_application(&self, application_id: &str)  -> Result<reqwest::Response, reqwest::Error>;
+    async fn delete_application(&self, application_id: &str)  -> Response;
     
-    async fn list_application_users(&self, application_id: &str)  -> Result<reqwest::Response, reqwest::Error>;
+    async fn list_application_users(&self, application_id: &str)  -> Response;
 
-    async fn associate_application_user(&self, application_id: &str, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error>;
+    async fn associate_application_user(&self, application_id: &str, params: Params) -> Response;
 
-    async fn associate_application_organization(&self, application_id: &str, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error>;
+    async fn associate_application_organization(&self, application_id: &str, params: Params) -> Response;
 }
 
 #[async_trait]
@@ -68,15 +66,15 @@ impl Ident for ApiClient {
         return ApiClient::new(&scheme, &host, &path, token);
     }
 
-    async fn create_user(&self, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error> {
+    async fn create_user(&self, params: Params) -> Response {
         return self.post("users", params, None).await
     }
 
-    async fn authenticate(&self, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error> {
+    async fn authenticate(&self, params: Params) -> Response {
         return self.post("authenticate", params, None).await
     }
 
-    async fn get_user(&self, user_id: &str, name: &str, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error> {
+    async fn get_user(&self, user_id: &str, name: &str, params: Params) -> Response {
         let uri = format!("users/{}", user_id);
         let name_header = AdditionalHeader {
             key: "name",
@@ -85,11 +83,11 @@ impl Ident for ApiClient {
         return self.get(&uri, params, Some(vec!(name_header))).await
     }
 
-    async fn get_users(&self) -> Result<reqwest::Response, reqwest::Error> {
+    async fn get_users(&self) -> Response {
         return self.get("users", None, None).await
     }
 
-    async fn update_user(&self, user_id: &str, name: &str, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error> {
+    async fn update_user(&self, user_id: &str, name: &str, params: Params) -> Response {
         let uri = format!("users/{}", user_id);
         let name_header = AdditionalHeader {
             key: "name",
@@ -98,80 +96,80 @@ impl Ident for ApiClient {
         return self.put(&uri, params, Some(vec!(name_header))).await
     }
 
-    async fn delete_user(&self, user_id: &str) -> Result<reqwest::Response, reqwest::Error> {
+    async fn delete_user(&self, user_id: &str) -> Response {
         let uri = format!("users/{}", user_id);
         return self.delete(&uri, None, None).await
     }
 
-    async fn create_organization(&self, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error> {
+    async fn create_organization(&self, params: Params) -> Response {
         return self.post("organizations", params, None).await
     }
 
-    async fn list_organizations(&self) -> Result<reqwest::Response, reqwest::Error> {
+    async fn list_organizations(&self) -> Response {
         return self.get("organizations", None, None).await
     }
 
-    async fn get_organization(&self, organization_id: &str) -> Result<reqwest::Response, reqwest::Error> {
+    async fn get_organization(&self, organization_id: &str) -> Response {
         let uri = format!("organizations/{}", organization_id);
         return self.get(&uri, None, None).await
     }
 
-    async fn update_organization(&self, organization_id: &str, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error> {
+    async fn update_organization(&self, organization_id: &str, params: Params) -> Response {
         let uri = format!("organizations/{}", organization_id);
         return self.put(&uri, params, None).await
     }
 
-    async fn application_authorization(&self, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error> {
+    async fn application_authorization(&self, params: Params) -> Response {
         return self.post("tokens", params, None).await
     }
 
-    async fn organization_authorization(&self, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error> {
+    async fn organization_authorization(&self, params: Params) -> Response {
         return self.post("tokens", params, None).await
     }
 
-    async fn list_tokens(&self, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error> {
+    async fn list_tokens(&self, params: Params) -> Response {
         return self.get("tokens", params, None).await
     }
 
-    async fn list_applications(&self) -> Result<reqwest::Response, reqwest::Error> {
+    async fn list_applications(&self) -> Response {
         return self.get("applications", None, None).await
     }
 
-    async fn create_application(&self, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error> {
+    async fn create_application(&self, params: Params) -> Response {
         return self.post("applications", params, None).await
     }
 
-    async fn get_application(&self, application_id: &str) -> Result<reqwest::Response, reqwest::Error> {
+    async fn get_application(&self, application_id: &str) -> Response {
         let uri = format!("applications/{}", application_id);
         return self.get(&uri, None, None).await
     }
 
-    async fn update_application(&self, application_id: &str, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error> {
+    async fn update_application(&self, application_id: &str, params: Params) -> Response {
         let uri = format!("applications/{}", application_id);
         return self.put(&uri, params, None).await
     }
 
-    async fn list_application_users(&self, application_id: &str)  -> Result<reqwest::Response, reqwest::Error> {
+    async fn list_application_users(&self, application_id: &str)  -> Response {
         let uri = format!("applications/{}/users", application_id);
         return self.get(&uri, None, None).await
     }
 
-    async fn delete_application(&self, application_id: &str) -> Result<reqwest::Response, reqwest::Error> {
+    async fn delete_application(&self, application_id: &str) -> Response {
         let uri = format!("applications/{}", application_id);
         return self.delete(&uri, None, None).await
     }
 
-    async fn associate_application_user(&self, application_id: &str, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error> {
+    async fn associate_application_user(&self, application_id: &str, params: Params) -> Response {
         let uri = format!("applications/{}/users", application_id);
         return self.post(&uri, params, None).await
     }
 
-    async fn revoke_token(&self, token_id: &str) -> Result<reqwest::Response, reqwest::Error> {
+    async fn revoke_token(&self, token_id: &str) -> Response {
         let uri = format!("tokens/{}", token_id);
         return self.delete(&uri, None, None).await
     }
 
-    async fn associate_application_organization(&self, application_id: &str, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error> {
+    async fn associate_application_organization(&self, application_id: &str, params: Params) -> Response {
         let uri = format!("applications/{}/organizations", application_id);
         return self.post(&uri, params, None).await
     }

@@ -1,8 +1,6 @@
-pub use crate::client::{ApiClient, AdditionalHeader};
-use std::result::{Result};
+pub use crate::client::{ApiClient, AdditionalHeader, Response, Params};
 use serde::{Deserialize, Serialize};
 use async_trait::async_trait;
-use serde_json::{Value};
 
 const DEFAULT_SCHEME: &str = "https";
 const DEFAULT_HOST: &str = "vault.provide.services";
@@ -12,33 +10,33 @@ const DEFAULT_PATH: &str = "api/v1";
 pub trait Vault {
     fn factory(token: &str) -> Self;
 
-    async fn create_vault(&self, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error>;
+    async fn create_vault(&self, params: Params) -> Response;
 
-    async fn list_vaults(&self) -> Result<reqwest::Response, reqwest::Error>;
+    async fn list_vaults(&self) -> Response;
 
-    async fn create_seal_unseal_key(&self) -> Result<reqwest::Response, reqwest::Error>;
+    async fn create_seal_unseal_key(&self) -> Response;
 
-    async fn unseal_vault(&self, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error>;
+    async fn unseal_vault(&self, params: Params) -> Response;
 
-    async fn create_key(&self, vault_id: &str, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error>;
+    async fn create_key(&self, vault_id: &str, params: Params) -> Response;
 
-    async fn delete_key(&self, vault_id: &str, key_id: &str) -> Result<reqwest::Response, reqwest::Error>;
+    async fn delete_key(&self, vault_id: &str, key_id: &str) -> Response;
 
-    async fn derive_key(&self, vault_id: &str, key_id: &str, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error>;
+    async fn derive_key(&self, vault_id: &str, key_id: &str, params: Params) -> Response;
 
-    async fn encrypt(&self, vault_id: &str, key_id: &str, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error>;
+    async fn encrypt(&self, vault_id: &str, key_id: &str, params: Params) -> Response;
 
-    async fn decrypt(&self, vault_id: &str, key_id: &str, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error>;
+    async fn decrypt(&self, vault_id: &str, key_id: &str, params: Params) -> Response;
 
-    async fn list_keys(&self, vault_id: &str) -> Result<reqwest::Response, reqwest::Error>;
+    async fn list_keys(&self, vault_id: &str) -> Response;
 
-    async fn list_secrets(&self, vault_id: &str) -> Result<reqwest::Response, reqwest::Error>;
+    async fn list_secrets(&self, vault_id: &str) -> Response;
 
-    async fn store_secret(&self, vault_id: &str, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error>;
+    async fn store_secret(&self, vault_id: &str, params: Params) -> Response;
 
-    async fn retrieve_secret(&self, vault_id: &str, secret_id: &str) -> Result<reqwest::Response, reqwest::Error>;
+    async fn retrieve_secret(&self, vault_id: &str, secret_id: &str) -> Response;
 
-    async fn delete_secret(&self, vault_id: &str, secret_id: &str) -> Result<reqwest::Response, reqwest::Error>;
+    async fn delete_secret(&self, vault_id: &str, secret_id: &str) -> Response;
 }
 
 #[async_trait]
@@ -51,68 +49,68 @@ impl Vault for ApiClient {
         return ApiClient::new(&scheme, &host, &path, token);
     }
 
-    async fn create_vault(&self, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error> {
+    async fn create_vault(&self, params: Params) -> Response {
         return self.post("vaults", params, None).await
     }
 
-    async fn list_vaults(&self) -> Result<reqwest::Response, reqwest::Error> {
+    async fn list_vaults(&self) -> Response {
         return self.get("vaults", None, None).await
     }
 
-    async fn create_seal_unseal_key(&self) -> Result<reqwest::Response, reqwest::Error> {
+    async fn create_seal_unseal_key(&self) -> Response {
         return self.post("unsealerkey", None, None).await
     }
 
-    async fn unseal_vault(&self, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error> {
+    async fn unseal_vault(&self, params: Params) -> Response {
         return self.post("unseal", params, None).await
     }
 
-    async fn create_key(&self, vault_id: &str, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error> {
+    async fn create_key(&self, vault_id: &str, params: Params) -> Response {
         let uri = format!("vaults/{}/keys", vault_id);
         return self.post(&uri, params, None).await
     }
 
-    async fn delete_key(&self, vault_id: &str, key_id: &str) -> Result<reqwest::Response, reqwest::Error> {
+    async fn delete_key(&self, vault_id: &str, key_id: &str) -> Response {
         let uri = format!("vaults/{}/keys/{}", vault_id, key_id);
         return self.delete(&uri, None, None).await
     }
 
-    async fn derive_key(&self, vault_id: &str, key_id: &str, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error> {
+    async fn derive_key(&self, vault_id: &str, key_id: &str, params: Params) -> Response {
         let uri = format!("vaults/{}/keys/{}/derive", vault_id, key_id);
         return self.post(&uri, params, None).await
     }
 
-    async fn encrypt(&self, vault_id: &str, key_id: &str, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error> {
+    async fn encrypt(&self, vault_id: &str, key_id: &str, params: Params) -> Response {
         let uri = format!("vaults/{}/keys/{}/encrypt", vault_id, key_id);
         return self.post(&uri, params, None).await
     }
 
-    async fn decrypt(&self, vault_id: &str, key_id: &str, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error> {
+    async fn decrypt(&self, vault_id: &str, key_id: &str, params: Params) -> Response {
         let uri = format!("vaults/{}/keys/{}/encrypt", vault_id, key_id);
         return self.post(&uri, params, None).await
     }
 
-    async fn list_keys(&self, vault_id: &str) -> Result<reqwest::Response, reqwest::Error> {
+    async fn list_keys(&self, vault_id: &str) -> Response {
         let uri = format!("vaults/{}/keys", vault_id);
         return self.get(&uri, None, None).await
     }
 
-    async fn list_secrets(&self, vault_id: &str) -> Result<reqwest::Response, reqwest::Error> {
+    async fn list_secrets(&self, vault_id: &str) -> Response {
         let uri = format!("vaults/{}/secrets", vault_id);
         return self.get(&uri, None, None).await
     }
 
-    async fn store_secret(&self, vault_id: &str, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error> {
+    async fn store_secret(&self, vault_id: &str, params: Params) -> Response {
         let uri = format!("vaults/{}/secrets", vault_id);
         return self.post(&uri, params, None).await
     }
 
-    async fn retrieve_secret(&self, vault_id: &str, secret_id: &str) -> Result<reqwest::Response, reqwest::Error> {
+    async fn retrieve_secret(&self, vault_id: &str, secret_id: &str) -> Response {
         let uri = format!("vaults/{}/secrets/{}", vault_id, secret_id);
         return self.get(&uri, None, None).await
     }
 
-    async fn delete_secret(&self, vault_id: &str, secret_id: &str) -> Result<reqwest::Response, reqwest::Error> {
+    async fn delete_secret(&self, vault_id: &str, secret_id: &str) -> Response {
         let uri = format!("vaults/{}/secrets/{}", vault_id, secret_id);
         return self.delete(&uri, None, None).await
     }
@@ -166,7 +164,7 @@ mod tests {
     use super::*;
     use fake::faker::name::en::{Name, FirstName, LastName};
     use fake::faker::internet::en::{FreeEmail, Password};
-    use fake::{Fake};
+    use fake::Fake;
     use crate::ident::{Ident, AuthenticateResponse};
     use serde_json::json;
 

@@ -1,8 +1,7 @@
-pub use crate::client::{ApiClient, AdditionalHeader};
-use std::result::{Result};
+pub use crate::client::{ApiClient, AdditionalHeader, Response, Params};
 use serde::{Deserialize, Serialize};
 use async_trait::async_trait;
-use serde_json::{Value};
+use serde_json::Value;
 
 const DEFAULT_SCHEME: &str = "https";
 const DEFAULT_HOST: &str = "baseline.provide.network";
@@ -12,57 +11,63 @@ const DEFAULT_PATH: &str = "api/v1";
 pub trait Baseline {
     fn factory(token: &str) -> Self;
 
-    async fn get_bpi_accounts(&self) -> Result<reqwest::Response, reqwest::Error>;
+    async fn get_bpi_accounts(&self) -> Response;
 
-    async fn create_bpi_account(&self, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error>;
+    async fn create_bpi_account(&self, params: Params) -> Response;
 
-    async fn get_bpi_account(&self, account_id: &str) -> Result<reqwest::Response, reqwest::Error>;
+    async fn get_bpi_account(&self, account_id: &str) -> Response;
 
-    async fn create_message(&self, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error>;
+    async fn create_message(&self, params: Params) -> Response;
 
-    async fn get_subjects(&self) -> Result<reqwest::Response, reqwest::Error>;
+    async fn get_subjects(&self) -> Response;
 
-    async fn create_subject(&self, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error>;
+    async fn create_subject(&self, params: Params) -> Response;
 
-    async fn get_subject(&self, subject_id: &str) -> Result<reqwest::Response, reqwest::Error>;
+    async fn get_subject(&self, subject_id: &str) -> Response;
 
-    async fn update_subject(&self, subject_id: &str, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error>;
+    async fn update_subject(&self, subject_id: &str, params: Params) -> Response;
 
-    async fn get_subject_accounts(&self, subject_id: &str) -> Result<reqwest::Response, reqwest::Error>;
+    async fn get_subject_accounts(&self, subject_id: &str) -> Response;
 
-    async fn create_subject_account(&self, subject_id: &str, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error>;
+    async fn create_subject_account(&self, subject_id: &str, params: Params) -> Response;
 
-    async fn get_subject_account(&self, subject_id: &str, account_id: &str) -> Result<reqwest::Response, reqwest::Error>;
+    async fn get_subject_account(&self, subject_id: &str, account_id: &str) -> Response;
 
-    async fn get_workflows(&self) -> Result<reqwest::Response, reqwest::Error>;
+    async fn get_workflows(&self) -> Response;
         
-    async fn create_workflow(&self, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error>;
+    async fn create_workflow(&self, params: Params) -> Response;
 
-    async fn get_workflow(&self, workflow_id: &str) -> Result<reqwest::Response, reqwest::Error>;
+    async fn get_workflow(&self, workflow_id: &str) -> Response;
 
-    async fn get_workflow_worksteps(&self, workflow_id: &str) -> Result<reqwest::Response, reqwest::Error>;
+    async fn get_workflow_worksteps(&self, workflow_id: &str) -> Response;
 
-    async fn get_workflow_workstep(&self, workflow_id: &str, workstep_id: &str) -> Result<reqwest::Response, reqwest::Error>;
+    async fn get_workflow_workstep(&self, workflow_id: &str, workstep_id: &str) -> Response;
 
-    async fn get_workgroups(&self) -> Result<reqwest::Response, reqwest::Error>;
+    async fn get_workgroups(&self) -> Response;
 
-    async fn create_workgroup(&self, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error>;
+    async fn create_workgroup(&self, params: Params) -> Response;
     
-    async fn get_workgroup(&self, workgroup_id: &str) -> Result<reqwest::Response, reqwest::Error>;
+    async fn get_workgroup(&self, workgroup_id: &str) -> Response;
 
-    async fn update_workgroup(&self, workgroup_id: &str, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error>;
+    async fn update_workgroup(&self, workgroup_id: &str, params: Params) -> Response;
 
-    async fn get_workgroup_subjects(&self, workgroup_id: &str) -> Result<reqwest::Response, reqwest::Error>;
+    async fn get_workgroup_subjects(&self, workgroup_id: &str) -> Response;
 
-    async fn associate_workgroup_subject(&self, workgroup_id: &str, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error>;
+    async fn associate_workgroup_subject(&self, workgroup_id: &str, params: Params) -> Response;
 
-    async fn create_object(&self, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error>;
+    async fn create_object(&self, params: Params) -> Response;
 
-    async fn update_object(&self, object_id: &str, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error>;
+    async fn update_object(&self, object_id: &str, params: Params) -> Response;
 
-    async fn get_state(&self, state_id: &str) -> Result<reqwest::Response, reqwest::Error>;
+    async fn get_state(&self, state_id: &str) -> Response;
 
-    async fn get_state_objects(&self) -> Result<reqwest::Response, reqwest::Error>;
+    async fn get_state_objects(&self) -> Response;
+
+    async fn get_workgroup_mappings(&self, workgroup_id: &str) -> Response;
+    
+    async fn create_workgroup_mappings(&self, workgroup_id: &str, params: Params) -> Response;
+    
+    async fn update_workgroup_mappings(&self, workgroup_id: &str, params: Params) -> Response;
 }
 
 #[async_trait]
@@ -75,124 +80,139 @@ impl Baseline for ApiClient {
         return ApiClient::new(&scheme, &host, &path, token);
     }
 
-    async fn get_bpi_accounts(&self) -> Result<reqwest::Response, reqwest::Error> {
+    async fn get_bpi_accounts(&self) -> Response {
         return self.get("bpi_accounts", None, None).await
     }
 
-    async fn create_bpi_account(&self, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error> {
+    async fn create_bpi_account(&self, params: Params) -> Response {
         return self.post("bpi_accounts", params, None).await
     }
 
-    async fn get_bpi_account(&self, account_id: &str) -> Result<reqwest::Response, reqwest::Error> {
+    async fn get_bpi_account(&self, account_id: &str) -> Response {
         let uri = format!("bpi_accounts/{}", account_id);
         return self.get(&uri, None, None).await
     }
 
-    async fn create_message(&self, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error> {
+    async fn create_message(&self, params: Params) -> Response {
         return self.post("protocol_messages", params, None).await
     }
 
-    async fn get_subjects(&self) -> Result<reqwest::Response, reqwest::Error> {
+    async fn get_subjects(&self) -> Response {
         return self.get("subjects", None, None).await
     }
 
-    async fn create_subject(&self, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error> {
+    async fn create_subject(&self, params: Params) -> Response {
         return self.post("subjects", params, None).await
     }
 
-    async fn get_subject(&self, subject_id: &str) -> Result<reqwest::Response, reqwest::Error> {
+    async fn get_subject(&self, subject_id: &str) -> Response {
         let uri = format!("subjects/{}", subject_id);
         return self.get(&uri, None, None).await
     }
 
-    async fn update_subject(&self, subject_id: &str, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error> {
+    async fn update_subject(&self, subject_id: &str, params: Params) -> Response {
         let uri = format!("subjects/{}", subject_id);
         return self.put(&uri, params, None).await
     }
 
-    async fn get_subject_accounts(&self, subject_id: &str) -> Result<reqwest::Response, reqwest::Error> {
+    async fn get_subject_accounts(&self, subject_id: &str) -> Response {
         let uri = format!("subjects/{}/accounts", subject_id);
         return self.get(&uri, None, None).await
     }
 
-    async fn create_subject_account(&self, subject_id: &str, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error> {
+    async fn create_subject_account(&self, subject_id: &str, params: Params) -> Response {
         let uri = format!("subjects/{}/accounts", subject_id);
         return self.post(&uri, params, None).await
     }
 
-    async fn get_subject_account(&self, subject_id: &str, account_id: &str) -> Result<reqwest::Response, reqwest::Error> {
+    async fn get_subject_account(&self, subject_id: &str, account_id: &str) -> Response {
         let uri = format!("subjects/{}/accounts/{}", subject_id, account_id);
         return self.get(&uri, None, None).await
     }
 
-    async fn get_workflows(&self) -> Result<reqwest::Response, reqwest::Error> {
+    async fn get_workflows(&self) -> Response {
         return self.get("workflows", None, None).await
     }
 
-    async fn create_workflow(&self, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error> {
+    async fn create_workflow(&self, params: Params) -> Response {
         return self.post("workflows", params, None).await
     }
 
-    async fn get_workflow(&self, workflow_id: &str) -> Result<reqwest::Response, reqwest::Error> {
+    async fn get_workflow(&self, workflow_id: &str) -> Response {
         let uri = format!("workflows/{}", workflow_id);
         return self.get(&uri, None, None).await
     }
 
-    async fn get_workflow_worksteps(&self, workflow_id: &str) -> Result<reqwest::Response, reqwest::Error> {
+    async fn get_workflow_worksteps(&self, workflow_id: &str) -> Response {
         let uri = format!("workflows/{}/worksteps", workflow_id);
         return self.get(&uri, None, None).await
     }
 
-    async fn get_workflow_workstep(&self, workflow_id: &str, workstep_id: &str) -> Result<reqwest::Response, reqwest::Error> {
+    async fn get_workflow_workstep(&self, workflow_id: &str, workstep_id: &str) -> Response {
         let uri = format!("workflows/{}/worksteps/{}", workflow_id, workstep_id);
         return self.get(&uri, None, None).await
     }
 
-    async fn get_workgroups(&self) -> Result<reqwest::Response, reqwest::Error> {
+    async fn get_workgroups(&self) -> Response {
         return self.get("workgroups", None, None).await
     }
 
-    async fn create_workgroup(&self, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error> {
+    async fn create_workgroup(&self, params: Params) -> Response {
         return self.post("workgroups", params, None).await
     }
 
-    async fn get_workgroup(&self, workgroup_id: &str) -> Result<reqwest::Response, reqwest::Error> {
+    async fn get_workgroup(&self, workgroup_id: &str) -> Response {
         let uri = format!("workgroups/{}", workgroup_id);
         return self.get(&uri, None, None).await
     }
 
-    async fn update_workgroup(&self, workgroup_id: &str, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error> {
+    async fn update_workgroup(&self, workgroup_id: &str, params: Params) -> Response {
         let uri = format!("workgroups/{}", workgroup_id);
         return self.put(&uri, params, None).await
     }
 
-    async fn get_workgroup_subjects(&self, workgroup_id: &str) -> Result<reqwest::Response, reqwest::Error> {
+    async fn get_workgroup_subjects(&self, workgroup_id: &str) -> Response {
         let uri = format!("workgroups/{}/subjects", workgroup_id);
         return self.get(&uri, None, None).await
     }
 
     // change params to subject id
-    async fn associate_workgroup_subject(&self, workgroup_id: &str, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error> {
+    async fn associate_workgroup_subject(&self, workgroup_id: &str, params: Params) -> Response {
         let uri = format!("workgroups/{}/subjects", workgroup_id);
         return self.post(&uri, params, None).await
     }
 
-    async fn create_object(&self, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error> {
+    async fn create_object(&self, params: Params) -> Response {
         return self.post("objects", params, None).await
     }
 
-    async fn update_object(&self, object_id: &str, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error> {
+    async fn update_object(&self, object_id: &str, params: Params) -> Response {
         let uri = format!("objects/{}", object_id);
         return self.put(&uri, params, None).await
     }
 
-    async fn get_state(&self, state_id: &str) -> Result<reqwest::Response, reqwest::Error> {
+    async fn get_state(&self, state_id: &str) -> Response {
         let uri = format!("states/{}", state_id);
         return self.get(&uri, None, None).await
     }
 
-    async fn get_state_objects(&self) -> Result<reqwest::Response, reqwest::Error> {
+    async fn get_state_objects(&self) -> Response {
         return self.get("states", None, None).await
+    }
+
+    async fn get_workgroup_mappings(&self, workgroup_id: &str) -> Response {
+        let uri = format!("workgroups/{}/mappings", workgroup_id);
+        return self.get(&uri, None, None).await
+    }
+    
+    async fn create_workgroup_mappings(&self, workgroup_id: &str, params: Params) -> Response {
+        let uri = format!("workgroups/{}/mappings", workgroup_id);
+        return self.post(&uri, params, None).await
+    }
+    
+    async fn update_workgroup_mappings(&self, workgroup_id: &str, params: Params) -> Response {
+        let uri = format!("workgroups/{}/mappings", workgroup_id);
+        return self.put(&uri, params, None).await
     }
 }
 
@@ -1246,14 +1266,8 @@ mod tests {
         // baseline_id
         // payload
 
-        println!("CREATE OBJ PARAMS {:?}", &create_object_params);
-
         let create_object_res = baseline.create_object(Some(create_object_params)).await.expect("create object response");
-
-        println!("RES STATUS {:?}", &create_object_res.status());
-        println!("RES BODY {:?}", &create_object_res.json::<Value>().await.unwrap());
-
-        assert_eq!(422, 201);
+        assert_eq!(create_object_res.status(), 202);
     }
 
     // #[tokio::test]
@@ -1296,40 +1310,78 @@ mod tests {
 
     // #[tokio::test]
     // async fn get_state_objects() {}
+
+    #[tokio::test]
+    async fn get_workgroup_mappings() {
+        let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
+        let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
+        
+        let org_access_token_json = config_vals["org_access_token"].to_string();
+        let org_access_token = serde_json::from_str::<String>(&org_access_token_json).expect("organzation access token");
+
+        let app_id_json = config_vals["app_id"].to_string();
+        let app_id = serde_json::from_str::<String>(&app_id_json).expect("application id");
+
+        let baseline: ApiClient = Baseline::factory(&org_access_token);
+
+        let get_workgroup_mappings_res = baseline.get_workgroup_mappings(&app_id).await.expect("get workgroup mappings response");
+        assert_eq!(get_workgroup_mappings_res.status(), 200);
+    }
+
+    #[tokio::test]
+    async fn create_workgroup_mappings() {
+        let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
+        let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
+        
+        let org_access_token_json = config_vals["org_access_token"].to_string();
+        let org_access_token = serde_json::from_str::<String>(&org_access_token_json).expect("organzation access token");
+
+        let app_id_json = config_vals["app_id"].to_string();
+        let app_id = serde_json::from_str::<String>(&app_id_json).expect("application id");
+
+        let baseline: ApiClient = Baseline::factory(&org_access_token);
+
+        let create_mappings_params = json!({
+            "description": "",
+            "primaryKey": "",
+            "type": "",
+        });
+
+        let create_workgroup_mappings_res = baseline.create_workgroup_mappings(&app_id, Some(create_mappings_params)).await.expect("create workgroup mappings response");
+        assert_eq!(create_workgroup_mappings_res.status(), 201);
+    }
+
+    #[tokio::test]
+    async fn update_workgroup_mappings() {
+        let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
+        let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
+        
+        let org_access_token_json = config_vals["org_access_token"].to_string();
+        let org_access_token = serde_json::from_str::<String>(&org_access_token_json).expect("organzation access token");
+
+        let app_id_json = config_vals["app_id"].to_string();
+        let app_id = serde_json::from_str::<String>(&app_id_json).expect("application id");
+
+        let baseline: ApiClient = Baseline::factory(&org_access_token);
+
+        let create_mappings_params = json!({
+            "description": "",
+            "primaryKey": "",
+            "type": "",
+        });
+
+        let create_workgroup_mappings_res = baseline.create_workgroup_mappings(&app_id, Some(create_mappings_params)).await.expect("create workgroup mappings response");
+        assert_eq!(create_workgroup_mappings_res.status(), 201);
+
+        let update_mappings_params = json!({
+            "description": "Some updated description",
+        });
+
+        let update_workgroup_mappings_res = baseline.update_workgroup_mappings(&app_id, Some(update_mappings_params)).await.expect("update workgroup mappings response");
+        assert_eq!(update_workgroup_mappings_res.status(), 404); // FIXME: is this supposed to return a 404?
+    }
 }
 
 // create workgroup helper
 // check issue kyle had
 // add examples dir with examples for each feature (standard, WASM, pure-rust?)
-
-// [GIN-debug] GET    /status                   --> main.statusHandler (4 handlers)
-// [GIN-debug] POST   /api/v1/credentials       --> github.com/provideplatform/baseline-proxy/baseline.issueVerifiableCredentialHandler (4 handlers)
-// [GIN-debug] POST   /api/v1/pub/invite        --> github.com/provideplatform/baseline-proxy/baseline.createPublicWorkgroupInviteHandler (4 handlers)
-// [GIN-debug] GET    /api/v1/bpi_accounts      --> github.com/provideplatform/baseline-proxy/baseline.listBPIAccountsHandler (7 handlers)
-// [GIN-debug] GET    /api/v1/bpi_accounts/:id  --> github.com/provideplatform/baseline-proxy/baseline.bpiAccountDetailsHandler (7 handlers)
-// [GIN-debug] POST   /api/v1/bpi_accounts      --> github.com/provideplatform/baseline-proxy/baseline.createBPIAccountHandler (7 handlers)
-// [GIN-debug] POST   /api/v1/protocol_messages --> github.com/provideplatform/baseline-proxy/baseline.createProtocolMessageHandler (7 handlers)
-// [GIN-debug] GET    /api/v1/subjects          --> github.com/provideplatform/baseline-proxy/baseline.listSubjectsHandler (7 handlers)
-// [GIN-debug] GET    /api/v1/subjects/:id      --> github.com/provideplatform/baseline-proxy/baseline.subjectDetailsHandler (7 handlers)
-// [GIN-debug] POST   /api/v1/subjects          --> github.com/provideplatform/baseline-proxy/baseline.createSubjectHandler (7 handlers)
-// [GIN-debug] PUT    /api/v1/subjects/:id      --> github.com/provideplatform/baseline-proxy/baseline.updateSubjectHandler (7 handlers)
-// [GIN-debug] GET    /api/v1/subjects/:id/accounts --> github.com/provideplatform/baseline-proxy/baseline.listSubjectAccountsHandler (7 handlers)
-// [GIN-debug] GET    /api/v1/subjects/:id/accounts/:accountId --> github.com/provideplatform/baseline-proxy/baseline.subjectAccountDetailsHandler (7 handlers)
-// [GIN-debug] POST   /api/v1/subjects/:id/accounts --> github.com/provideplatform/baseline-proxy/baseline.createSubjectAccountsHandler (7 handlers)
-// [GIN-debug] PUT    /api/v1/subjects/:id/accounts/:accountId --> github.com/provideplatform/baseline-proxy/baseline.updateSubjectAccountsHandler (7 handlers)
-// [GIN-debug] POST   /api/v1/objects           --> github.com/provideplatform/baseline-proxy/baseline.createObjectHandler (7 handlers)
-// [GIN-debug] PUT    /api/v1/objects/:id       --> github.com/provideplatform/baseline-proxy/baseline.updateObjectHandler (7 handlers)
-// [GIN-debug] PUT    /api/v1/config            --> github.com/provideplatform/baseline-proxy/baseline.configurationHandler (7 handlers)
-// [GIN-debug] POST   /api/v1/business_objects  --> github.com/provideplatform/baseline-proxy/baseline.createObjectHandler (7 handlers)
-// [GIN-debug] PUT    /api/v1/business_objects/:id --> github.com/provideplatform/baseline-proxy/baseline.updateObjectHandler (7 handlers)
-// [GIN-debug] GET    /api/v1/workflows         --> github.com/provideplatform/baseline-proxy/baseline.listWorkflowsHandler (7 handlers)
-// [GIN-debug] GET    /api/v1/workflows/:id     --> github.com/provideplatform/baseline-proxy/baseline.workflowDetailsHandler (7 handlers)
-// [GIN-debug] POST   /api/v1/workflows         --> github.com/provideplatform/baseline-proxy/baseline.createWorkflowHandler (7 handlers)
-// [GIN-debug] GET    /api/v1/workgroups        --> github.com/provideplatform/baseline-proxy/baseline.listWorkgroupsHandler (7 handlers)
-// [GIN-debug] GET    /api/v1/workgroups/:id    --> github.com/provideplatform/baseline-proxy/baseline.workgroupDetailsHandler (7 handlers)
-// [GIN-debug] POST   /api/v1/workgroups        --> github.com/provideplatform/baseline-proxy/baseline.createWorkgroupHandler (7 handlers)
-// [GIN-debug] GET    /api/v1/workflows/:id/worksteps --> github.com/provideplatform/baseline-proxy/baseline.listWorkstepsHandler (7 handlers)
-// [GIN-debug] GET    /api/v1/workflows/:id/worksteps/:workstepId --> github.com/provideplatform/baseline-proxy/baseline.workstepDetailsHandler (7 handlers)
-// [GIN-debug] POST   /api/v1/workflows/:id/worksteps --> github.com/provideplatform/baseline-proxy/baseline.createWorkstepHandler (7 handlers)
-// [GIN-debug] POST   /api/v1/stats             --> github.com/provideplatform/baseline-proxy/stats.statsLogHandler (7 handlers)
-

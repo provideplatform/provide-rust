@@ -1,8 +1,6 @@
-pub use crate::client::{ApiClient, AdditionalHeader};
-use std::result::{Result};
+pub use crate::client::{ApiClient, AdditionalHeader, Response, Params};
 use serde::{Deserialize, Serialize};
 use async_trait::async_trait;
-use serde_json::{Value};
 
 const DEFAULT_SCHEME: &str = "https";
 const DEFAULT_HOST: &str = "privacy.provide.services";
@@ -12,17 +10,17 @@ const DEFAULT_PATH: &str = "api/v1";
 pub trait Privacy {
     fn factory(token: &str) -> Self;
 
-    async fn list_circuits(&self) -> Result<reqwest::Response, reqwest::Error>;
+    async fn list_circuits(&self) -> Response;
 
-    async fn create_circuit(&self, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error>;
+    async fn create_circuit(&self, params: Params) -> Response;
 
-    async fn get_circuit(&self, circuit_id: &str) -> Result<reqwest::Response, reqwest::Error>;
+    async fn get_circuit(&self, circuit_id: &str) -> Response;
 
-    async fn generate_proof(&self, circuit_id: &str, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error>;
+    async fn generate_proof(&self, circuit_id: &str, params: Params) -> Response;
 
-    async fn verify_proof(&self, circuit_id: &str, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error>;
+    async fn verify_proof(&self, circuit_id: &str, params: Params) -> Response;
 
-    async fn retrieve_store_value(&self, circuit_id: &str, leaf_index: &str) -> Result<reqwest::Response, reqwest::Error>;
+    async fn retrieve_store_value(&self, circuit_id: &str, leaf_index: &str) -> Response;
 }
 
 #[async_trait]
@@ -35,30 +33,30 @@ impl Privacy for ApiClient {
         return ApiClient::new(&scheme, &host, &path, token);
     }
 
-    async fn list_circuits(&self) -> Result<reqwest::Response, reqwest::Error> {
+    async fn list_circuits(&self) -> Response {
         return self.get("circuits", None, None).await
     }
 
-    async fn create_circuit(&self, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error> {
+    async fn create_circuit(&self, params: Params) -> Response {
         return self.post("circuits", params, None).await
     }
 
-    async fn get_circuit(&self, circuit_id: &str) -> Result<reqwest::Response, reqwest::Error> {
+    async fn get_circuit(&self, circuit_id: &str) -> Response {
         let uri = format!("circuits/{}", circuit_id);
         return self.get(&uri, None, None).await
     }
 
-    async fn generate_proof(&self, circuit_id: &str, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error> {
+    async fn generate_proof(&self, circuit_id: &str, params: Params) -> Response {
         let uri = format!("circuits/{}/prove", circuit_id);
         return self.post(&uri, params, None).await
     }
 
-    async fn verify_proof(&self, circuit_id: &str, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error> {
+    async fn verify_proof(&self, circuit_id: &str, params: Params) -> Response {
         let uri = format!("circuits/{}/verify", circuit_id);
         return self.post(&uri, params, None).await
     }
 
-    async fn retrieve_store_value(&self, circuit_id: &str, leaf_index: &str) -> Result<reqwest::Response, reqwest::Error> {
+    async fn retrieve_store_value(&self, circuit_id: &str, leaf_index: &str) -> Response {
         let uri = format!("circuits/{}/notes/{}", circuit_id, leaf_index);
         return self.get(&uri, None, None).await
     }
@@ -94,7 +92,7 @@ mod tests {
     use super::*;
     use fake::faker::name::en::{Name, FirstName, LastName};
     use fake::faker::internet::en::{FreeEmail, Password};
-    use fake::{Fake};
+    use fake::Fake;
     use crate::ident::{Ident, AuthenticateResponse, Application, Token};
     use serde_json::json;
     use tokio::time::{self, Duration};

@@ -1,8 +1,7 @@
-pub use crate::client::{ApiClient, AdditionalHeader};
-use std::result::{Result};
+pub use crate::client::{ApiClient, AdditionalHeader, Response, Params};
 use serde::{Deserialize, Serialize};
 use async_trait::async_trait;
-use serde_json::{Value};
+use serde_json::Value;
 
 const DEFAULT_SCHEME: &str = "https";
 const DEFAULT_HOST: &str = "nchain.provide.services";
@@ -12,57 +11,57 @@ const DEFAULT_PATH: &str = "api/v1";
 pub trait NChain {
     fn factory(token: &str) -> Self;
 
-    async fn list_accounts(&self) -> Result<reqwest::Response, reqwest::Error>;
+    async fn list_accounts(&self) -> Response;
 
-    async fn create_account(&self, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error>;
+    async fn create_account(&self, params: Params) -> Response;
 
-    async fn get_account(&self, account_id: &str) -> Result<reqwest::Response, reqwest::Error>;
+    async fn get_account(&self, account_id: &str) -> Response;
 
-    async fn get_connectors(&self) -> Result<reqwest::Response, reqwest::Error>;
+    async fn get_connectors(&self) -> Response;
 
-    async fn create_connector(&self, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error>;
+    async fn create_connector(&self, params: Params) -> Response;
 
-    async fn get_connector(&self, connector_id: &str) -> Result<reqwest::Response, reqwest::Error>;
+    async fn get_connector(&self, connector_id: &str) -> Response;
 
-    async fn delete_connector(&self, connector_id: &str) -> Result<reqwest::Response, reqwest::Error>;
+    async fn delete_connector(&self, connector_id: &str) -> Response;
 
-    async fn get_contracts(&self) -> Result<reqwest::Response, reqwest::Error>;
+    async fn get_contracts(&self) -> Response;
 
-    async fn create_contract(&self, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error>;
+    async fn create_contract(&self, params: Params) -> Response;
 
-    async fn get_contract(&self, contract_id: &str) -> Result<reqwest::Response, reqwest::Error>;
+    async fn get_contract(&self, contract_id: &str) -> Response;
 
-    async fn execute_contract(&self, contract_id: &str, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error>;
+    async fn execute_contract(&self, contract_id: &str, params: Params) -> Response;
 
-    async fn get_wallets(&self) -> Result<reqwest::Response, reqwest::Error>;
+    async fn get_wallets(&self) -> Response;
 
-    async fn create_wallet(&self, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error>;
+    async fn create_wallet(&self, params: Params) -> Response;
 
-    async fn get_wallet_accounts(&self, wallet_id: &str) -> Result<reqwest::Response, reqwest::Error>;
+    async fn get_wallet_accounts(&self, wallet_id: &str) -> Response;
 
-    async fn get_networks(&self) -> Result<reqwest::Response, reqwest::Error>;
+    async fn get_networks(&self) -> Response;
 
-    async fn create_network(&self, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error>;
+    async fn create_network(&self, params: Params) -> Response;
 
-    async fn update_network(&self, network_id: &str, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error>;
+    async fn update_network(&self, network_id: &str, params: Params) -> Response;
 
-    async fn get_network(&self, network_id: &str) -> Result<reqwest::Response, reqwest::Error>;
+    async fn get_network(&self, network_id: &str) -> Response;
 
-    async fn get_oracles(&self) -> Result<reqwest::Response, reqwest::Error>;
+    async fn get_oracles(&self) -> Response;
 
-    async fn create_oracle(&self, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error>;
+    async fn create_oracle(&self, params: Params) -> Response;
 
-    async fn get_oracle(&self, oracle_id: &str) -> Result<reqwest::Response, reqwest::Error>;
+    async fn get_oracle(&self, oracle_id: &str) -> Response;
 
-    async fn update_oracle(&self, oracle_id: &str, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error>;
+    async fn update_oracle(&self, oracle_id: &str, params: Params) -> Response;
 
-    async fn delete_oracle(&self, oracle_id: &str) -> Result<reqwest::Response, reqwest::Error>;
+    async fn delete_oracle(&self, oracle_id: &str) -> Response;
 
-    async fn get_transactions(&self) -> Result<reqwest::Response, reqwest::Error>;
+    async fn get_transactions(&self) -> Response;
 
-    async fn create_transaction(&self, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error>;
+    async fn create_transaction(&self, params: Params) -> Response;
 
-    async fn get_transaction(&self, tx_id: &str) -> Result<reqwest::Response, reqwest::Error>;
+    async fn get_transaction(&self, tx_id: &str) -> Response;
 }
 
 #[async_trait]
@@ -75,118 +74,118 @@ impl NChain for ApiClient {
         return ApiClient::new(&scheme, &host, &path, token);
     }
 
-    async fn list_accounts(&self) -> Result<reqwest::Response, reqwest::Error> {
+    async fn list_accounts(&self) -> Response {
         return self.get("accounts", None, None).await
     }
 
-    async fn create_account(&self, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error> {
+    async fn create_account(&self, params: Params) -> Response {
         return self.post("accounts", params, None).await
     }
 
-    async fn get_account(&self, account_id: &str) -> Result<reqwest::Response, reqwest::Error> {
+    async fn get_account(&self, account_id: &str) -> Response {
         let uri = format!("accounts/{}", account_id);
         return self.get(&uri, None, None).await
     }
 
-    async fn get_connectors(&self) -> Result<reqwest::Response, reqwest::Error> {
+    async fn get_connectors(&self) -> Response {
         return self.get("connectors", None, None).await
     }
 
-    async fn create_connector(&self, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error> {
+    async fn create_connector(&self, params: Params) -> Response {
         return self.post("connectors", params, None).await
     }
 
-    async fn get_connector(&self, connector_id: &str) -> Result<reqwest::Response, reqwest::Error> {
+    async fn get_connector(&self, connector_id: &str) -> Response {
         let uri = format!("connectors/{}", connector_id);
         return self.get(&uri, None, None).await
     }
 
-    async fn delete_connector(&self, connector_id: &str) -> Result<reqwest::Response, reqwest::Error> {
+    async fn delete_connector(&self, connector_id: &str) -> Response {
         let uri = format!("connectors/{}", connector_id);
         return self.delete(&uri, None, None).await
     }
 
-    async fn get_contracts(&self) -> Result<reqwest::Response, reqwest::Error> {
+    async fn get_contracts(&self) -> Response {
         return self.get("contracts", None, None).await
     }
 
-    async fn create_contract(&self, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error> {
+    async fn create_contract(&self, params: Params) -> Response {
         return self.post("contracts", params, None).await
     }
 
-    async fn get_contract(&self, contract_id: &str) -> Result<reqwest::Response, reqwest::Error> {
+    async fn get_contract(&self, contract_id: &str) -> Response {
         let uri = format!("contracts/{}", contract_id);
         return self.get(&uri, None, None).await
     }
 
-    async fn execute_contract(&self, contract_id: &str, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error> {
+    async fn execute_contract(&self, contract_id: &str, params: Params) -> Response {
         let uri = format!("contracts/{}/execute", contract_id);
         return self.post(&uri, params, None).await
     }
 
-    async fn get_wallets(&self) -> Result<reqwest::Response, reqwest::Error> {
+    async fn get_wallets(&self) -> Response {
         return self.get("wallets", None, None).await
     }
 
-    async fn create_wallet(&self, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error> {
+    async fn create_wallet(&self, params: Params) -> Response {
         return self.post("wallets", params, None).await
     }
 
-    async fn get_wallet_accounts(&self, wallet_id: &str) -> Result<reqwest::Response, reqwest::Error> {
+    async fn get_wallet_accounts(&self, wallet_id: &str) -> Response {
         let uri = format!("wallets/{}/accounts", wallet_id);
         return self.get(&uri, None, None).await
     }
 
-    async fn get_networks(&self) -> Result<reqwest::Response, reqwest::Error> {
+    async fn get_networks(&self) -> Response {
         return self.get("networks", None, None).await
     }
 
-    async fn create_network(&self, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error> {
+    async fn create_network(&self, params: Params) -> Response {
         return self.post("networks", params, None).await
     }
 
-    async fn update_network(&self, network_id: &str, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error> {
+    async fn update_network(&self, network_id: &str, params: Params) -> Response {
         let uri = format!("networks/{}", network_id);
         return self.put(&uri, params, None).await
     }
 
-    async fn get_network(&self, network_id: &str) -> Result<reqwest::Response, reqwest::Error> {
+    async fn get_network(&self, network_id: &str) -> Response {
         let uri = format!("networks/{}", network_id);
         return self.get(&uri, None, None).await
     }
 
-    async fn get_oracles(&self) -> Result<reqwest::Response, reqwest::Error> {
+    async fn get_oracles(&self) -> Response {
         return self.get("oracles", None, None).await
     }
 
-    async fn create_oracle(&self, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error> {
+    async fn create_oracle(&self, params: Params) -> Response {
         return self.post("oracles", params, None).await
     }
 
-    async fn get_oracle(&self, oracle_id: &str) -> Result<reqwest::Response, reqwest::Error> {
+    async fn get_oracle(&self, oracle_id: &str) -> Response {
         let uri = format!("oracles/{}", oracle_id);
         return self.get(&uri, None, None).await
     }
 
-    async fn update_oracle(&self, oracle_id: &str, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error> {
+    async fn update_oracle(&self, oracle_id: &str, params: Params) -> Response {
         let uri = format!("oracles/{}", oracle_id);
         return self.put(&uri, params, None).await
     }
 
-    async fn delete_oracle(&self, oracle_id: &str) -> Result<reqwest::Response, reqwest::Error> {
+    async fn delete_oracle(&self, oracle_id: &str) -> Response {
         let uri = format!("oracles/{}", oracle_id);
         return self.delete(&uri, None, None).await
     }
 
-    async fn get_transactions(&self) -> Result<reqwest::Response, reqwest::Error> {
+    async fn get_transactions(&self) -> Response {
         return self.get("transactions", None, None).await
     }
 
-    async fn create_transaction(&self, params: Option<Value>) -> Result<reqwest::Response, reqwest::Error> {
+    async fn create_transaction(&self, params: Params) -> Response {
         return self.post("transactions", params, None).await
     }
 
-    async fn get_transaction(&self, tx_id: &str) -> Result<reqwest::Response, reqwest::Error> {
+    async fn get_transaction(&self, tx_id: &str) -> Response {
         let uri = format!("transactions/{}", tx_id);
         return self.get(&uri, None, None).await
     }
@@ -296,12 +295,12 @@ pub struct Transaction {
     hd_derivation_path: String,
     to: String,
     value: i64,
-    data: Option<Value>,
+    data: Params,
     hash: String,
     status: String,
-    r#ref: Option<Value>,
+    r#ref: Params,
     description: Option<String>,
-    block: Option<Value>,
+    block: Params,
     broadcast_at: String,
 }
 
@@ -310,7 +309,7 @@ mod tests {
     use super::*;
     use fake::faker::name::en::{Name, FirstName, LastName};
     use fake::faker::internet::en::{FreeEmail, Password};
-    use fake::{Fake};
+    use fake::Fake;
     use crate::ident::{Ident, AuthenticateResponse, Application, Token};
     use serde_json::json;
 
