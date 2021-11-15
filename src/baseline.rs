@@ -581,6 +581,7 @@ mod tests {
 		run_cmd += &format!(" --vault-refresh-token={}", &org_refresh_token);
 		run_cmd += &format!(" --vault-scheme={}", std::env::var("VAULT_API_SCHEME").unwrap_or(String::from("http")));
 		run_cmd += &format!(" --workgroup={}", &create_application_body.id);
+		run_cmd += &format!(" --postgres-port={}", "5433");
 
         let localhost_regex = regex::Regex::new(r"localhost").expect("localhost regex expression");
         run_cmd = localhost_regex.replace_all(&run_cmd, "host.docker.internal").to_string();
