@@ -1,6 +1,7 @@
-pub use crate::client::{ApiClient, AdditionalHeader, Response, Params};
-use serde::{Deserialize, Serialize};
 use async_trait::async_trait;
+
+use crate::client::{ApiClient, Response, Params};
+pub use crate::models::vault::*;
 
 const DEFAULT_SCHEME: &str = "https";
 const DEFAULT_HOST: &str = "vault.provide.services";
@@ -116,48 +117,7 @@ impl Vault for ApiClient {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Default, Clone)]
-pub struct VaultContainer {
-    pub id: String,
-    created_at: String,
-    name: String,
-    description: String,
-}
 
-#[derive(Serialize, Deserialize, Debug, Default, Clone)]
-pub struct UnsealerKey {
-    key: String,
-    validation_hash: String,
-}
-
-#[derive(Serialize, Deserialize, Debug, Default, Clone)]
-pub struct VaultKey {
-    pub id: String,
-    created_at: String,
-    vault_id: String,
-    r#type: String,
-    usage: String,
-    spec: String,
-    name: String,
-    description: String,
-    pub address: Option<String>,
-    public_key: Option<String>,
-}
-
-#[derive(Serialize, Deserialize, Debug, Default, Clone)]
-pub struct EncryptedData {
-    data: String,
-}
-
-#[derive(Serialize, Deserialize, Debug, Default, Clone)]
-pub struct VaultSecret {
-    id: String,
-    created_at: String,
-    vault_id: String,
-    r#type: String,
-    name: String,
-    description: String,
-}
 
 #[cfg(test)]
 mod tests {

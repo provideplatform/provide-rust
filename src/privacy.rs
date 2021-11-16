@@ -1,6 +1,7 @@
-pub use crate::client::{ApiClient, AdditionalHeader, Response, Params};
-use serde::{Deserialize, Serialize};
 use async_trait::async_trait;
+
+use crate::client::{ApiClient, Response, Params};
+pub use crate::models::privacy::*;
 
 const DEFAULT_SCHEME: &str = "https";
 const DEFAULT_HOST: &str = "privacy.provide.services";
@@ -60,30 +61,6 @@ impl Privacy for ApiClient {
         let uri = format!("circuits/{}/notes/{}", circuit_id, leaf_index);
         return self.get(&uri, None, None).await
     }
-}
-
-#[derive(Serialize, Deserialize, Debug, Default, Clone)]
-pub struct Circuit {
-    id: String,
-    created_at: String,
-    vault_id: String,
-    encryption_key_id: Option<String>,
-    proving_key_id: Option<String>,
-    verifying_key_id: Option<String>,
-    name: String,
-    description: Option<String>,
-    identifier: String,
-    provider: String,
-    proving_scheme: String,
-    curve: String,
-    status: Option<String>,
-    note_store_id: Option<String>,
-    nullifier_store_id: Option<String>,
-}
-
-#[derive(Serialize, Deserialize, Debug, Default, Clone)]
-pub struct Proof {
-    proof: String,
 }
 
 // MAKE THESE APPLICATION SCOPED
