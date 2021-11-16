@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-
+use crate::models::privacy::Circuit;
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
 pub struct BpiAccount {
     context: Value, // FIXME: apparently this is @context
@@ -16,48 +16,105 @@ pub struct BpiAccount {
 }
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
-pub struct Subject {
-    created_at: String,
-    description: String, // this is probably optional
-    id: String,
-    metadata: Value,
-    name: String,
-    r#type: String,
-}
-
-#[derive(Serialize, Deserialize, Debug, Default, Clone)]
-pub struct SubjectAccount {
-    context: Value, // FIXME: apparently this is @context
-    id: String,
-    bpi_account_ids: Vec<String>,
-    created_at: String,
-    credentials: Value,
-    metadata: Value,
-    r#type: String,
-    recovery_policy: Value,
-    role: Value,
-    subject_id: String,
-    security_policies: Value,
-}
-
-#[derive(Serialize, Deserialize, Debug, Default, Clone)]
 pub struct Workflow {
     id: String,
-    name: String,
-    r#type: String,
-    workstep_ids: Vec<String>,
+    created_at: String,
+    version: Option<String>,
+    participants: Option<Vec<Participant>>,
+    worksteps: Option<Vec<Workstep>>,
+    workflow_id: Option<String>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Default, Clone)]
+pub struct  WorkflowInstance {
+    id: String,
+    created_at: String,
+    version: Option<String>,
+    participants: Option<Vec<Participant>>,
+    worksteps: Option<Vec<Workstep>>,
+    workflow_id: Option<String>,
+    shield: Option<String>,
+    status: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
 pub struct Workgroup {
     id: String,
     created_at: String,
-    subject_id: String,
-    config: Value,
-    description: String,
+    participants: Option<Vec<Participant>>,
+    workflows: Option<Vec<Workflow>>,
+    privacy_policy: Option<Value>,
+    security_policy: Option<Value>,
+    tokenization_policy: Option<Value>,
+    name: Option<String>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Default, Clone)]
+pub struct Participant {
+    metadata: Value,
+    api_endpoint: Option<String>,
+    messaging_endpoint: Option<String>,
+    address: Option<String>,
+    workgroups: Option<Vec<Workgroup>>,
+    workflows: Option<Vec<Workflow>>,
+    worksteps: Option<Vec<Workstep>>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Default, Clone)]
+pub struct Workstep {
+    id: String,
+    created_at: String,
+    circuit: Option<Circuit>,
+    circuit_id: Option<String>,
+    require_finality: bool,
+    workflow_id: Option<String>,
+    participants: Option<Vec<Participant>>,
+    workstep_id: Option<String>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Default, Clone)]
+pub struct WorkstepInstance {
+    id: String,
+    created_at: String,
+    circuit: Option<Circuit>,
+    circuit_id: Option<String>,
+    require_finality: bool,
+    workflow_id: Option<String>,
+    participants: Option<Vec<Participant>>,
+    workstep_id: Option<String>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Default, Clone)]
+pub struct Mapping {
+    pub id: String,
+    created_at: String,
     name: String,
-    network_id: String,
+    description: Option<String>,
+    r#type: Option<String>,
+    models: Option<Vec<MappingModel>>,
+    organization_id: Option<String>,
+    workgroup_id: Option<String>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Default, Clone)]
+pub struct MappingField {
+    id: String,
+    created_at: String,
+    default_value: Option<Value>,
+    is_primary_key: bool,
+    name: String,
+    description: Option<String>,
     r#type: String,
-    security_policies: Value,
-    admins: Vec<String>,
+    mapping_model_id: String,
+}
+
+#[derive(Serialize, Deserialize, Debug, Default, Clone)]
+pub struct MappingModel {
+    id: String,
+    created_at: String,
+    description: Option<String>,
+    primary_key: Option<String>,
+    r#type: Option<String>,
+    mapping_id: String,
+    fields: Option<Vec<MappingField>>,
 }

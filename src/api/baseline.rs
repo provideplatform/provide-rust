@@ -66,11 +66,15 @@ pub trait Baseline {
 
     async fn create_workgroup(&self, params: Params) -> Response;
 
-    async fn get_workgroup_mappings(&self, workgroup_id: &str) -> Response;
+    async fn get_mappings(&self) -> Response;
+    
+    // async fn get_mapping(&self) -> Response;
 
-    async fn create_workgroup_mappings(&self, workgroup_id: &str, params: Params) -> Response;
+    async fn create_mapping(&self, params: Params) -> Response;
 
-    async fn update_workgroup_mappings(&self, workgroup_id: &str, params: Params) -> Response;
+    async fn update_mapping(&self, mapping_id: &str, params: Params) -> Response;
+
+    async fn delete_mapping(&self, mapping_id: &str) -> Response;
 
     async fn get_workflow_worksteps(&self, workflow_id: &str) -> Response;
 
@@ -205,19 +209,22 @@ impl Baseline for ApiClient {
         return self.get(&uri, None, None).await;
     }
 
-    async fn get_workgroup_mappings(&self, workgroup_id: &str) -> Response {
-        let uri = format!("workgroups/{}/mappings", workgroup_id);
-        return self.get(&uri, None, None).await;
+    async fn get_mappings(&self) -> Response {
+        return self.get("mappings", None, None).await;
     }
 
-    async fn create_workgroup_mappings(&self, workgroup_id: &str, params: Params) -> Response {
-        let uri = format!("workgroups/{}/mappings", workgroup_id);
-        return self.post(&uri, params, None).await;
+    async fn create_mapping(&self, params: Params) -> Response {
+        return self.post("mappings", params, None).await;
     }
 
-    async fn update_workgroup_mappings(&self, workgroup_id: &str, params: Params) -> Response {
-        let uri = format!("workgroups/{}/mappings", workgroup_id);
+    async fn update_mapping(&self, mapping_id: &str, params: Params) -> Response {
+        let uri = format!("mappings/{}", mapping_id);
         return self.put(&uri, params, None).await;
+    }
+
+    async fn delete_mapping(&self, mapping_id: &str) -> Response {
+        let uri = format!("mappings/{}", mapping_id);
+        return self.delete(&uri, None, None).await
     }
 
     async fn get_workflow_worksteps(&self, workflow_id: &str) -> Response {
@@ -991,28 +998,24 @@ mod tests {
         assert_eq!(get_workflows_res.status(), 200);
     }
 
-    // #[tokio::test]
-    // async fn create_workflow() {
-    //     let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
-    //     let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
+    #[tokio::test]
+    async fn create_workflow() {
+        let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
+        let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
 
-    //     let org_access_token_json = config_vals["org_access_token"].to_string();
-    //     let org_access_token = serde_json::from_str::<String>(&org_access_token_json).expect("organzation access token");
+        let org_access_token_json = config_vals["org_access_token"].to_string();
+        let org_access_token = serde_json::from_str::<String>(&org_access_token_json).expect("organzation access token");
 
-    //     let baseline: ApiClient = Baseline::factory(&org_access_token);
+        let baseline: ApiClient = Baseline::factory(&org_access_token);
 
-    //     let create_workflow_params = json!({
-    //        "participants": [],
-    //        "version": "",
-    //        "worksteps": [],
-    //     });
+        let create_workflow_params = json!({
+           "participants": [],
+           "worksteps": [],
+        });
 
-    //     let create_workflow_res = baseline.create_workflow(Some(create_workflow_params)).await.expect("create workflow response");
-
-    //     println!("create workflow res msg {:?}", create_workflow_res.json::<Value>().await.unwrap());
-    //     // assert_eq!(create_workflow_res.status(), 201);
-    //     assert!(false)
-    // }
+        let create_workflow_res = baseline.create_workflow(Some(create_workflow_params)).await.expect("create workflow response");
+        assert_eq!(create_workflow_res.status(), 201, "create workflow response body: {:?}", create_workflow_res.json::<Value>().await.unwrap());
+    }
 
     // #[tokio::test]
     // async fn create_workflow_instance() {
@@ -1246,39 +1249,6 @@ mod tests {
     //     assert_eq!(get_workgroup_subjects_res.status(), 200);
     // }
 
-    // #[tokio::test]
-    // async fn associate_workgroup_subject() {
-    //     let authentication_res_body = generate_new_user_and_token().await;
-    //     let access_token = match authentication_res_body.token.access_token {
-    //         Some(string) => string,
-    //         None => panic!("authentication response access token not found"),
-    //     };
-
-    //     let baseline: ApiClient = Baseline::factory(access_token);
-
-    //     let create_subject_body = generate_subject(&baseline).await;
-
-    //     let create_workgroup_params = Some(json!({
-    //         "subject_id": format!("did:prvd:{}", &create_subject_body.id),
-    //         "description": "An example of the request body for workgroup creation",
-    //         "name": "Example workgroup",
-    //         "network_id": "07102258-5e49-480e-86af-6d0c3260827d",
-    //         "type": "baseline",
-    //         "security_policies": [],
-    //         "admins": [
-    //             format!("did:prvd:{}", &create_subject_body.id),
-    //         ],
-    //     }));
-
-    //     let create_workgroup_res = baseline.create_workgroup(create_workgroup_params).await.expect("create workgroup response");
-
-    //     let create_workgroup_body = create_workgroup_res.json::<Workgroup>().await.expect("create workgroup body");
-
-    //     let another_subject_body = generate_subject(&baseline).await;
-
-    //     // then probably pass that as a param in body - the swaggerhub is incomplete
-    // }
-
     #[tokio::test]
     async fn create_object() {
         let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
@@ -1361,8 +1331,9 @@ mod tests {
     //     assert_eq!(update_object_res.status(), 201);
     // }
 
+    // TODO: test the response here with passing valid vs nonexistent uuid in query string
     #[tokio::test]
-    async fn get_workgroup_mappings() {
+    async fn get_mappings() {
         let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
         let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
 
@@ -1375,15 +1346,15 @@ mod tests {
 
         let baseline: ApiClient = Baseline::factory(&org_access_token);
 
-        let get_workgroup_mappings_res = baseline
-            .get_workgroup_mappings(&app_id)
+        let mappings_res = baseline
+            .get_mappings()
             .await
-            .expect("get workgroup mappings response");
-        assert_eq!(get_workgroup_mappings_res.status(), 200);
+            .expect("get mappings response");
+        assert_eq!(mappings_res.status(), 200);
     }
 
     #[tokio::test]
-    async fn create_workgroup_mappings() {
+    async fn create_mapping() {
         let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
         let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
 
@@ -1396,7 +1367,8 @@ mod tests {
 
         let baseline: ApiClient = Baseline::factory(&org_access_token);
 
-        let create_mappings_params = json!({
+        let create_mapping_params = json!({
+            "workgroup_id": &app_id,
             "name": format!("{} mapping", Name().fake::<String>()),
             "models": [
                 {
@@ -1412,15 +1384,15 @@ mod tests {
             ],
         });
 
-        let create_workgroup_mappings_res = baseline
-            .create_workgroup_mappings(&app_id, Some(create_mappings_params))
+        let mappings_res = baseline
+            .create_mapping(Some(create_mapping_params))
             .await
-            .expect("create workgroup mappings response");
-        assert_eq!(create_workgroup_mappings_res.status(), 201);
+            .expect("create mappings response");
+        assert_eq!(mappings_res.status(), 201);
     }
 
     #[tokio::test]
-    async fn update_workgroup_mappings() {
+    async fn update_mapping() {
         let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
         let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
 
@@ -1433,7 +1405,8 @@ mod tests {
 
         let baseline: ApiClient = Baseline::factory(&org_access_token);
 
-        let create_mappings_params = json!({
+        let create_mapping_params = json!({
+            "workgroup_id": &app_id,
             "name": format!("{} mapping", Name().fake::<String>()),
             "models": [
                 {
@@ -1449,13 +1422,17 @@ mod tests {
             ],
         });
 
-        let create_workgroup_mappings_res = baseline
-            .create_workgroup_mappings(&app_id, Some(create_mappings_params))
+        let mappings_res = baseline
+            .create_mapping(Some(create_mapping_params))
             .await
-            .expect("create workgroup mappings response");
-        assert_eq!(create_workgroup_mappings_res.status(), 201);
+            .expect("create mapping response");
+        assert_eq!(mappings_res.status(), 201);
+
+        let mappings_body = mappings_res.json::<Mapping>().await.expect("create mapping body");
 
         let update_mappings_params = json!({
+            "workgroup_id": &app_id,
+            "name": format!("{} mapping", Name().fake::<String>()),
             "models": [
                 {
                     "type": "PurchaseOrder",
@@ -1464,17 +1441,35 @@ mod tests {
                             "name": "id",
                             "is_primary_key": true,
                         },
+                        {
+                            "name": "id",
+                            "is_primary_key": false,
+                        },
+                    ],
+                    "primary_key": "id",
+                },
+                {
+                    "type": "SalesOrder",
+                    "fields": [
+                        {
+                            "name": "id",
+                            "is_primary_key": true,
+                        },
+                        {
+                            "name": "identifier",
+                            "is_primary_key": false,
+                        },
                     ],
                     "primary_key": "id",
                 },
             ],
         });
 
-        let update_workgroup_mappings_res = baseline
-            .update_workgroup_mappings(&app_id, Some(update_mappings_params))
+        let update_mappings_res = baseline
+            .update_mapping(&mappings_body.id, Some(update_mappings_params))
             .await
-            .expect("update workgroup mappings response");
-        assert_eq!(update_workgroup_mappings_res.status(), 204); // FIXME: not supposed to return 404
+            .expect("update mapping response");
+        assert_eq!(update_mappings_res.status(), 204);
     }
 
     // #[tokio::test]
