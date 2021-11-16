@@ -7,5 +7,4 @@ pub mod vault;
 pub mod privacy;
 pub mod nchain;
 pub mod baseline;
-
 // #[cfg(doctest)] <-----------

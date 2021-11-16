@@ -71,7 +71,7 @@ pub trait Baseline {
 
     async fn get_workflow_workstep(&self, workflow_id: &str, workstep_id: &str) -> Response;
 
-    async fn create_workflow_workstep(&self, workflow_id: &str, workstep_id: &str, params: Params) -> Response;
+    async fn create_workflow_workstep(&self, workflow_id: &str, params: Params) -> Response;
 }
 
 #[async_trait]
@@ -220,9 +220,9 @@ impl Baseline for ApiClient {
         return self.get(&uri, None, None).await
     }
 
-    async fn create_workflow_workstep(&self, workflow_id: &str, workstep_id: &str, params: Params) -> Response {
-        let uri = format!("workflows/{}/worksteps/{}", workflow_id, workstep_id);
-        return self.get(&uri, params, None).await
+    async fn create_workflow_workstep(&self, workflow_id: &str, params: Params) -> Response {
+        let uri = format!("workflows/{}/worksteps", workflow_id,);
+        return self.post(&uri, params, None).await
     }
 }
 
@@ -275,11 +275,11 @@ pub struct Workflow {
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
 pub struct Workgroup {
+    id: String,
+    created_at: String,
     subject_id: String,
     config: Value,
-    created_at: String,
     description: String,
-    id: String,
     name: String,
     network_id: String,
     r#type: String,
@@ -304,67 +304,6 @@ mod tests {
 
     const ROPSTEN_NETWORK_ID: &str = "66d44f30-9092-4182-a3c4-bc02736d6ae5";
     
-    async unsafe fn init_baseline_user_and_token() -> AuthenticateResponse {
-        let ident: ApiClient = Ident::factory("");
-
-        let user_email = Some(FreeEmail().fake::<String>());
-        let user_password = Some(Password(8..15).fake::<String>());
-
-        let user_data = Some(json!({
-            "first_name": FirstName().fake::<String>(),
-            "last_name": LastName().fake::<String>(),
-            "email": &user_email,
-            "password": &user_password,
-        }));
-        let create_user_res = ident.create_user(user_data).await.expect("create user response");
-        assert_eq!(create_user_res.status(), 201);
-
-        let params = Some(json!({
-            "email": &user_email,
-            "password": &user_password,
-            "scope": "offline_access",
-        }));
-        let authenticate_res = ident.authenticate(params).await.expect("authenticate response");
-        assert_eq!(authenticate_res.status(), 201);
-
-        return authenticate_res.json::<AuthenticateResponse>().await.expect("authentication response body");
-    }
-
-    async fn authenticate_workgroup() -> Token {
-        let mut ident: ApiClient = Ident::factory("");
-
-        let email = "baselineuser@example.come";
-        let password = "baselinepassword123";
-
-        let credentials = json!({
-            "email": email,
-            "password": password,
-            "scope": "offline_access",
-        });
-
-        let authenticate_res = ident.authenticate(Some(credentials)).await.expect("");
-        assert_eq!(authenticate_res.status(), 201);
-
-        let authenticate_user_body = authenticate_res.json::<AuthenticateResponse>().await.expect("authenticate baseline user resposne body");
-
-        ident.token = match authenticate_user_body.token.access_token {
-            Some(string) => string,
-            None => panic!("authenticate user access token not found"),
-        };
-
-        let get_organizations_res = ident.list_organizations().await.expect("get organizations response");
-        let get_organizations_body = get_organizations_res.json::<Vec<Organization>>().await.expect("get organizations body");
-
-        let authenticate_org_params = json!({
-            "organization_id": &get_organizations_body[0].id,
-            "scope": "offline_access",
-        });
-        let organization_authorization_res = ident.organization_authorization(Some(authenticate_org_params)).await.expect("organization authorization response");
-        assert_eq!(organization_authorization_res.status(), 201);
-
-        return organization_authorization_res.json::<Token>().await.expect("organization authorization response")
-    }
-
     async fn generate_application(ident: &ApiClient, user_id: &str) -> Application {
         let application_data = json!({
             "network_id": ROPSTEN_NETWORK_ID,
@@ -395,23 +334,6 @@ mod tests {
         assert_eq!(create_organization_res.status(), 201);
 
         return create_organization_res.json::<Organization>().await.expect("generate organization body")
-    }
-
-    async fn generate_subject(baseline: &ApiClient) -> Subject {
-        // FIXME: need to make generate wallet helper
-        let create_subject_params = Some(json!({
-            "wallet_id": "99c404e9-fe10-4ca7-b787-d5943d03591c",
-            "credentials": [],
-            "description": "Organization for testing",
-            "metadata": {},
-            "name": format!("{} subject", Name().fake::<String>()),
-            "type": "Organization"
-        }));
-
-        let create_subject_res = baseline.create_subject(create_subject_params).await.expect("create subject response");
-        assert_eq!(create_subject_res.status(), 201);
-
-        return create_subject_res.json::<Subject>().await.expect("generate subject response");
     }
 
     #[tokio::test]
@@ -1001,8 +923,9 @@ mod tests {
     //     let baseline: ApiClient = Baseline::factory(&org_access_token);
 
     //     let create_workflow_params = json!({
-    //         "name": "Procure to Pay",
-    //         "type": "general_consistency",
+    //        "participants": [],
+    //        "version": "",
+    //        "worksteps": [],
     //     });
 
     //     let create_workflow_res = baseline.create_workflow(Some(create_workflow_params)).await.expect("create workflow response");
@@ -1010,6 +933,40 @@ mod tests {
     //     println!("create workflow res msg {:?}", create_workflow_res.json::<Value>().await.unwrap());
     //     // assert_eq!(create_workflow_res.status(), 201);
     //     assert!(false)
+    // }
+
+    // #[tokio::test]
+    // async fn create_workflow_instance() {
+    //     let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
+    //     let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
+        
+    //     let org_access_token_json = config_vals["org_access_token"].to_string();
+    //     let org_access_token = serde_json::from_str::<String>(&org_access_token_json).expect("organzation access token");
+
+    //     let baseline: ApiClient = Baseline::factory(&org_access_token);
+
+    //     let create_workflow_params = json!({
+    //        "participants": [],
+    //        "version": "",
+    //        "worksteps": [],
+    //     });
+
+    //     let create_workflow_res = baseline.create_workflow(Some(create_workflow_params)).await.expect("create workflow response");
+    //     assert_eq!(create_workflow_res.status(), 201);
+
+    //     // let create_workflow_body = create_workflow_res.json::<Value>().await.expect("create workflow body");
+
+    //     let create_workflow_instance_params = json!({
+    //         "participants": [],
+    //         "version": "",
+    //         "worksteps": [],
+    //         "workflow_id": "",
+    //         "shield": "",
+    //         "status": "",
+    //     });
+
+    //     let create_workflow_instance_res = baseline.create_workflow(Some(create_workflow_instance_params)).await.expect("create workflow instance response");
+    //     assert_eq!(create_workflow_instance_res.status(), 201);
     // }
 
     // #[tokio::test]
@@ -1315,12 +1272,6 @@ mod tests {
     //     assert_eq!(update_object_res.status(), 201);
     // }
 
-    // #[tokio::test]
-    // async fn get_state() {}
-
-    // #[tokio::test]
-    // async fn get_state_objects() {}
-
     #[tokio::test]
     async fn get_workgroup_mappings() {
         let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
@@ -1368,10 +1319,7 @@ mod tests {
         });
 
         let create_workgroup_mappings_res = baseline.create_workgroup_mappings(&app_id, Some(create_mappings_params)).await.expect("create workgroup mappings response");
-        println!("{:?}", create_workgroup_mappings_res.json::<Value>().await.unwrap());
-        
-        // assert_eq!(create_workgroup_mappings_res.status(), 201);
-        assert_eq!(400, 201);
+        assert_eq!(create_workgroup_mappings_res.status(), 201);
     }
 
     #[tokio::test]
@@ -1407,12 +1355,128 @@ mod tests {
         assert_eq!(create_workgroup_mappings_res.status(), 201);
 
         let update_mappings_params = json!({
-            "description": "Some updated description",
+            "models": [
+                {
+                    "type": "PurchaseOrder",
+                    "fields": [
+                        {
+                            "name": "id",
+                            "is_primary_key": true,
+                        },
+                    ],
+                    "primary_key": "id",
+                },
+            ],
         });
 
         let update_workgroup_mappings_res = baseline.update_workgroup_mappings(&app_id, Some(update_mappings_params)).await.expect("update workgroup mappings response");
-        assert_eq!(update_workgroup_mappings_res.status(), 404); // FIXME: not supposed to return 404
+        assert_eq!(update_workgroup_mappings_res.status(), 204); // FIXME: not supposed to return 404
     }
+
+    // #[tokio::test]
+    // async fn get_workflow_worksteps() {
+        // let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
+        // let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
+        
+        // let org_access_token_json = config_vals["org_access_token"].to_string();
+        // let org_access_token = serde_json::from_str::<String>(&org_access_token_json).expect("organzation access token");
+
+        // let baseline: ApiClient = Baseline::factory(&org_access_token);
+
+        // let create_workflow_params = json!({
+        //    "participants": [],
+        //    "version": "",
+        //    "worksteps": [],
+        // });
+
+        // let create_workflow_res = baseline.create_workflow(Some(create_workflow_params)).await.expect("create workflow response");
+        // assert_eq!(create_workflow_res.status(), 201);
+
+        // // let create_workflow_body = create_workflow_res.json::<Value>().await.expect("create workflow body");
+
+    //     let get_workflow_worksteps_res = baseline.get_workflow_worksteps("").await.expect("get workflow worksteps response");
+    //     assert_eq!(get_workflow_worksteps_res.status(), 200);
+    // }
+
+    // #[tokio::test]
+    // async fn create_workflow_workstep() {
+    //     let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
+    //     let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
+        
+    //     let org_access_token_json = config_vals["org_access_token"].to_string();
+    //     let org_access_token = serde_json::from_str::<String>(&org_access_token_json).expect("organzation access token");
+
+    //     let baseline: ApiClient = Baseline::factory(&org_access_token);
+
+    //     let create_workflow_params = json!({
+    //        "participants": [],
+    //        "version": "",
+    //        "worksteps": [],
+    //     });
+
+    //     let create_workflow_res = baseline.create_workflow(Some(create_workflow_params)).await.expect("create workflow response");
+    //     assert_eq!(create_workflow_res.status(), 201);
+
+    //     // let create_workflow_body = create_workflow_res.json::<Value>().await.expect("create workflow body");
+
+    //     let create_workflow_workstep_params = json!({
+    //         "circuit": "",
+    //         "circuit_id": "",
+    //         "participants": [],
+    //         "require_finality": false,
+    //         "workflow_id": "",
+    //     });
+
+    //     let create_workflow_workstep_res = baseline.create_workflow_workstep("", Some(create_workflow_workstep_params)).await.expect("create workflow workstep response");
+    //     assert_eq!(create_workflow_workstep_res.status(), 201);
+    // }
+
+    // #[tokio::test]
+    // async fn create_workflow_workstep_instance() {
+    //     let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
+    //     let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
+        
+    //     let org_access_token_json = config_vals["org_access_token"].to_string();
+    //     let org_access_token = serde_json::from_str::<String>(&org_access_token_json).expect("organzation access token");
+
+    //     let baseline: ApiClient = Baseline::factory(&org_access_token);
+
+    //     let create_workflow_params = json!({
+    //        "participants": [],
+    //        "version": "",
+    //        "worksteps": [],
+    //     });
+
+    //     let create_workflow_res = baseline.create_workflow(Some(create_workflow_params)).await.expect("create workflow response");
+    //     assert_eq!(create_workflow_res.status(), 201);
+
+    //     // let create_workflow_body = create_workflow_res.json::<Value>().await.expect("create workflow body");
+
+    //     let create_workflow_workstep_params = json!({
+    //         "circuit": "",
+    //         "circuit_id": "",
+    //         "participants": [],
+    //         "require_finality": false,
+    //         "workflow_id": "",
+    //     });
+
+    //     let create_workstep_res = baseline.create_workflow_workstep("", Some(create_workflow_workstep_params)).await.expect("create workflow workstep response");
+    //     assert_eq!(create_workstep_res.status(), 201);
+
+    //     // let create_workflow_workstep_body = create_workflow_res.json::<Value>().await.expect("create workflow workstep body");
+
+    //     let create_workflow_workstep_instance_params = json!({
+    //         "circuit": "",
+    //         "circuit_id": "",
+    //         "participants": [],
+    //         "require_finality": false,
+    //         "workflow_id": "",
+    //         "workstep_id": "",
+    //     });
+
+    //     let create_workflow_workstep_instance_res = baseline.create_workflow_workstep("", Some(create_workflow_workstep_instance_params)).await.expect("create workflow workstep instance params");
+    //     assert_eq!(create_workflow_workstep_instance_res.status(), 201);
+    // }
 }
 
 // create workgroup helper
