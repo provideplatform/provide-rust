@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use http::HeaderValue;
 
-use crate::client::{ApiClient, AdditionalHeader, Response, Params};
+use crate::api::client::{AdditionalHeader, ApiClient, Params, Response};
 pub use crate::models::ident::*;
 
 const DEFAULT_SCHEME: &str = "https";
@@ -11,7 +11,7 @@ const DEFAULT_PATH: &str = "api/v1";
 #[async_trait]
 pub trait Ident {
     fn factory(token: &str) -> Self;
-    
+
     async fn create_user(&self, params: Params) -> Response;
 
     async fn get_user(&self, user_id: &str, name: &str, params: Params) -> Response;
@@ -21,13 +21,13 @@ pub trait Ident {
     async fn update_user(&self, user_id: &str, name: &str, params: Params) -> Response;
 
     async fn delete_user(&self, user_id: &str) -> Response;
-    
+
     async fn authenticate(&self, params: Params) -> Response;
 
     async fn application_authorization(&self, params: Params) -> Response;
 
     async fn organization_authorization(&self, params: Params) -> Response;
-    
+
     async fn list_tokens(&self, params: Params) -> Response;
 
     async fn revoke_token(&self, token_id: &str) -> Response;
@@ -35,26 +35,30 @@ pub trait Ident {
     async fn create_organization(&self, params: Params) -> Response;
 
     async fn get_organization(&self, organization_id: &str) -> Response;
-    
+
     async fn list_organizations(&self) -> Response;
 
     async fn update_organization(&self, organization_id: &str, params: Params) -> Response;
 
     async fn create_application(&self, params: Params) -> Response;
-    
+
     async fn get_application(&self, application_id: &str) -> Response;
-    
+
     async fn list_applications(&self) -> Response;
 
     async fn update_application(&self, application_id: &str, params: Params) -> Response;
 
-    async fn delete_application(&self, application_id: &str)  -> Response;
-    
-    async fn list_application_users(&self, application_id: &str)  -> Response;
+    async fn delete_application(&self, application_id: &str) -> Response;
+
+    async fn list_application_users(&self, application_id: &str) -> Response;
 
     async fn associate_application_user(&self, application_id: &str, params: Params) -> Response;
 
-    async fn associate_application_organization(&self, application_id: &str, params: Params) -> Response;
+    async fn associate_application_organization(
+        &self,
+        application_id: &str,
+        params: Params,
+    ) -> Response;
 }
 
 #[async_trait]
@@ -68,124 +72,125 @@ impl Ident for ApiClient {
     }
 
     async fn create_user(&self, params: Params) -> Response {
-        return self.post("users", params, None).await
+        return self.post("users", params, None).await;
     }
 
     async fn authenticate(&self, params: Params) -> Response {
-        return self.post("authenticate", params, None).await
+        return self.post("authenticate", params, None).await;
     }
 
     async fn get_user(&self, user_id: &str, name: &str, params: Params) -> Response {
         let uri = format!("users/{}", user_id);
         let name_header = AdditionalHeader {
             key: "name",
-            value: HeaderValue::from_str(name).expect("get user name")
+            value: HeaderValue::from_str(name).expect("get user name"),
         };
-        return self.get(&uri, params, Some(vec!(name_header))).await
+        return self.get(&uri, params, Some(vec![name_header])).await;
     }
 
     async fn get_users(&self) -> Response {
-        return self.get("users", None, None).await
+        return self.get("users", None, None).await;
     }
 
     async fn update_user(&self, user_id: &str, name: &str, params: Params) -> Response {
         let uri = format!("users/{}", user_id);
         let name_header = AdditionalHeader {
             key: "name",
-            value: HeaderValue::from_str(name).expect("get user name")
+            value: HeaderValue::from_str(name).expect("get user name"),
         };
-        return self.put(&uri, params, Some(vec!(name_header))).await
+        return self.put(&uri, params, Some(vec![name_header])).await;
     }
 
     async fn delete_user(&self, user_id: &str) -> Response {
         let uri = format!("users/{}", user_id);
-        return self.delete(&uri, None, None).await
+        return self.delete(&uri, None, None).await;
     }
 
     async fn create_organization(&self, params: Params) -> Response {
-        return self.post("organizations", params, None).await
+        return self.post("organizations", params, None).await;
     }
 
     async fn list_organizations(&self) -> Response {
-        return self.get("organizations", None, None).await
+        return self.get("organizations", None, None).await;
     }
 
     async fn get_organization(&self, organization_id: &str) -> Response {
         let uri = format!("organizations/{}", organization_id);
-        return self.get(&uri, None, None).await
+        return self.get(&uri, None, None).await;
     }
 
     async fn update_organization(&self, organization_id: &str, params: Params) -> Response {
         let uri = format!("organizations/{}", organization_id);
-        return self.put(&uri, params, None).await
+        return self.put(&uri, params, None).await;
     }
 
     async fn application_authorization(&self, params: Params) -> Response {
-        return self.post("tokens", params, None).await
+        return self.post("tokens", params, None).await;
     }
 
     async fn organization_authorization(&self, params: Params) -> Response {
-        return self.post("tokens", params, None).await
+        return self.post("tokens", params, None).await;
     }
 
     async fn list_tokens(&self, params: Params) -> Response {
-        return self.get("tokens", params, None).await
+        return self.get("tokens", params, None).await;
     }
 
     async fn list_applications(&self) -> Response {
-        return self.get("applications", None, None).await
+        return self.get("applications", None, None).await;
     }
 
     async fn create_application(&self, params: Params) -> Response {
-        return self.post("applications", params, None).await
+        return self.post("applications", params, None).await;
     }
 
     async fn get_application(&self, application_id: &str) -> Response {
         let uri = format!("applications/{}", application_id);
-        return self.get(&uri, None, None).await
+        return self.get(&uri, None, None).await;
     }
 
     async fn update_application(&self, application_id: &str, params: Params) -> Response {
         let uri = format!("applications/{}", application_id);
-        return self.put(&uri, params, None).await
+        return self.put(&uri, params, None).await;
     }
 
-    async fn list_application_users(&self, application_id: &str)  -> Response {
+    async fn list_application_users(&self, application_id: &str) -> Response {
         let uri = format!("applications/{}/users", application_id);
-        return self.get(&uri, None, None).await
+        return self.get(&uri, None, None).await;
     }
 
     async fn delete_application(&self, application_id: &str) -> Response {
         let uri = format!("applications/{}", application_id);
-        return self.delete(&uri, None, None).await
+        return self.delete(&uri, None, None).await;
     }
 
     async fn associate_application_user(&self, application_id: &str, params: Params) -> Response {
         let uri = format!("applications/{}/users", application_id);
-        return self.post(&uri, params, None).await
+        return self.post(&uri, params, None).await;
     }
 
     async fn revoke_token(&self, token_id: &str) -> Response {
         let uri = format!("tokens/{}", token_id);
-        return self.delete(&uri, None, None).await
+        return self.delete(&uri, None, None).await;
     }
 
-    async fn associate_application_organization(&self, application_id: &str, params: Params) -> Response {
+    async fn associate_application_organization(
+        &self,
+        application_id: &str,
+        params: Params,
+    ) -> Response {
         let uri = format!("applications/{}/organizations", application_id);
-        return self.post(&uri, params, None).await
+        return self.post(&uri, params, None).await;
     }
 }
-
-
-
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use fake::faker::name::en::{Name, FirstName, LastName};
     use fake::faker::internet::en::{FreeEmail, Password};
-    use fake::{Fake};
-    use serde_json::{json};
+    use fake::faker::name::en::{FirstName, LastName, Name};
+    use fake::Fake;
+    use serde_json::json;
 
     const ROPSTEN_NETWORK_ID: &str = "66d44f30-9092-4182-a3c4-bc02736d6ae5";
 
@@ -201,7 +206,10 @@ mod tests {
             "email": &email,
             "password": &password,
         });
-        let create_user_res = ident.create_user(Some(user_data)).await.expect("create user response");
+        let create_user_res = ident
+            .create_user(Some(user_data))
+            .await
+            .expect("create user response");
         assert_eq!(create_user_res.status(), 201);
 
         let params = json!({
@@ -209,10 +217,16 @@ mod tests {
             "password": &password,
             "scope": "offline_access",
         });
-        let authenticate_res = ident.authenticate(Some(params)).await.expect("authenticate response");
+        let authenticate_res = ident
+            .authenticate(Some(params))
+            .await
+            .expect("authenticate response");
         assert_eq!(authenticate_res.status(), 201);
 
-        return authenticate_res.json::<AuthenticateResponse>().await.expect("authentication response body");
+        return authenticate_res
+            .json::<AuthenticateResponse>()
+            .await
+            .expect("authentication response body");
     }
 
     async fn generate_new_application(ident: &ApiClient, user_id: &str) -> Application {
@@ -225,10 +239,16 @@ mod tests {
             "hidden": false
         });
 
-        let create_application_res = ident.create_application(Some(application_data)).await.expect("generate application response");
+        let create_application_res = ident
+            .create_application(Some(application_data))
+            .await
+            .expect("generate application response");
         assert_eq!(create_application_res.status(), 201);
 
-        return create_application_res.json::<Application>().await.expect("create application body")
+        return create_application_res
+            .json::<Application>()
+            .await
+            .expect("create application body");
     }
 
     async fn generate_organization(ident: &ApiClient, user_id: &str) -> Organization {
@@ -241,10 +261,16 @@ mod tests {
                 "arbitrary": "input"
             },
         }));
-        let create_organization_res = ident.create_organization(create_organization_params).await.expect("create organization response");
+        let create_organization_res = ident
+            .create_organization(create_organization_params)
+            .await
+            .expect("create organization response");
         assert_eq!(create_organization_res.status(), 201);
 
-        return create_organization_res.json::<Organization>().await.expect("generate organization body")
+        return create_organization_res
+            .json::<Organization>()
+            .await
+            .expect("generate organization body");
     }
 
     #[tokio::test]
@@ -262,7 +288,14 @@ mod tests {
 
         let ident: ApiClient = Ident::factory(&access_token);
 
-        let get_user_res = ident.get_user(&authentication_res_body.user.id, &authentication_res_body.user.name, None).await.expect("get user response");
+        let get_user_res = ident
+            .get_user(
+                &authentication_res_body.user.id,
+                &authentication_res_body.user.name,
+                None,
+            )
+            .await
+            .expect("get user response");
         assert_eq!(get_user_res.status(), 200);
     }
 
@@ -293,7 +326,14 @@ mod tests {
         let update_params = json!({
             "name": Name().fake::<String>(),
         });
-        let update_user_res = ident.update_user(&authentication_res_body.user.id, &authentication_res_body.user.name, Some(update_params)).await.expect("update user response");
+        let update_user_res = ident
+            .update_user(
+                &authentication_res_body.user.id,
+                &authentication_res_body.user.name,
+                Some(update_params),
+            )
+            .await
+            .expect("update user response");
         assert_eq!(update_user_res.status(), 204);
     }
 
@@ -307,7 +347,10 @@ mod tests {
 
         let ident: ApiClient = Ident::factory(&access_token);
 
-        let delete_user_res = ident.delete_user(&authentication_res_body.user.id).await.expect("delete user response");
+        let delete_user_res = ident
+            .delete_user(&authentication_res_body.user.id)
+            .await
+            .expect("delete user response");
         assert_eq!(delete_user_res.status(), 403);
     }
 
@@ -334,7 +377,10 @@ mod tests {
 
         let ident: ApiClient = Ident::factory(&access_token);
 
-        let list_organizations_res = ident.list_organizations().await.expect("list organizations response");
+        let list_organizations_res = ident
+            .list_organizations()
+            .await
+            .expect("list organizations response");
         assert_eq!(list_organizations_res.status(), 200);
     }
 
@@ -348,9 +394,13 @@ mod tests {
 
         let ident: ApiClient = Ident::factory(&access_token);
 
-        let create_organization_body = generate_organization(&ident, &authentication_res_body.user.id).await;
+        let create_organization_body =
+            generate_organization(&ident, &authentication_res_body.user.id).await;
 
-        let get_organization_res = ident.get_organization(&create_organization_body.id).await.expect("get organization response");
+        let get_organization_res = ident
+            .get_organization(&create_organization_body.id)
+            .await
+            .expect("get organization response");
         assert_eq!(get_organization_res.status(), 200);
     }
 
@@ -364,14 +414,21 @@ mod tests {
 
         let ident: ApiClient = Ident::factory(&access_token);
 
-        let create_organization_body = generate_organization(&ident, &authentication_res_body.user.id).await;
+        let create_organization_body =
+            generate_organization(&ident, &authentication_res_body.user.id).await;
 
         let update_organization_params = json!({
             "name": "ACME Inc.",
             "description": "Updated description",
             "user_id": &authentication_res_body.user.id,
         });
-        let update_organization_res = ident.update_organization(&create_organization_body.id, Some(update_organization_params)).await.expect("update organization response");
+        let update_organization_res = ident
+            .update_organization(
+                &create_organization_body.id,
+                Some(update_organization_params),
+            )
+            .await
+            .expect("update organization response");
         assert_eq!(update_organization_res.status(), 204);
     }
 
@@ -385,13 +442,17 @@ mod tests {
 
         let ident: ApiClient = Ident::factory(&access_token);
 
-        let create_organization_body = generate_organization(&ident, &authentication_res_body.user.id).await;
+        let create_organization_body =
+            generate_organization(&ident, &authentication_res_body.user.id).await;
 
         let organization_authorization_params = json!({
             "organization_id": create_organization_body.id,
             "scope": "offline_access"
         });
-        let organization_authorization_res = ident.organization_authorization(Some(organization_authorization_params)).await.expect("organization authorization response");
+        let organization_authorization_res = ident
+            .organization_authorization(Some(organization_authorization_params))
+            .await
+            .expect("organization authorization response");
         assert_eq!(organization_authorization_res.status(), 201)
     }
 
@@ -415,24 +476,39 @@ mod tests {
                 "arbitrary": "input"
             }
         });
-        let create_organization_res = ident.create_organization(Some(create_organization_params)).await.expect("create organization response");
+        let create_organization_res = ident
+            .create_organization(Some(create_organization_params))
+            .await
+            .expect("create organization response");
         assert_eq!(create_organization_res.status(), 201);
-        
-        let create_organization_body = create_organization_res.json::<Organization>().await.expect("create organization body");
+
+        let create_organization_body = create_organization_res
+            .json::<Organization>()
+            .await
+            .expect("create organization body");
 
         let organization_authorization_params = json!({
             "organization_id": create_organization_body.id,
             "scope": "offline_access"
         });
-        let organization_authorization_res = ident.organization_authorization(Some(organization_authorization_params)).await.expect("organization authorization response");
+        let organization_authorization_res = ident
+            .organization_authorization(Some(organization_authorization_params))
+            .await
+            .expect("organization authorization response");
         assert_eq!(organization_authorization_res.status(), 201);
 
-        let organization_authorization_body = organization_authorization_res.json::<Token>().await.expect("organization authorization body");
+        let organization_authorization_body = organization_authorization_res
+            .json::<Token>()
+            .await
+            .expect("organization authorization body");
 
         let list_tokens_params = json!({
             "refresh_token": organization_authorization_body.refresh_token
         });
-        let list_tokens_res = ident.list_tokens(Some(list_tokens_params)).await.expect("list tokens res");
+        let list_tokens_res = ident
+            .list_tokens(Some(list_tokens_params))
+            .await
+            .expect("list tokens res");
         assert_eq!(list_tokens_res.status(), 200);
     }
 
@@ -446,7 +522,10 @@ mod tests {
 
         let ident: ApiClient = Ident::factory(&access_token);
 
-        let list_applications_res = ident.list_applications().await.expect("list applications response");
+        let list_applications_res = ident
+            .list_applications()
+            .await
+            .expect("list applications response");
         assert_eq!(list_applications_res.status(), 200);
     }
 
@@ -473,9 +552,13 @@ mod tests {
 
         let ident: ApiClient = Ident::factory(&access_token);
 
-        let create_application_body = generate_new_application(&ident, &authentication_res_body.user.id).await;
+        let create_application_body =
+            generate_new_application(&ident, &authentication_res_body.user.id).await;
 
-        let get_application_res = ident.get_application(&create_application_body.id).await.expect("get application response");
+        let get_application_res = ident
+            .get_application(&create_application_body.id)
+            .await
+            .expect("get application response");
         assert_eq!(get_application_res.status(), 200);
     }
 
@@ -489,12 +572,16 @@ mod tests {
 
         let ident: ApiClient = Ident::factory(&access_token);
 
-        let create_application_body = generate_new_application(&ident, &authentication_res_body.user.id).await;
+        let create_application_body =
+            generate_new_application(&ident, &authentication_res_body.user.id).await;
 
         let update_application_params = json!({
             "description": "An updated description"
         });
-        let update_application_res = ident.update_application(&create_application_body.id, Some(update_application_params)).await.expect("update application response");
+        let update_application_res = ident
+            .update_application(&create_application_body.id, Some(update_application_params))
+            .await
+            .expect("update application response");
         assert_eq!(update_application_res.status(), 204);
     }
 
@@ -508,9 +595,13 @@ mod tests {
 
         let ident: ApiClient = Ident::factory(&access_token);
 
-        let create_application_body = generate_new_application(&ident, &authentication_res_body.user.id).await;
+        let create_application_body =
+            generate_new_application(&ident, &authentication_res_body.user.id).await;
 
-        let delete_application_res = ident.delete_application(&create_application_body.id).await.expect("delete application response");
+        let delete_application_res = ident
+            .delete_application(&create_application_body.id)
+            .await
+            .expect("delete application response");
         assert_eq!(delete_application_res.status(), 501);
     }
 
@@ -524,9 +615,13 @@ mod tests {
 
         let ident: ApiClient = Ident::factory(&access_token);
 
-        let create_application_body = generate_new_application(&ident, &authentication_res_body.user.id).await;
+        let create_application_body =
+            generate_new_application(&ident, &authentication_res_body.user.id).await;
 
-        let list_application_users_res = ident.list_application_users(&create_application_body.id).await.expect("list application users res");
+        let list_application_users_res = ident
+            .list_application_users(&create_application_body.id)
+            .await
+            .expect("list application users res");
         assert_eq!(list_application_users_res.status(), 200);
     }
 
@@ -540,16 +635,23 @@ mod tests {
 
         let mut ident: ApiClient = Ident::factory(&access_token);
 
-        let create_application_body = generate_new_application(&ident, &authentication_res_body.user.id).await;
-        
+        let create_application_body =
+            generate_new_application(&ident, &authentication_res_body.user.id).await;
+
         let application_authorization_params = json!({
             "application_id": create_application_body.id,
             "scope": "offline_access"
         });
-        let application_authorization_res = ident.application_authorization(Some(application_authorization_params)).await.expect("application authorization response");
+        let application_authorization_res = ident
+            .application_authorization(Some(application_authorization_params))
+            .await
+            .expect("application authorization response");
         assert_eq!(application_authorization_res.status(), 201);
 
-        let application_authorization_body = application_authorization_res.json::<Token>().await.expect("organization authorization body");
+        let application_authorization_body = application_authorization_res
+            .json::<Token>()
+            .await
+            .expect("organization authorization body");
         let app_access_token = match application_authorization_body.access_token {
             Some(string) => string,
             None => panic!("application authentication response access token not found"),
@@ -562,15 +664,27 @@ mod tests {
             "email": FreeEmail().fake::<String>(),
             "password": Password(std::ops::Range { start: 8, end: 15 }).fake::<String>(),
         });
-        let create_another_user_res = ident.create_user(Some(another_user_params)).await.expect("create another user response");
+        let create_another_user_res = ident
+            .create_user(Some(another_user_params))
+            .await
+            .expect("create another user response");
         assert_eq!(create_another_user_res.status(), 201);
 
-        let another_user_body = create_another_user_res.json::<User>().await.expect("another user body");
+        let another_user_body = create_another_user_res
+            .json::<User>()
+            .await
+            .expect("another user body");
         let associate_application_user_params = json!({
             "user_id": another_user_body.id
         });
 
-        let associate_application_user_res = ident.associate_application_user(&create_application_body.id, Some(associate_application_user_params)).await.expect("associate application user response");
+        let associate_application_user_res = ident
+            .associate_application_user(
+                &create_application_body.id,
+                Some(associate_application_user_params),
+            )
+            .await
+            .expect("associate application user response");
         assert_eq!(associate_application_user_res.status(), 204);
     }
 
@@ -584,13 +698,17 @@ mod tests {
 
         let ident: ApiClient = Ident::factory(&access_token);
 
-        let create_application_body = generate_new_application(&ident, &authentication_res_body.user.id).await;
+        let create_application_body =
+            generate_new_application(&ident, &authentication_res_body.user.id).await;
 
         let application_authorization_params = json!({
             "application_id": create_application_body.id,
             "scope": "offline_access"
         });
-        let application_authorization_res = ident.application_authorization(Some(application_authorization_params)).await.expect("application authorization response");
+        let application_authorization_res = ident
+            .application_authorization(Some(application_authorization_params))
+            .await
+            .expect("application authorization response");
         assert_eq!(application_authorization_res.status(), 201);
     }
 
@@ -604,17 +722,27 @@ mod tests {
 
         let ident: ApiClient = Ident::factory(&access_token);
 
-        let create_application_body = generate_new_application(&ident, &authentication_res_body.user.id).await;
+        let create_application_body =
+            generate_new_application(&ident, &authentication_res_body.user.id).await;
 
         let application_authorization_params = json!({
             "application_id": create_application_body.id
         });
-        let application_authorization_res = ident.application_authorization(Some(application_authorization_params)).await.expect("application authorization response");
+        let application_authorization_res = ident
+            .application_authorization(Some(application_authorization_params))
+            .await
+            .expect("application authorization response");
         assert_eq!(application_authorization_res.status(), 201);
 
-        let application_authorization_body = application_authorization_res.json::<Token>().await.expect("application authorization body");
+        let application_authorization_body = application_authorization_res
+            .json::<Token>()
+            .await
+            .expect("application authorization body");
 
-        let revoke_token_res = ident.revoke_token(&application_authorization_body.id).await.expect("revoke token response");
+        let revoke_token_res = ident
+            .revoke_token(&application_authorization_body.id)
+            .await
+            .expect("revoke token response");
         assert_eq!(revoke_token_res.status(), 204);
     }
 
@@ -628,29 +756,43 @@ mod tests {
 
         let mut ident: ApiClient = Ident::factory(&access_token);
 
-        let create_application_body = generate_new_application(&ident, &authentication_res_body.user.id).await;
-        
+        let create_application_body =
+            generate_new_application(&ident, &authentication_res_body.user.id).await;
+
         let application_authorization_params = json!({
             "application_id": create_application_body.id,
             "scope": "offline_access"
         });
-        let application_authorization_res = ident.application_authorization(Some(application_authorization_params)).await.expect("application authorization response");
+        let application_authorization_res = ident
+            .application_authorization(Some(application_authorization_params))
+            .await
+            .expect("application authorization response");
         assert_eq!(application_authorization_res.status(), 201);
 
-        let application_authorization_body = application_authorization_res.json::<Token>().await.expect("organization authorization body");
+        let application_authorization_body = application_authorization_res
+            .json::<Token>()
+            .await
+            .expect("organization authorization body");
         let app_access_token = match application_authorization_body.access_token {
             Some(string) => string,
             None => panic!("application authentication response access token not found"),
         };
         ident.set_bearer_token(&app_access_token);
 
-        let create_organization_body = generate_organization(&ident, &authentication_res_body.user.id).await;
+        let create_organization_body =
+            generate_organization(&ident, &authentication_res_body.user.id).await;
 
         let associate_application_org_params = json!({
             "organization_id": &create_organization_body.id,
         });
 
-        let associate_application_org_res = ident.associate_application_organization(&create_application_body.id, Some(associate_application_org_params)).await.expect("associate application user response");
+        let associate_application_org_res = ident
+            .associate_application_organization(
+                &create_application_body.id,
+                Some(associate_application_org_params),
+            )
+            .await
+            .expect("associate application user response");
         assert_eq!(associate_application_org_res.status(), 204);
     }
 }

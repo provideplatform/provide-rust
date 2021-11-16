@@ -1,6 +1,6 @@
-use serde_json::Value;
-use reqwest;
 use http;
+use reqwest;
+use serde_json::Value;
 
 // TODO: make properties private?
 #[derive(Debug)]
@@ -16,5 +16,5 @@ pub type Params = Option<Value>;
 #[derive(Debug)]
 pub struct AdditionalHeader {
     pub key: &'static str,
-    pub value: http::HeaderValue
+    pub value: http::HeaderValue,
 }

@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 
-use crate::client::{ApiClient, Response, Params};
+use crate::api::client::{ApiClient, Params, Response};
 pub use crate::models::baseline::*;
 
 const DEFAULT_SCHEME: &str = "https";
@@ -18,7 +18,7 @@ pub trait Baseline {
     async fn get_bpi_accounts(&self) -> Response;
 
     async fn get_bpi_account(&self, account_id: &str) -> Response;
-    
+
     async fn create_bpi_account(&self, params: Params) -> Response;
 
     async fn create_message(&self, params: Params) -> Response;
@@ -26,7 +26,7 @@ pub trait Baseline {
     async fn get_subjects(&self) -> Response;
 
     async fn get_subject(&self, subject_id: &str) -> Response;
-    
+
     async fn create_subject(&self, params: Params) -> Response;
 
     async fn update_subject(&self, subject_id: &str, params: Params) -> Response;
@@ -34,15 +34,20 @@ pub trait Baseline {
     async fn get_subject_accounts(&self, subject_id: &str) -> Response;
 
     async fn get_subject_account(&self, subject_id: &str, account_id: &str) -> Response;
-    
+
     async fn create_subject_account(&self, subject_id: &str, params: Params) -> Response;
 
-    async fn update_subject_account(&self, subject_id: &str, account_id: &str, params: Params) -> Response;
+    async fn update_subject_account(
+        &self,
+        subject_id: &str,
+        account_id: &str,
+        params: Params,
+    ) -> Response;
 
     async fn create_object(&self, params: Params) -> Response;
 
     async fn update_object(&self, object_id: &str, params: Params) -> Response;
-    
+
     async fn update_config(&self, params: Params) -> Response;
 
     async fn create_business_object(&self, params: Params) -> Response;
@@ -52,21 +57,21 @@ pub trait Baseline {
     async fn get_workflows(&self) -> Response;
 
     async fn get_workflow(&self, workflow_id: &str) -> Response;
-    
+
     async fn create_workflow(&self, params: Params) -> Response;
 
     async fn get_workgroups(&self) -> Response;
 
     async fn get_workgroup(&self, workgroup_id: &str) -> Response;
-    
+
     async fn create_workgroup(&self, params: Params) -> Response;
-    
+
     async fn get_workgroup_mappings(&self, workgroup_id: &str) -> Response;
-    
+
     async fn create_workgroup_mappings(&self, workgroup_id: &str, params: Params) -> Response;
-    
+
     async fn update_workgroup_mappings(&self, workgroup_id: &str, params: Params) -> Response;
-    
+
     async fn get_workflow_worksteps(&self, workflow_id: &str) -> Response;
 
     async fn get_workflow_workstep(&self, workflow_id: &str, workstep_id: &str) -> Response;
@@ -80,171 +85,173 @@ impl Baseline for ApiClient {
         let scheme = std::env::var("BASELINE_API_SCHEME").unwrap_or(String::from(DEFAULT_SCHEME));
         let host = std::env::var("BASELINE_API_HOST").unwrap_or(String::from(DEFAULT_HOST));
         let path = std::env::var("BASELINE_API_PATH").unwrap_or(String::from(DEFAULT_PATH));
-    
+
         return ApiClient::new(&scheme, &host, &path, token);
     }
 
     async fn issue_verifiable_credential(&self, params: Params) -> Response {
-        return self.post("credentials", params, None).await
+        return self.post("credentials", params, None).await;
     }
 
     async fn create_public_workgroup_invite(&self, params: Params) -> Response {
-        return self.post("pub/invite", params, None).await
+        return self.post("pub/invite", params, None).await;
     }
 
     async fn get_bpi_accounts(&self) -> Response {
-        return self.get("bpi_accounts", None, None).await
+        return self.get("bpi_accounts", None, None).await;
     }
 
     async fn get_bpi_account(&self, account_id: &str) -> Response {
         let uri = format!("bpi_accounts/{}", account_id);
-        return self.get(&uri, None, None).await
+        return self.get(&uri, None, None).await;
     }
-    
+
     async fn create_bpi_account(&self, params: Params) -> Response {
-        return self.post("bpi_accounts", params, None).await
+        return self.post("bpi_accounts", params, None).await;
     }
 
     async fn create_message(&self, params: Params) -> Response {
-        return self.post("protocol_messages", params, None).await
+        return self.post("protocol_messages", params, None).await;
     }
 
     async fn get_subjects(&self) -> Response {
-        return self.get("subjects", None, None).await
+        return self.get("subjects", None, None).await;
     }
 
     async fn get_subject(&self, subject_id: &str) -> Response {
         let uri = format!("subjects/{}", subject_id);
-        return self.get(&uri, None, None).await
+        return self.get(&uri, None, None).await;
     }
-    
+
     async fn create_subject(&self, params: Params) -> Response {
-        return self.post("subjects", params, None).await
+        return self.post("subjects", params, None).await;
     }
 
     async fn update_subject(&self, subject_id: &str, params: Params) -> Response {
         let uri = format!("subjects/{}", subject_id);
-        return self.put(&uri, params, None).await
+        return self.put(&uri, params, None).await;
     }
 
     async fn get_subject_accounts(&self, subject_id: &str) -> Response {
         let uri = format!("subjects/{}/accounts", subject_id);
-        return self.get(&uri, None, None).await
+        return self.get(&uri, None, None).await;
     }
 
     async fn get_subject_account(&self, subject_id: &str, account_id: &str) -> Response {
         let uri = format!("subjects/{}/accounts/{}", subject_id, account_id);
-        return self.get(&uri, None, None).await
-    }
-    
-    async fn create_subject_account(&self, subject_id: &str, params: Params) -> Response {
-        let uri = format!("subjects/{}/accounts", subject_id);
-        return self.post(&uri, params, None).await
+        return self.get(&uri, None, None).await;
     }
 
-    async fn update_subject_account(&self, subject_id: &str, account_id: &str, params: Params) -> Response {
+    async fn create_subject_account(&self, subject_id: &str, params: Params) -> Response {
+        let uri = format!("subjects/{}/accounts", subject_id);
+        return self.post(&uri, params, None).await;
+    }
+
+    async fn update_subject_account(
+        &self,
+        subject_id: &str,
+        account_id: &str,
+        params: Params,
+    ) -> Response {
         let uri = format!("subjects/{}/accounts/{}", subject_id, account_id);
-        return self.put(&uri, params, None).await
+        return self.put(&uri, params, None).await;
     }
 
     async fn create_object(&self, params: Params) -> Response {
-        return self.post("objects", params, None).await
+        return self.post("objects", params, None).await;
     }
 
     async fn update_object(&self, object_id: &str, params: Params) -> Response {
         let uri = format!("objects/{}", object_id);
-        return self.put(&uri, params, None).await
+        return self.put(&uri, params, None).await;
     }
 
     async fn update_config(&self, params: Params) -> Response {
-        return self.put("config", params, None).await
+        return self.put("config", params, None).await;
     }
 
     async fn create_business_object(&self, params: Params) -> Response {
-        return self.post("business_objects", params, None).await
+        return self.post("business_objects", params, None).await;
     }
 
     async fn update_business_object(&self, business_object_id: &str, params: Params) -> Response {
         let uri = format!("business_objects/{}", business_object_id);
-        return self.put(&uri, params, None).await
+        return self.put(&uri, params, None).await;
     }
-    
+
     async fn get_workflows(&self) -> Response {
-        return self.get("workflows", None, None).await
+        return self.get("workflows", None, None).await;
     }
 
     async fn get_workflow(&self, workflow_id: &str) -> Response {
         let uri = format!("workflows/{}", workflow_id);
-        return self.get(&uri, None, None).await
+        return self.get(&uri, None, None).await;
     }
-    
+
     async fn create_workflow(&self, params: Params) -> Response {
-        return self.post("workflows", params, None).await
+        return self.post("workflows", params, None).await;
     }
-    
+
     async fn get_workgroups(&self) -> Response {
-        return self.get("workgroups", None, None).await
+        return self.get("workgroups", None, None).await;
     }
 
     async fn create_workgroup(&self, params: Params) -> Response {
-        return self.post("workgroups", params, None).await
+        return self.post("workgroups", params, None).await;
     }
 
     async fn get_workgroup(&self, workgroup_id: &str) -> Response {
         let uri = format!("workgroups/{}", workgroup_id);
-        return self.get(&uri, None, None).await
+        return self.get(&uri, None, None).await;
     }
-    
+
     async fn get_workgroup_mappings(&self, workgroup_id: &str) -> Response {
         let uri = format!("workgroups/{}/mappings", workgroup_id);
-        return self.get(&uri, None, None).await
+        return self.get(&uri, None, None).await;
     }
-    
+
     async fn create_workgroup_mappings(&self, workgroup_id: &str, params: Params) -> Response {
         let uri = format!("workgroups/{}/mappings", workgroup_id);
-        return self.post(&uri, params, None).await
+        return self.post(&uri, params, None).await;
     }
-    
+
     async fn update_workgroup_mappings(&self, workgroup_id: &str, params: Params) -> Response {
         let uri = format!("workgroups/{}/mappings", workgroup_id);
-        return self.put(&uri, params, None).await
+        return self.put(&uri, params, None).await;
     }
-    
+
     async fn get_workflow_worksteps(&self, workflow_id: &str) -> Response {
         let uri = format!("workflows/{}/worksteps", workflow_id);
-        return self.get(&uri, None, None).await
+        return self.get(&uri, None, None).await;
     }
 
     async fn get_workflow_workstep(&self, workflow_id: &str, workstep_id: &str) -> Response {
         let uri = format!("workflows/{}/worksteps/{}", workflow_id, workstep_id);
-        return self.get(&uri, None, None).await
+        return self.get(&uri, None, None).await;
     }
 
     async fn create_workflow_workstep(&self, workflow_id: &str, params: Params) -> Response {
         let uri = format!("workflows/{}/worksteps", workflow_id,);
-        return self.post(&uri, params, None).await
+        return self.post(&uri, params, None).await;
     }
 }
-
-
-
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use fake::faker::name::en::{Name, FirstName, LastName};
+    use crate::api::ident::{Application, AuthenticateResponse, Ident, Organization, Token};
+    use crate::api::nchain::{Account, Contract, NChain};
+    use crate::api::vault::{Vault, VaultContainer, VaultKey};
     use fake::faker::internet::en::{FreeEmail, Password};
-    use fake::{Fake};
-    use crate::ident::{Ident, AuthenticateResponse, Application, Token, Organization};
-    use crate::nchain::{NChain, Account, Contract};
-    use crate::vault::{Vault, VaultContainer, VaultKey};
+    use fake::faker::name::en::{FirstName, LastName, Name};
+    use fake::Fake;
     use serde_json::{json, Value};
-    use tokio::time::{self, Duration};
-    use std::process::Command;
     use std::io::Write;
+    use std::process::Command;
+    use tokio::time::{self, Duration};
 
     const ROPSTEN_NETWORK_ID: &str = "66d44f30-9092-4182-a3c4-bc02736d6ae5";
-    
+
     async fn generate_application(ident: &ApiClient, user_id: &str) -> Application {
         let application_data = json!({
             "network_id": ROPSTEN_NETWORK_ID,
@@ -255,10 +262,16 @@ mod tests {
             "hidden": false
         });
 
-        let create_application_res = ident.create_application(Some(application_data)).await.expect("generate application response");
+        let create_application_res = ident
+            .create_application(Some(application_data))
+            .await
+            .expect("generate application response");
         assert_eq!(create_application_res.status(), 201);
 
-        return create_application_res.json::<Application>().await.expect("create application body")
+        return create_application_res
+            .json::<Application>()
+            .await
+            .expect("create application body");
     }
 
     async fn generate_baseline_organization(ident: &ApiClient, user_id: &str) -> Organization {
@@ -268,21 +281,32 @@ mod tests {
             "user_id": user_id,
             "metadata": {
                 "hello": "world",
-                "arbitrary": "input"
+                "arbitrary": "input",
             },
         }));
-        let create_organization_res = ident.create_organization(create_organization_params).await.expect("create organization response");
+        let create_organization_res = ident
+            .create_organization(create_organization_params)
+            .await
+            .expect("create organization response");
         assert_eq!(create_organization_res.status(), 201);
 
-        return create_organization_res.json::<Organization>().await.expect("generate organization body")
+        return create_organization_res
+            .json::<Organization>()
+            .await
+            .expect("generate organization body");
     }
 
     #[tokio::test]
     async fn _setup() {
         // check if prvd cli is installed
-        let prvd_cli_cmd = Command::new("sh").arg("-c").arg("prvd").output().expect("provide cli install check");
+        let prvd_cli_cmd = Command::new("sh")
+            .arg("-c")
+            .arg("prvd")
+            .output()
+            .expect("provide cli install check");
         if !prvd_cli_cmd.status.success() {
-            panic!("Provide cli not installed. Please install to run the baseline integration test SUITE") // link to cli?
+            panic!("Provide cli not installed. Please install to run the baseline integration test SUITE")
+            // link to cli?
         }
 
         // create user
@@ -295,7 +319,10 @@ mod tests {
             "email": &user_email,
             "password": &user_password,
         }));
-        let create_user_res = ident.create_user(user_data).await.expect("create user response");
+        let create_user_res = ident
+            .create_user(user_data)
+            .await
+            .expect("create user response");
         assert_eq!(create_user_res.status(), 201);
 
         // authenticate user
@@ -304,9 +331,15 @@ mod tests {
             "password": &user_password,
             "scope": "offline_access",
         }));
-        let authenticate_res = ident.authenticate(params).await.expect("authenticate response");
+        let authenticate_res = ident
+            .authenticate(params)
+            .await
+            .expect("authenticate response");
         assert_eq!(authenticate_res.status(), 201);
-        let authentication_res_body = authenticate_res.json::<AuthenticateResponse>().await.expect("authentication response body");
+        let authentication_res_body = authenticate_res
+            .json::<AuthenticateResponse>()
+            .await
+            .expect("authentication response body");
         let user_access_token = match authentication_res_body.token.access_token {
             Some(tkn) => tkn,
             None => panic!("user access token not found"),
@@ -319,14 +352,21 @@ mod tests {
         ident.token = user_access_token.to_string();
 
         // create organization
-        let create_organization_body = generate_baseline_organization(&ident, &authentication_res_body.user.id).await;
+        let create_organization_body =
+            generate_baseline_organization(&ident, &authentication_res_body.user.id).await;
         let organization_authorization_params = json!({
             "organization_id": &create_organization_body.id,
             "scope": "offline_access",
         });
-        let organization_authorization_res = ident.organization_authorization(Some(organization_authorization_params)).await.expect("organization authorization response");
+        let organization_authorization_res = ident
+            .organization_authorization(Some(organization_authorization_params))
+            .await
+            .expect("organization authorization response");
         assert_eq!(organization_authorization_res.status(), 201);
-        let organization_auth_body = organization_authorization_res.json::<Token>().await.expect("organization authorization body");
+        let organization_auth_body = organization_authorization_res
+            .json::<Token>()
+            .await
+            .expect("organization authorization body");
         let org_access_token = match organization_auth_body.access_token {
             Some(tkn) => tkn,
             None => panic!("organization access token not found"),
@@ -337,14 +377,21 @@ mod tests {
         };
 
         // create application
-        let create_application_body = generate_application(&ident, &authentication_res_body.user.id).await;
+        let create_application_body =
+            generate_application(&ident, &authentication_res_body.user.id).await;
         let application_authorization_params = json!({
             "application_id": &create_application_body.id,
             "scope": "offline_access",
         });
-        let application_authorization_res = ident.application_authorization(Some(application_authorization_params)).await.expect("application authorization response");
+        let application_authorization_res = ident
+            .application_authorization(Some(application_authorization_params))
+            .await
+            .expect("application authorization response");
         assert_eq!(application_authorization_res.status(), 201);
-        let application_auth_body = application_authorization_res.json::<Token>().await.expect("application authorization body");
+        let application_auth_body = application_authorization_res
+            .json::<Token>()
+            .await
+            .expect("application authorization body");
         let app_access_token = match application_auth_body.access_token {
             Some(tkn) => tkn,
             None => panic!("application access toke not found"),
@@ -356,23 +403,38 @@ mod tests {
         let associate_application_org_params = json!({
             "organization_id": &create_organization_body.id,
         });
-        let associate_application_org_res = ident.associate_application_organization(&create_application_body.id, Some(associate_application_org_params)).await.expect("create application organization response");
+        let associate_application_org_res = ident
+            .associate_application_organization(
+                &create_application_body.id,
+                Some(associate_application_org_params),
+            )
+            .await
+            .expect("create application organization response");
         assert_eq!(associate_application_org_res.status(), 204);
 
         // get shuttle registry contract
         let registry_contracts_res = ident.client.get("https://s3.amazonaws.com/static.provide.services/capabilities/provide-capabilities-manifest.json").send().await.expect("get registry contracts response");
-        let registry_contracts = registry_contracts_res.json::<Value>().await.expect("registry contracts body");
+        let registry_contracts = registry_contracts_res
+            .json::<Value>()
+            .await
+            .expect("registry contracts body");
         let shuttle_contract = &registry_contracts["baseline"]["contracts"][2];
-        
+
         let nchain: ApiClient = NChain::factory(&app_access_token);
-        
+
         // deploy workgroup contract
         let create_account_params = json!({
             "network_id": ROPSTEN_NETWORK_ID,
         });
-        let create_account_res = nchain.create_account(Some(create_account_params)).await.expect("create account response");
+        let create_account_res = nchain
+            .create_account(Some(create_account_params))
+            .await
+            .expect("create account response");
         assert_eq!(create_account_res.status(), 201);
-        let create_account_body = create_account_res.json::<Account>().await.expect("create account body");
+        let create_account_body = create_account_res
+            .json::<Account>()
+            .await
+            .expect("create account body");
         let create_contract_params = json!({
             "address": "0x",
             "params": {
@@ -384,16 +446,28 @@ mod tests {
             "network_id": ROPSTEN_NETWORK_ID,
             "type": "organization-registry",
         });
-        let create_contract_res = nchain.create_contract(Some(create_contract_params)).await.expect("create contract response");
+        let create_contract_res = nchain
+            .create_contract(Some(create_contract_params))
+            .await
+            .expect("create contract response");
         assert_eq!(create_contract_res.status(), 201);
-        let mut registry_contract = create_contract_res.json::<Contract>().await.expect("create contract body");
+        let mut registry_contract = create_contract_res
+            .json::<Contract>()
+            .await
+            .expect("create contract body");
         let mut interval = time::interval(Duration::from_millis(500));
         while registry_contract.address == "0x" {
             interval.tick().await;
-            let get_contract_res = nchain.get_contract(&registry_contract.id).await.expect("get contract response");
+            let get_contract_res = nchain
+                .get_contract(&registry_contract.id)
+                .await
+                .expect("get contract response");
             assert_eq!(get_contract_res.status(), 200);
-            registry_contract = get_contract_res.json::<Contract>().await.expect("get contract body");
-        };
+            registry_contract = get_contract_res
+                .json::<Contract>()
+                .await
+                .expect("get contract body");
+        }
         let registry_contract_address = registry_contract.address;
 
         let vault: ApiClient = Vault::factory(&app_access_token);
@@ -403,9 +477,15 @@ mod tests {
             "name": format!("{} vault", Name().fake::<String>()),
             "description": "Some vault description",
         });
-        let create_vault_res = vault.create_vault(Some(create_vault_params)).await.expect("create vault response");
+        let create_vault_res = vault
+            .create_vault(Some(create_vault_params))
+            .await
+            .expect("create vault response");
         assert_eq!(create_vault_res.status(), 201);
-        let create_vault_body = create_vault_res.json::<VaultContainer>().await.expect("create vault body");
+        let create_vault_body = create_vault_res
+            .json::<VaultContainer>()
+            .await
+            .expect("create vault body");
         let create_key_params = json!({
             "type": "symmetric",
             "usage": "encrypt/decrypt",
@@ -413,9 +493,15 @@ mod tests {
             "name": format!("{} key", Name().fake::<String>()),
             "description": "Some key description",
         });
-        let create_key_res = vault.create_key(&create_vault_body.id, Some(create_key_params)).await.expect("create key resposne");
+        let create_key_res = vault
+            .create_key(&create_vault_body.id, Some(create_key_params))
+            .await
+            .expect("create key resposne");
         assert_eq!(create_key_res.status(), 201);
-        let create_key_body = create_key_res.json::<VaultKey>().await.expect("create key body");
+        let create_key_body = create_key_res
+            .json::<VaultKey>()
+            .await
+            .expect("create key body");
         let org_address = match create_key_body.address {
             Some(string) => string,
             None => panic!("address from organization key not found"),
@@ -432,12 +518,22 @@ mod tests {
             "app_access_token": &app_access_token,
             "app_id": &create_application_body.id,
         });
-        serde_json::to_writer_pretty(std::fs::File::create(".test-config.tmp.json").expect("baseline json config"), &json_config_params).expect("write json");
-        
+        serde_json::to_writer_pretty(
+            std::fs::File::create(".test-config.tmp.json").expect("baseline json config"),
+            &json_config_params,
+        )
+        .expect("write json");
+
         // yaml config file
-        let config_file_contents = format!("access-token: {}\nrefresh-token: {}\n{}:\n  api-token: {}\n", &user_access_token, &user_refresh_token, &create_application_body.id, &app_access_token);
+        let config_file_contents = format!(
+            "access-token: {}\nrefresh-token: {}\n{}:\n  api-token: {}\n",
+            &user_access_token, &user_refresh_token, &create_application_body.id, &app_access_token
+        );
         let cwd = match std::env::current_dir() {
-            Ok(path) => path.into_os_string().into_string().expect("current working directory"),
+            Ok(path) => path
+                .into_os_string()
+                .into_string()
+                .expect("current working directory"),
             Err(v) => panic!("{:?}", v),
         };
         let config_file_name = format!("{}/.local-baseline-test-config.tmp.yaml", cwd);
@@ -449,61 +545,99 @@ mod tests {
 
         let mut run_cmd = String::from("prvd baseline stack start");
         run_cmd += &format!(" --api-endpoint={}", "http://localhost:8086");
-        run_cmd += &format!(" --config={}", &config_file_name); 
-        run_cmd += &format!(" --ident-host={}", std::env::var("IDENT_API_HOST").unwrap_or(String::from("localhost:8081"))); // TODO: use env
-        run_cmd += &format!(" --ident-scheme={}", std::env::var("IDENT_API_SCHEME").unwrap_or(String::from("http")));
+        run_cmd += &format!(" --config={}", &config_file_name);
+        run_cmd += &format!(
+            " --ident-host={}",
+            std::env::var("IDENT_API_HOST").unwrap_or(String::from("localhost:8081"))
+        ); // TODO: use env
+        run_cmd += &format!(
+            " --ident-scheme={}",
+            std::env::var("IDENT_API_SCHEME").unwrap_or(String::from("http"))
+        );
         run_cmd += &format!(" --messaging-endpoint={}", "nats://localhost:4223");
         run_cmd += &format!(" --name=\"{}\"", &create_organization_body.name);
         run_cmd += &format!(" --nats-auth-token={}", "testtoken");
         run_cmd += &format!(" --nats-port={}", "4223");
         run_cmd += &format!(" --nats-ws-port={}", "4224");
-        run_cmd += &format!(" --nchain-host={}", std::env::var("NCHAIN_API_HOST").unwrap_or(String::from("localhost:8084")));
-        run_cmd += &format!(" --nchain-scheme={}", std::env::var("NCHAIN_API_SCHEME").unwrap_or(String::from("http")));
+        run_cmd += &format!(
+            " --nchain-host={}",
+            std::env::var("NCHAIN_API_HOST").unwrap_or(String::from("localhost:8084"))
+        );
+        run_cmd += &format!(
+            " --nchain-scheme={}",
+            std::env::var("NCHAIN_API_SCHEME").unwrap_or(String::from("http"))
+        );
         run_cmd += &format!(" --nchain-network-id={}", ROPSTEN_NETWORK_ID);
         run_cmd += &format!(" --organization={}", &create_organization_body.id);
         run_cmd += &format!(" --organization-address={}", &org_address);
         run_cmd += &format!(" --organization-refresh-token={}", &org_refresh_token);
         run_cmd += &format!(" --port={}", "8085");
-        run_cmd += &format!(" --privacy-host={}", std::env::var("PRIVACY_API_HOST").unwrap_or(String::from("localhost:8083")));
-		run_cmd += &format!(" --privacy-scheme={}", std::env::var("PRIVACY_API_SCHEME").unwrap_or(String::from("http")));
-		run_cmd += &format!(" --registry-contract-address={}", &registry_contract_address);
+        run_cmd += &format!(
+            " --privacy-host={}",
+            std::env::var("PRIVACY_API_HOST").unwrap_or(String::from("localhost:8083"))
+        );
+        run_cmd += &format!(
+            " --privacy-scheme={}",
+            std::env::var("PRIVACY_API_SCHEME").unwrap_or(String::from("http"))
+        );
+        run_cmd += &format!(
+            " --registry-contract-address={}",
+            &registry_contract_address
+        );
         run_cmd += &format!(" --redis-hostname={}-redis", &create_organization_body.name);
         run_cmd += &format!(" --redis-port={}", "6380");
         run_cmd += &format!(" --sor={}", "ephemeral");
-        run_cmd += &format!(" --vault-host={}", std::env::var("VAULT_API_HOST").unwrap_or(String::from("localhost:8082")));
-		run_cmd += &format!(" --vault-refresh-token={}", &org_refresh_token);
-		run_cmd += &format!(" --vault-scheme={}", std::env::var("VAULT_API_SCHEME").unwrap_or(String::from("http")));
-		run_cmd += &format!(" --workgroup={}", &create_application_body.id);
-		run_cmd += &format!(" --postgres-port={}", "5433");
+        run_cmd += &format!(
+            " --vault-host={}",
+            std::env::var("VAULT_API_HOST").unwrap_or(String::from("localhost:8082"))
+        );
+        run_cmd += &format!(" --vault-refresh-token={}", &org_refresh_token);
+        run_cmd += &format!(
+            " --vault-scheme={}",
+            std::env::var("VAULT_API_SCHEME").unwrap_or(String::from("http"))
+        );
+        run_cmd += &format!(" --workgroup={}", &create_application_body.id);
+        run_cmd += &format!(" --postgres-port={}", "5433");
 
         let localhost_regex = regex::Regex::new(r"localhost").expect("localhost regex expression");
-        run_cmd = localhost_regex.replace_all(&run_cmd, "host.docker.internal").to_string();
+        run_cmd = localhost_regex
+            .replace_all(&run_cmd, "host.docker.internal")
+            .to_string();
         let baseline_cmd = format!("{} {}", run_env, run_cmd);
 
-        Command::new("sh").arg("-c").arg(&baseline_cmd).spawn().expect("baseline tests init process"); // attach to some sort of log level?
-        
+        Command::new("sh")
+            .arg("-c")
+            .arg(&baseline_cmd)
+            .spawn()
+            .expect("baseline tests init process"); // attach to some sort of log level?
+
         let mut baseline_status_client = ApiClient::new("", "", "", "");
-        baseline_status_client.set_base_url(&format!("{}://{}", std::env::var("BASELINE_API_SCHEME").expect("baseline api scheme"), std::env::var("BASELINE_API_HOST").expect("baseline api host")));
+        baseline_status_client.set_base_url(&format!(
+            "{}://{}",
+            std::env::var("BASELINE_API_SCHEME").expect("baseline api scheme"),
+            std::env::var("BASELINE_API_HOST").expect("baseline api host")
+        ));
 
         let mut baseline_container_status = String::from("");
 
         while baseline_container_status == "" {
-            baseline_container_status = match baseline_status_client.get("status", None, None).await {
+            baseline_container_status = match baseline_status_client.get("status", None, None).await
+            {
                 Ok(res) => res.status().to_string(),
                 Err(_) => String::from(""),
             };
 
             interval.tick().await;
-        };
-        
+        }
+
         assert_eq!(baseline_container_status, "204 No Content"); // these logs probably shouldn't show unless baseline suite is specified
     }
-    
+
     // #[tokio::test]
     // async fn get_bpi_accounts() {
     //     let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
     //     let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
-        
+
     //     let org_access_token_json = config_vals["org_access_token"].to_string();
     //     let org_access_token = serde_json::from_str::<String>(&org_access_token_json).expect("organzation access token");
 
@@ -624,18 +758,18 @@ mod tests {
 
     //     let baseline: ApiClient = Baseline::factory(access_token);
 
-        // // FIXME: need to make generate wallet helper
-        // let create_subject_params = Some(json!({
-        //     "wallet_id": "99c404e9-fe10-4ca7-b787-d5943d03591c",
-        //     "credentials": [],
-        //     "description": "Organization for testing",
-        //     "metadata": {},
-        //     "name": format!("{} subject", Name().fake::<String>()),
-        //     "type": "Organization"
-        // }));
+    // // FIXME: need to make generate wallet helper
+    // let create_subject_params = Some(json!({
+    //     "wallet_id": "99c404e9-fe10-4ca7-b787-d5943d03591c",
+    //     "credentials": [],
+    //     "description": "Organization for testing",
+    //     "metadata": {},
+    //     "name": format!("{} subject", Name().fake::<String>()),
+    //     "type": "Organization"
+    // }));
 
-        // let create_subject_res = baseline.create_subject(create_subject_params).await.expect("create subject response");
-        // assert_eq!(create_subject_res.status(), 201);
+    // let create_subject_res = baseline.create_subject(create_subject_params).await.expect("create subject response");
+    // assert_eq!(create_subject_res.status(), 201);
     // }
 
     // #[tokio::test]
@@ -785,15 +919,15 @@ mod tests {
 
     // #[tokio::test]
     // async fn get_subject_account() {
-        // let authentication_res_body = generate_new_user_and_token().await;
-        // let access_token = match authentication_res_body.token.access_token {
-        //     Some(string) => string,
-        //     None => panic!("authentication response access token not found"),
-        // };
+    // let authentication_res_body = generate_new_user_and_token().await;
+    // let access_token = match authentication_res_body.token.access_token {
+    //     Some(string) => string,
+    //     None => panic!("authentication response access token not found"),
+    // };
 
-        // let baseline: ApiClient = Baseline::factory(access_token);
+    // let baseline: ApiClient = Baseline::factory(access_token);
 
-        // let create_subject_body = generate_subject(&baseline).await;
+    // let create_subject_body = generate_subject(&baseline).await;
 
     //     let create_subject_account_params = Some(json!({
     //         "@context": [],
@@ -832,7 +966,7 @@ mod tests {
     //     }));
 
     //     let create_subject_account_res = baseline.create_subject_account(&create_subject_body.id, create_subject_account_params).await.expect("create subject account response");
-        
+
     //     let create_subject_account_body = create_subject_account_res.json::<SubjectAccount>().await.expect("create subject account body");
 
     //     let get_subject_account_res = baseline.get_subject_account(&create_subject_body.id, &create_subject_account_body.id).await.expect("get subject account response");
@@ -843,13 +977,17 @@ mod tests {
     async fn get_workflows() {
         let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
         let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
-        
+
         let org_access_token_json = config_vals["org_access_token"].to_string();
-        let org_access_token = serde_json::from_str::<String>(&org_access_token_json).expect("organzation access token");
+        let org_access_token = serde_json::from_str::<String>(&org_access_token_json)
+            .expect("organzation access token");
 
         let baseline: ApiClient = Baseline::factory(&org_access_token);
-    
-        let get_workflows_res = baseline.get_workflows().await.expect("get workflows response");
+
+        let get_workflows_res = baseline
+            .get_workflows()
+            .await
+            .expect("get workflows response");
         assert_eq!(get_workflows_res.status(), 200);
     }
 
@@ -857,7 +995,7 @@ mod tests {
     // async fn create_workflow() {
     //     let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
     //     let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
-        
+
     //     let org_access_token_json = config_vals["org_access_token"].to_string();
     //     let org_access_token = serde_json::from_str::<String>(&org_access_token_json).expect("organzation access token");
 
@@ -880,7 +1018,7 @@ mod tests {
     // async fn create_workflow_instance() {
     //     let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
     //     let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
-        
+
     //     let org_access_token_json = config_vals["org_access_token"].to_string();
     //     let org_access_token = serde_json::from_str::<String>(&org_access_token_json).expect("organzation access token");
 
@@ -966,13 +1104,17 @@ mod tests {
     async fn get_workgroups() {
         let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
         let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
-        
+
         let org_access_token_json = config_vals["org_access_token"].to_string();
-        let org_access_token = serde_json::from_str::<String>(&org_access_token_json).expect("organzation access token");
+        let org_access_token = serde_json::from_str::<String>(&org_access_token_json)
+            .expect("organzation access token");
 
         let baseline: ApiClient = Baseline::factory(&org_access_token);
-    
-        let get_workgroups_res = baseline.get_workgroups().await.expect("get workgroups response");
+
+        let get_workgroups_res = baseline
+            .get_workgroups()
+            .await
+            .expect("get workgroups response");
         assert_eq!(get_workgroups_res.status(), 200);
     }
 
@@ -1141,18 +1283,21 @@ mod tests {
     async fn create_object() {
         let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
         let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
-        
+
         let org_access_token_json = config_vals["org_access_token"].to_string();
-        let org_access_token = serde_json::from_str::<String>(&org_access_token_json).expect("organzation access token");
+        let org_access_token = serde_json::from_str::<String>(&org_access_token_json)
+            .expect("organzation access token");
 
         let baseline: ApiClient = Baseline::factory(&org_access_token);
 
         let workgroup_id_json = config_vals["app_id"].to_string();
-        let workgroup_id = serde_json::from_str::<String>(&workgroup_id_json).expect("workgroup id");
+        let workgroup_id =
+            serde_json::from_str::<String>(&workgroup_id_json).expect("workgroup id");
         println!("APP ID {}", &workgroup_id);
 
         let organization_id_json = config_vals["org_id"].to_string();
-        let organization_id = serde_json::from_str::<String>(&organization_id_json).expect("organization id");
+        let organization_id =
+            serde_json::from_str::<String>(&organization_id_json).expect("organization id");
         println!("ORG ID {}", &organization_id);
 
         let create_object_params = json!({
@@ -1174,7 +1319,10 @@ mod tests {
         // baseline_id
         // payload
 
-        let create_object_res = baseline.create_object(Some(create_object_params)).await.expect("create object response");
+        let create_object_res = baseline
+            .create_object(Some(create_object_params))
+            .await
+            .expect("create object response");
         assert_eq!(create_object_res.status(), 202);
     }
 
@@ -1190,7 +1338,7 @@ mod tests {
     // async fn update_object() {
     //     let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
     //     let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
-        
+
     //     let org_access_token_json = config_vals["org_access_token"].to_string();
     //     let org_access_token = serde_json::from_str::<String>(&org_access_token_json).expect("organzation access token");
 
@@ -1217,16 +1365,20 @@ mod tests {
     async fn get_workgroup_mappings() {
         let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
         let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
-        
+
         let org_access_token_json = config_vals["org_access_token"].to_string();
-        let org_access_token = serde_json::from_str::<String>(&org_access_token_json).expect("organzation access token");
+        let org_access_token = serde_json::from_str::<String>(&org_access_token_json)
+            .expect("organzation access token");
 
         let app_id_json = config_vals["app_id"].to_string();
         let app_id = serde_json::from_str::<String>(&app_id_json).expect("application id");
 
         let baseline: ApiClient = Baseline::factory(&org_access_token);
 
-        let get_workgroup_mappings_res = baseline.get_workgroup_mappings(&app_id).await.expect("get workgroup mappings response");
+        let get_workgroup_mappings_res = baseline
+            .get_workgroup_mappings(&app_id)
+            .await
+            .expect("get workgroup mappings response");
         assert_eq!(get_workgroup_mappings_res.status(), 200);
     }
 
@@ -1234,9 +1386,10 @@ mod tests {
     async fn create_workgroup_mappings() {
         let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
         let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
-        
+
         let org_access_token_json = config_vals["org_access_token"].to_string();
-        let org_access_token = serde_json::from_str::<String>(&org_access_token_json).expect("organzation access token");
+        let org_access_token = serde_json::from_str::<String>(&org_access_token_json)
+            .expect("organzation access token");
 
         let app_id_json = config_vals["app_id"].to_string();
         let app_id = serde_json::from_str::<String>(&app_id_json).expect("application id");
@@ -1259,7 +1412,10 @@ mod tests {
             ],
         });
 
-        let create_workgroup_mappings_res = baseline.create_workgroup_mappings(&app_id, Some(create_mappings_params)).await.expect("create workgroup mappings response");
+        let create_workgroup_mappings_res = baseline
+            .create_workgroup_mappings(&app_id, Some(create_mappings_params))
+            .await
+            .expect("create workgroup mappings response");
         assert_eq!(create_workgroup_mappings_res.status(), 201);
     }
 
@@ -1267,9 +1423,10 @@ mod tests {
     async fn update_workgroup_mappings() {
         let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
         let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
-        
+
         let org_access_token_json = config_vals["org_access_token"].to_string();
-        let org_access_token = serde_json::from_str::<String>(&org_access_token_json).expect("organzation access token");
+        let org_access_token = serde_json::from_str::<String>(&org_access_token_json)
+            .expect("organzation access token");
 
         let app_id_json = config_vals["app_id"].to_string();
         let app_id = serde_json::from_str::<String>(&app_id_json).expect("application id");
@@ -1292,7 +1449,10 @@ mod tests {
             ],
         });
 
-        let create_workgroup_mappings_res = baseline.create_workgroup_mappings(&app_id, Some(create_mappings_params)).await.expect("create workgroup mappings response");
+        let create_workgroup_mappings_res = baseline
+            .create_workgroup_mappings(&app_id, Some(create_mappings_params))
+            .await
+            .expect("create workgroup mappings response");
         assert_eq!(create_workgroup_mappings_res.status(), 201);
 
         let update_mappings_params = json!({
@@ -1310,30 +1470,33 @@ mod tests {
             ],
         });
 
-        let update_workgroup_mappings_res = baseline.update_workgroup_mappings(&app_id, Some(update_mappings_params)).await.expect("update workgroup mappings response");
+        let update_workgroup_mappings_res = baseline
+            .update_workgroup_mappings(&app_id, Some(update_mappings_params))
+            .await
+            .expect("update workgroup mappings response");
         assert_eq!(update_workgroup_mappings_res.status(), 204); // FIXME: not supposed to return 404
     }
 
     // #[tokio::test]
     // async fn get_workflow_worksteps() {
-        // let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
-        // let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
-        
-        // let org_access_token_json = config_vals["org_access_token"].to_string();
-        // let org_access_token = serde_json::from_str::<String>(&org_access_token_json).expect("organzation access token");
+    // let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
+    // let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
 
-        // let baseline: ApiClient = Baseline::factory(&org_access_token);
+    // let org_access_token_json = config_vals["org_access_token"].to_string();
+    // let org_access_token = serde_json::from_str::<String>(&org_access_token_json).expect("organzation access token");
 
-        // let create_workflow_params = json!({
-        //    "participants": [],
-        //    "version": "",
-        //    "worksteps": [],
-        // });
+    // let baseline: ApiClient = Baseline::factory(&org_access_token);
 
-        // let create_workflow_res = baseline.create_workflow(Some(create_workflow_params)).await.expect("create workflow response");
-        // assert_eq!(create_workflow_res.status(), 201);
+    // let create_workflow_params = json!({
+    //    "participants": [],
+    //    "version": "",
+    //    "worksteps": [],
+    // });
 
-        // // let create_workflow_body = create_workflow_res.json::<Value>().await.expect("create workflow body");
+    // let create_workflow_res = baseline.create_workflow(Some(create_workflow_params)).await.expect("create workflow response");
+    // assert_eq!(create_workflow_res.status(), 201);
+
+    // // let create_workflow_body = create_workflow_res.json::<Value>().await.expect("create workflow body");
 
     //     let get_workflow_worksteps_res = baseline.get_workflow_worksteps("").await.expect("get workflow worksteps response");
     //     assert_eq!(get_workflow_worksteps_res.status(), 200);
@@ -1343,7 +1506,7 @@ mod tests {
     // async fn create_workflow_workstep() {
     //     let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
     //     let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
-        
+
     //     let org_access_token_json = config_vals["org_access_token"].to_string();
     //     let org_access_token = serde_json::from_str::<String>(&org_access_token_json).expect("organzation access token");
 
@@ -1376,7 +1539,7 @@ mod tests {
     // async fn create_workflow_workstep_instance() {
     //     let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
     //     let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
-        
+
     //     let org_access_token_json = config_vals["org_access_token"].to_string();
     //     let org_access_token = serde_json::from_str::<String>(&org_access_token_json).expect("organzation access token");
 

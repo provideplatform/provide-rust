@@ -73,7 +73,7 @@ pub struct Contract {
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
 pub struct Wallet {
-   pub id: String,
+    pub id: String,
     created_at: String,
     user_id: Option<String>,
     vault_id: String,

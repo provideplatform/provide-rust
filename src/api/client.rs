@@ -1,6 +1,6 @@
+pub use crate::models::client::{AdditionalHeader, ApiClient, Params, Response};
 use http;
 use reqwest;
-pub use crate::models::client::{ApiClient, Response, Params, AdditionalHeader};
 
 const DEFAULT_API_USER_AGENT: &str = "provide-rust client library";
 
@@ -20,7 +20,7 @@ impl ApiClient {
         &self,
         uri: &str,
         params: Params,
-        additional_headers: Option<Vec<AdditionalHeader>>
+        additional_headers: Option<Vec<AdditionalHeader>>,
     ) -> impl std::future::Future<Output = Response> {
         let url = format!("{}/{}", self.base_url, uri);
         self.client
@@ -34,7 +34,7 @@ impl ApiClient {
         &self,
         uri: &str,
         params: Params,
-        additional_headers: Option<Vec<AdditionalHeader>>
+        additional_headers: Option<Vec<AdditionalHeader>>,
     ) -> impl std::future::Future<Output = Response> {
         let url = format!("{}/{}", self.base_url, uri);
         self.client
@@ -48,7 +48,7 @@ impl ApiClient {
         &self,
         uri: &str,
         params: Params,
-        additional_headers: Option<Vec<AdditionalHeader>>
+        additional_headers: Option<Vec<AdditionalHeader>>,
     ) -> impl std::future::Future<Output = Response> {
         let url = format!("{}/{}", self.base_url, uri);
         self.client
@@ -62,7 +62,7 @@ impl ApiClient {
         &self,
         uri: &str,
         params: Params,
-        additional_headers: Option<Vec<AdditionalHeader>>
+        additional_headers: Option<Vec<AdditionalHeader>>,
     ) -> impl std::future::Future<Output = Response> {
         let url = format!("{}/{}", self.base_url, uri);
         self.client
@@ -76,7 +76,7 @@ impl ApiClient {
         &self,
         uri: &str,
         params: Params,
-        additional_headers: Option<Vec<AdditionalHeader>>
+        additional_headers: Option<Vec<AdditionalHeader>>,
     ) -> impl std::future::Future<Output = Response> {
         let url = format!("{}/{}", self.base_url, uri);
         self.client
@@ -86,15 +86,21 @@ impl ApiClient {
             .send()
     }
 
-    pub fn set_bearer_token(&mut self, token: &str) { // could simply have general prop setter method instead of seperate bearer and baseurl
+    pub fn set_bearer_token(&mut self, token: &str) {
+        // could simply have general prop setter method instead of seperate bearer and baseurl
         self.token = token.to_string();
     }
 
-    pub fn set_base_url(&mut self, base_url: &str) { // TODO: this should not be necessary
+    pub fn set_base_url(&mut self, base_url: &str) {
+        // TODO: this should not be necessary
         self.base_url = base_url.to_string();
     }
 
-    pub fn construct_headers(&self, additional_headers: Option<Vec<AdditionalHeader>>) -> http::HeaderMap { // make additiona headers reference?
+    pub fn construct_headers(
+        &self,
+        additional_headers: Option<Vec<AdditionalHeader>>,
+    ) -> http::HeaderMap {
+        // make additiona headers reference?
         let mut headers = http::HeaderMap::new();
 
         // make conditional
@@ -123,7 +129,7 @@ impl ApiClient {
                 for header in more_headers {
                     headers.insert(header.key, header.value);
                 }
-            },
+            }
             None => {}
         }
 

@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 
-use crate::client::{ApiClient, Response, Params};
+use crate::api::client::{ApiClient, Params, Response};
 pub use crate::models::privacy::*;
 
 const DEFAULT_SCHEME: &str = "https";
@@ -30,36 +30,36 @@ impl Privacy for ApiClient {
         let scheme = std::env::var("PRIVACY_API_SCHEME").unwrap_or(String::from(DEFAULT_SCHEME));
         let host = std::env::var("PRIVACY_API_HOST").unwrap_or(String::from(DEFAULT_HOST));
         let path = std::env::var("PRIVACY_API_PATH").unwrap_or(String::from(DEFAULT_PATH));
-    
+
         return ApiClient::new(&scheme, &host, &path, token);
     }
 
     async fn list_circuits(&self) -> Response {
-        return self.get("circuits", None, None).await
+        return self.get("circuits", None, None).await;
     }
 
     async fn create_circuit(&self, params: Params) -> Response {
-        return self.post("circuits", params, None).await
+        return self.post("circuits", params, None).await;
     }
 
     async fn get_circuit(&self, circuit_id: &str) -> Response {
         let uri = format!("circuits/{}", circuit_id);
-        return self.get(&uri, None, None).await
+        return self.get(&uri, None, None).await;
     }
 
     async fn generate_proof(&self, circuit_id: &str, params: Params) -> Response {
         let uri = format!("circuits/{}/prove", circuit_id);
-        return self.post(&uri, params, None).await
+        return self.post(&uri, params, None).await;
     }
 
     async fn verify_proof(&self, circuit_id: &str, params: Params) -> Response {
         let uri = format!("circuits/{}/verify", circuit_id);
-        return self.post(&uri, params, None).await
+        return self.post(&uri, params, None).await;
     }
 
     async fn retrieve_store_value(&self, circuit_id: &str, leaf_index: &str) -> Response {
         let uri = format!("circuits/{}/notes/{}", circuit_id, leaf_index);
-        return self.get(&uri, None, None).await
+        return self.get(&uri, None, None).await;
     }
 }
 
@@ -67,10 +67,10 @@ impl Privacy for ApiClient {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use fake::faker::name::en::{Name, FirstName, LastName};
+    use crate::api::ident::{Application, AuthenticateResponse, Ident, Token};
     use fake::faker::internet::en::{FreeEmail, Password};
+    use fake::faker::name::en::{FirstName, LastName, Name};
     use fake::Fake;
-    use crate::ident::{Ident, AuthenticateResponse, Application, Token};
     use serde_json::json;
     use tokio::time::{self, Duration};
 
@@ -88,7 +88,10 @@ mod tests {
             "email": &email,
             "password": &password,
         }));
-        let create_user_res = ident.create_user(user_data).await.expect("create user response");
+        let create_user_res = ident
+            .create_user(user_data)
+            .await
+            .expect("create user response");
         assert_eq!(create_user_res.status(), 201);
 
         let params = Some(json!({
@@ -96,10 +99,16 @@ mod tests {
             "password": &password,
             "scope": "offline_access",
         }));
-        let authenticate_res = ident.authenticate(params).await.expect("authenticate response");
+        let authenticate_res = ident
+            .authenticate(params)
+            .await
+            .expect("authenticate response");
         assert_eq!(authenticate_res.status(), 201);
 
-        return authenticate_res.json::<AuthenticateResponse>().await.expect("authentication response body");
+        return authenticate_res
+            .json::<AuthenticateResponse>()
+            .await
+            .expect("authentication response body");
     }
 
     async fn deploy_circuit(privacy: &ApiClient) -> Circuit {
@@ -110,11 +119,17 @@ mod tests {
             "proving_scheme": "groth16",
             "curve": "BN254",
         }));
-        
-        let create_circuit_res = privacy.create_circuit(create_circuit_params).await.expect("create circuit response");
+
+        let create_circuit_res = privacy
+            .create_circuit(create_circuit_params)
+            .await
+            .expect("create circuit response");
         assert_eq!(create_circuit_res.status(), 201);
 
-        return create_circuit_res.json::<Circuit>().await.expect("create circuit body");
+        return create_circuit_res
+            .json::<Circuit>()
+            .await
+            .expect("create circuit body");
     }
 
     #[tokio::test]
@@ -127,7 +142,10 @@ mod tests {
 
         let privacy: ApiClient = Privacy::factory(&access_token);
 
-        let list_circuits_res = privacy.list_circuits().await.expect("list circuits response");
+        let list_circuits_res = privacy
+            .list_circuits()
+            .await
+            .expect("list circuits response");
         assert_eq!(list_circuits_res.status(), 200);
     }
 
@@ -154,7 +172,10 @@ mod tests {
         let privacy: ApiClient = Privacy::factory(&access_token);
         let deploy_circuit_body = deploy_circuit(&privacy).await;
 
-        let get_circuit_res = privacy.get_circuit(&deploy_circuit_body.id).await.expect("get circuit response");
+        let get_circuit_res = privacy
+            .get_circuit(&deploy_circuit_body.id)
+            .await
+            .expect("get circuit response");
         assert_eq!(get_circuit_res.status(), 200);
     }
 
@@ -177,18 +198,30 @@ mod tests {
             "hidden": false
         }));
 
-        let create_application_res = ident.create_application(application_data).await.expect("generate application response");
+        let create_application_res = ident
+            .create_application(application_data)
+            .await
+            .expect("generate application response");
         assert_eq!(create_application_res.status(), 201);
 
-        let create_application_body = create_application_res.json::<Application>().await.expect("create application body");
+        let create_application_body = create_application_res
+            .json::<Application>()
+            .await
+            .expect("create application body");
         let application_auth_params = Some(json!({
             "application_id": create_application_body.id,
             "scope": "offline_access",
         }));
 
-        let application_auth_res = ident.application_authorization(application_auth_params).await.expect("application authorization response");
+        let application_auth_res = ident
+            .application_authorization(application_auth_params)
+            .await
+            .expect("application authorization response");
 
-        let application_auth_body = application_auth_res.json::<Token>().await.expect("application authorization body");
+        let application_auth_body = application_auth_res
+            .json::<Token>()
+            .await
+            .expect("application authorization body");
         let application_access_token = match application_auth_body.access_token {
             Some(string) => string,
             None => panic!("application authentication response access token not found"),
@@ -207,10 +240,16 @@ mod tests {
         while circuit_status != "provisioned" {
             interval.tick().await;
 
-            let get_circuit_res = privacy.get_circuit(&deploy_circuit_body.id).await.expect("get circuit response");
+            let get_circuit_res = privacy
+                .get_circuit(&deploy_circuit_body.id)
+                .await
+                .expect("get circuit response");
             assert_eq!(get_circuit_res.status(), 200);
 
-            let get_circuit_body = get_circuit_res.json::<Circuit>().await.expect("get circuit body");
+            let get_circuit_body = get_circuit_res
+                .json::<Circuit>()
+                .await
+                .expect("get circuit body");
             circuit_status = match get_circuit_body.status {
                 Some(string) => string,
                 None => panic!("get circuit body status not found"),
@@ -230,7 +269,10 @@ mod tests {
             }
         }));
 
-        let generate_proof_res = privacy.generate_proof(&deploy_circuit_body.id, generate_proof_param).await.expect("generate proof response");
+        let generate_proof_res = privacy
+            .generate_proof(&deploy_circuit_body.id, generate_proof_param)
+            .await
+            .expect("generate proof response");
         assert_eq!(generate_proof_res.status(), 200);
     }
 
@@ -253,18 +295,30 @@ mod tests {
             "hidden": false
         }));
 
-        let create_application_res = ident.create_application(application_data).await.expect("generate application response");
+        let create_application_res = ident
+            .create_application(application_data)
+            .await
+            .expect("generate application response");
         assert_eq!(create_application_res.status(), 201);
 
-        let create_application_body = create_application_res.json::<Application>().await.expect("create application body");
+        let create_application_body = create_application_res
+            .json::<Application>()
+            .await
+            .expect("create application body");
         let application_auth_params = Some(json!({
             "application_id": create_application_body.id,
             "scope": "offline_access",
         }));
 
-        let application_auth_res = ident.application_authorization(application_auth_params).await.expect("application authorization response");
+        let application_auth_res = ident
+            .application_authorization(application_auth_params)
+            .await
+            .expect("application authorization response");
 
-        let application_auth_body = application_auth_res.json::<Token>().await.expect("application authorization body");
+        let application_auth_body = application_auth_res
+            .json::<Token>()
+            .await
+            .expect("application authorization body");
         let application_access_token = match application_auth_body.access_token {
             Some(string) => string,
             None => panic!("application authentication response access token not found"),
@@ -283,10 +337,16 @@ mod tests {
         while circuit_status != "provisioned" {
             interval.tick().await;
 
-            let get_circuit_res = privacy.get_circuit(&deploy_circuit_body.id).await.expect("get circuit response");
+            let get_circuit_res = privacy
+                .get_circuit(&deploy_circuit_body.id)
+                .await
+                .expect("get circuit response");
             assert_eq!(get_circuit_res.status(), 200);
 
-            let get_circuit_body = get_circuit_res.json::<Circuit>().await.expect("get circuit body");
+            let get_circuit_body = get_circuit_res
+                .json::<Circuit>()
+                .await
+                .expect("get circuit body");
             circuit_status = match get_circuit_body.status {
                 Some(string) => string,
                 None => panic!("get circuit body status not found"),
@@ -306,10 +366,16 @@ mod tests {
             },
         }));
 
-        let generate_proof_res = privacy.generate_proof(&deploy_circuit_body.id, generate_proof_param).await.expect("generate proof response");
+        let generate_proof_res = privacy
+            .generate_proof(&deploy_circuit_body.id, generate_proof_param)
+            .await
+            .expect("generate proof response");
         assert_eq!(generate_proof_res.status(), 200);
 
-        let create_proof_body = generate_proof_res.json::<Proof>().await.expect("create proof body");
+        let create_proof_body = generate_proof_res
+            .json::<Proof>()
+            .await
+            .expect("create proof body");
 
         let verify_proof_params = Some(json!({
             "witness": {
@@ -319,7 +385,10 @@ mod tests {
             "proof": create_proof_body.proof,
         }));
 
-        let verify_proof_res = privacy.verify_proof(&deploy_circuit_body.id, verify_proof_params).await.expect("verify proof response");
+        let verify_proof_res = privacy
+            .verify_proof(&deploy_circuit_body.id, verify_proof_params)
+            .await
+            .expect("verify proof response");
         assert_eq!(verify_proof_res.status(), 200);
     }
 
@@ -342,18 +411,30 @@ mod tests {
             "hidden": false
         }));
 
-        let create_application_res = ident.create_application(application_data).await.expect("generate application response");
+        let create_application_res = ident
+            .create_application(application_data)
+            .await
+            .expect("generate application response");
         assert_eq!(create_application_res.status(), 201);
 
-        let create_application_body = create_application_res.json::<Application>().await.expect("create application body");
+        let create_application_body = create_application_res
+            .json::<Application>()
+            .await
+            .expect("create application body");
         let application_auth_params = Some(json!({
             "application_id": create_application_body.id,
             "scope": "offline_access",
         }));
 
-        let application_auth_res = ident.application_authorization(application_auth_params).await.expect("application authorization response");
+        let application_auth_res = ident
+            .application_authorization(application_auth_params)
+            .await
+            .expect("application authorization response");
 
-        let application_auth_body = application_auth_res.json::<Token>().await.expect("application authorization body");
+        let application_auth_body = application_auth_res
+            .json::<Token>()
+            .await
+            .expect("application authorization body");
         let application_access_token = match application_auth_body.access_token {
             Some(string) => string,
             None => panic!("application authentication response access token not found"),
@@ -372,10 +453,16 @@ mod tests {
         while circuit_status != "provisioned" {
             interval.tick().await;
 
-            let get_circuit_res = privacy.get_circuit(&deploy_circuit_body.id).await.expect("get circuit response");
+            let get_circuit_res = privacy
+                .get_circuit(&deploy_circuit_body.id)
+                .await
+                .expect("get circuit response");
             assert_eq!(get_circuit_res.status(), 200);
 
-            let get_circuit_body = get_circuit_res.json::<Circuit>().await.expect("get circuit body");
+            let get_circuit_body = get_circuit_res
+                .json::<Circuit>()
+                .await
+                .expect("get circuit body");
             circuit_status = match get_circuit_body.status {
                 Some(string) => string,
                 None => panic!("get circuit body status not found"),
@@ -395,10 +482,16 @@ mod tests {
             },
         }));
 
-        let generate_proof_res = privacy.generate_proof(&deploy_circuit_body.id, generate_proof_param).await.expect("generate proof response");
+        let generate_proof_res = privacy
+            .generate_proof(&deploy_circuit_body.id, generate_proof_param)
+            .await
+            .expect("generate proof response");
         assert_eq!(generate_proof_res.status(), 200);
 
-        let retrieve_store_value_res = privacy.retrieve_store_value(&deploy_circuit_body.id, "0").await.expect("retrieve store value response");
+        let retrieve_store_value_res = privacy
+            .retrieve_store_value(&deploy_circuit_body.id, "0")
+            .await
+            .expect("retrieve store value response");
         assert_eq!(retrieve_store_value_res.status(), 200);
     }
 }

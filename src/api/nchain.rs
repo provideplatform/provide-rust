@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 
-use crate::client::{ApiClient, Response, Params};
+use crate::api::client::{ApiClient, Params, Response};
 pub use crate::models::nchain::*;
 
 const DEFAULT_SCHEME: &str = "https";
@@ -70,134 +70,134 @@ impl NChain for ApiClient {
         let scheme = std::env::var("NCHAIN_API_SCHEME").unwrap_or(String::from(DEFAULT_SCHEME));
         let host = std::env::var("NCHAIN_API_HOST").unwrap_or(String::from(DEFAULT_HOST));
         let path = std::env::var("NCHAIN_API_PATH").unwrap_or(String::from(DEFAULT_PATH));
-    
+
         return ApiClient::new(&scheme, &host, &path, token);
     }
 
     async fn list_accounts(&self) -> Response {
-        return self.get("accounts", None, None).await
+        return self.get("accounts", None, None).await;
     }
 
     async fn create_account(&self, params: Params) -> Response {
-        return self.post("accounts", params, None).await
+        return self.post("accounts", params, None).await;
     }
 
     async fn get_account(&self, account_id: &str) -> Response {
         let uri = format!("accounts/{}", account_id);
-        return self.get(&uri, None, None).await
+        return self.get(&uri, None, None).await;
     }
 
     async fn get_connectors(&self) -> Response {
-        return self.get("connectors", None, None).await
+        return self.get("connectors", None, None).await;
     }
 
     async fn create_connector(&self, params: Params) -> Response {
-        return self.post("connectors", params, None).await
+        return self.post("connectors", params, None).await;
     }
 
     async fn get_connector(&self, connector_id: &str) -> Response {
         let uri = format!("connectors/{}", connector_id);
-        return self.get(&uri, None, None).await
+        return self.get(&uri, None, None).await;
     }
 
     async fn delete_connector(&self, connector_id: &str) -> Response {
         let uri = format!("connectors/{}", connector_id);
-        return self.delete(&uri, None, None).await
+        return self.delete(&uri, None, None).await;
     }
 
     async fn get_contracts(&self) -> Response {
-        return self.get("contracts", None, None).await
+        return self.get("contracts", None, None).await;
     }
 
     async fn create_contract(&self, params: Params) -> Response {
-        return self.post("contracts", params, None).await
+        return self.post("contracts", params, None).await;
     }
 
     async fn get_contract(&self, contract_id: &str) -> Response {
         let uri = format!("contracts/{}", contract_id);
-        return self.get(&uri, None, None).await
+        return self.get(&uri, None, None).await;
     }
 
     async fn execute_contract(&self, contract_id: &str, params: Params) -> Response {
         let uri = format!("contracts/{}/execute", contract_id);
-        return self.post(&uri, params, None).await
+        return self.post(&uri, params, None).await;
     }
 
     async fn get_wallets(&self) -> Response {
-        return self.get("wallets", None, None).await
+        return self.get("wallets", None, None).await;
     }
 
     async fn create_wallet(&self, params: Params) -> Response {
-        return self.post("wallets", params, None).await
+        return self.post("wallets", params, None).await;
     }
 
     async fn get_wallet_accounts(&self, wallet_id: &str) -> Response {
         let uri = format!("wallets/{}/accounts", wallet_id);
-        return self.get(&uri, None, None).await
+        return self.get(&uri, None, None).await;
     }
 
     async fn get_networks(&self) -> Response {
-        return self.get("networks", None, None).await
+        return self.get("networks", None, None).await;
     }
 
     async fn create_network(&self, params: Params) -> Response {
-        return self.post("networks", params, None).await
+        return self.post("networks", params, None).await;
     }
 
     async fn update_network(&self, network_id: &str, params: Params) -> Response {
         let uri = format!("networks/{}", network_id);
-        return self.put(&uri, params, None).await
+        return self.put(&uri, params, None).await;
     }
 
     async fn get_network(&self, network_id: &str) -> Response {
         let uri = format!("networks/{}", network_id);
-        return self.get(&uri, None, None).await
+        return self.get(&uri, None, None).await;
     }
 
     async fn get_oracles(&self) -> Response {
-        return self.get("oracles", None, None).await
+        return self.get("oracles", None, None).await;
     }
 
     async fn create_oracle(&self, params: Params) -> Response {
-        return self.post("oracles", params, None).await
+        return self.post("oracles", params, None).await;
     }
 
     async fn get_oracle(&self, oracle_id: &str) -> Response {
         let uri = format!("oracles/{}", oracle_id);
-        return self.get(&uri, None, None).await
+        return self.get(&uri, None, None).await;
     }
 
     async fn update_oracle(&self, oracle_id: &str, params: Params) -> Response {
         let uri = format!("oracles/{}", oracle_id);
-        return self.put(&uri, params, None).await
+        return self.put(&uri, params, None).await;
     }
 
     async fn delete_oracle(&self, oracle_id: &str) -> Response {
         let uri = format!("oracles/{}", oracle_id);
-        return self.delete(&uri, None, None).await
+        return self.delete(&uri, None, None).await;
     }
 
     async fn get_transactions(&self) -> Response {
-        return self.get("transactions", None, None).await
+        return self.get("transactions", None, None).await;
     }
 
     async fn create_transaction(&self, params: Params) -> Response {
-        return self.post("transactions", params, None).await
+        return self.post("transactions", params, None).await;
     }
 
     async fn get_transaction(&self, tx_id: &str) -> Response {
         let uri = format!("transactions/{}", tx_id);
-        return self.get(&uri, None, None).await
+        return self.get(&uri, None, None).await;
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use fake::faker::name::en::{Name, FirstName, LastName};
+    use crate::api::ident::{Application, AuthenticateResponse, Ident, Token};
     use fake::faker::internet::en::{FreeEmail, Password};
+    use fake::faker::name::en::{FirstName, LastName, Name};
     use fake::Fake;
-    use crate::ident::{Ident, AuthenticateResponse, Application, Token};
     use serde_json::json;
 
     const ROPSTEN_NETWORK_ID: &str = "66d44f30-9092-4182-a3c4-bc02736d6ae5";
@@ -214,7 +214,10 @@ mod tests {
             "email": &email,
             "password": &password,
         }));
-        let create_user_res = ident.create_user(user_data).await.expect("create user response");
+        let create_user_res = ident
+            .create_user(user_data)
+            .await
+            .expect("create user response");
         assert_eq!(create_user_res.status(), 201);
 
         let params = Some(json!({
@@ -222,10 +225,16 @@ mod tests {
             "password": &password,
             "scope": "offline_access",
         }));
-        let authenticate_res = ident.authenticate(params).await.expect("authenticate response");
+        let authenticate_res = ident
+            .authenticate(params)
+            .await
+            .expect("authenticate response");
         assert_eq!(authenticate_res.status(), 201);
 
-        return authenticate_res.json::<AuthenticateResponse>().await.expect("authentication response body");
+        return authenticate_res
+            .json::<AuthenticateResponse>()
+            .await
+            .expect("authentication response body");
     }
 
     async fn generate_new_application(ident: &ApiClient, user_id: &str) -> Application {
@@ -238,10 +247,16 @@ mod tests {
             "hidden": false
         }));
 
-        let create_application_res = ident.create_application(application_data).await.expect("generate application response");
+        let create_application_res = ident
+            .create_application(application_data)
+            .await
+            .expect("generate application response");
         assert_eq!(create_application_res.status(), 201);
 
-        return create_application_res.json::<Application>().await.expect("create application body")
+        return create_application_res
+            .json::<Application>()
+            .await
+            .expect("create application body");
     }
 
     async fn generate_application_auth(ident: &ApiClient, application_id: &str) -> Token {
@@ -250,10 +265,16 @@ mod tests {
             "scope": "offline_access",
         }));
 
-        let application_auth_res = ident.application_authorization(application_authorization_params).await.expect("application authorization response");
+        let application_auth_res = ident
+            .application_authorization(application_authorization_params)
+            .await
+            .expect("application authorization response");
         assert_eq!(application_auth_res.status(), 201);
 
-        return application_auth_res.json::<Token>().await.expect("application authorization body")
+        return application_auth_res
+            .json::<Token>()
+            .await
+            .expect("application authorization body");
     }
 
     #[tokio::test]
@@ -266,7 +287,10 @@ mod tests {
 
         let nchain: ApiClient = NChain::factory(&access_token);
 
-        let get_accounts_res = nchain.list_accounts().await.expect("list accounts response");
+        let get_accounts_res = nchain
+            .list_accounts()
+            .await
+            .expect("list accounts response");
         assert_eq!(get_accounts_res.status(), 200);
     }
 
@@ -284,7 +308,10 @@ mod tests {
             "network_id": ROPSTEN_NETWORK_ID,
         }));
 
-        let create_account_res = nchain.create_account(create_account_params).await.expect("create account response");
+        let create_account_res = nchain
+            .create_account(create_account_params)
+            .await
+            .expect("create account response");
         assert_eq!(create_account_res.status(), 201);
     }
 
@@ -302,12 +329,21 @@ mod tests {
             "network_id": ROPSTEN_NETWORK_ID,
         }));
 
-        let create_account_res = nchain.create_account(create_account_params).await.expect("create account response");
+        let create_account_res = nchain
+            .create_account(create_account_params)
+            .await
+            .expect("create account response");
         assert_eq!(create_account_res.status(), 201);
 
-        let create_account_body = create_account_res.json::<Account>().await.expect("create account body");
+        let create_account_body = create_account_res
+            .json::<Account>()
+            .await
+            .expect("create account body");
 
-        let get_account_res = nchain.get_account(&create_account_body.id).await.expect("get account response");
+        let get_account_res = nchain
+            .get_account(&create_account_body.id)
+            .await
+            .expect("get account response");
         assert_eq!(get_account_res.status(), 200);
     }
 
@@ -321,9 +357,11 @@ mod tests {
 
         let ident: ApiClient = Ident::factory(&access_token);
 
-        let create_application_body = generate_new_application(&ident, &authentication_res_body.user.id).await;
+        let create_application_body =
+            generate_new_application(&ident, &authentication_res_body.user.id).await;
 
-        let application_auth_body = generate_application_auth(&ident, &create_application_body.id).await;
+        let application_auth_body =
+            generate_application_auth(&ident, &create_application_body.id).await;
 
         let application_access_token = match application_auth_body.access_token {
             Some(string) => string,
@@ -332,7 +370,10 @@ mod tests {
 
         let nchain: ApiClient = NChain::factory(&application_access_token);
 
-        let get_connectors_res = nchain.get_connectors().await.expect("get connectors response");
+        let get_connectors_res = nchain
+            .get_connectors()
+            .await
+            .expect("get connectors response");
         assert_eq!(get_connectors_res.status(), 200);
     }
 
@@ -346,9 +387,11 @@ mod tests {
 
         let ident: ApiClient = Ident::factory(&access_token);
 
-        let create_application_body = generate_new_application(&ident, &authentication_res_body.user.id).await;
+        let create_application_body =
+            generate_new_application(&ident, &authentication_res_body.user.id).await;
 
-        let application_auth_body = generate_application_auth(&ident, &create_application_body.id).await;
+        let application_auth_body =
+            generate_application_auth(&ident, &create_application_body.id).await;
 
         let application_access_token = match application_auth_body.access_token {
             Some(string) => string,
@@ -374,7 +417,10 @@ mod tests {
             },
         }));
 
-        let create_connector_res = nchain.create_connector(create_connector_params).await.expect("create connector response");
+        let create_connector_res = nchain
+            .create_connector(create_connector_params)
+            .await
+            .expect("create connector response");
         assert_eq!(create_connector_res.status(), 201);
     }
 
@@ -388,9 +434,11 @@ mod tests {
 
         let ident: ApiClient = Ident::factory(&access_token);
 
-        let create_application_body = generate_new_application(&ident, &authentication_res_body.user.id).await;
+        let create_application_body =
+            generate_new_application(&ident, &authentication_res_body.user.id).await;
 
-        let application_auth_body = generate_application_auth(&ident, &create_application_body.id).await;
+        let application_auth_body =
+            generate_application_auth(&ident, &create_application_body.id).await;
 
         let application_access_token = match application_auth_body.access_token {
             Some(string) => string,
@@ -416,12 +464,21 @@ mod tests {
             },
         }));
 
-        let create_connector_res = nchain.create_connector(create_connector_params).await.expect("create connector response");
+        let create_connector_res = nchain
+            .create_connector(create_connector_params)
+            .await
+            .expect("create connector response");
         assert_eq!(create_connector_res.status(), 201);
 
-        let create_connector_body = create_connector_res.json::<Connector>().await.expect("create connector body");
+        let create_connector_body = create_connector_res
+            .json::<Connector>()
+            .await
+            .expect("create connector body");
 
-        let get_connector_res = nchain.get_connector(&create_connector_body.id).await.expect("get connector response");
+        let get_connector_res = nchain
+            .get_connector(&create_connector_body.id)
+            .await
+            .expect("get connector response");
         assert_eq!(get_connector_res.status(), 200);
     }
 
@@ -435,9 +492,11 @@ mod tests {
 
         let ident: ApiClient = Ident::factory(&access_token);
 
-        let create_application_body = generate_new_application(&ident, &authentication_res_body.user.id).await;
+        let create_application_body =
+            generate_new_application(&ident, &authentication_res_body.user.id).await;
 
-        let application_auth_body = generate_application_auth(&ident, &create_application_body.id).await;
+        let application_auth_body =
+            generate_application_auth(&ident, &create_application_body.id).await;
 
         let application_access_token = match application_auth_body.access_token {
             Some(string) => string,
@@ -463,12 +522,21 @@ mod tests {
             },
         }));
 
-        let create_connector_res = nchain.create_connector(create_connector_params).await.expect("create connector response");
+        let create_connector_res = nchain
+            .create_connector(create_connector_params)
+            .await
+            .expect("create connector response");
         assert_eq!(create_connector_res.status(), 201);
 
-        let create_connector_body = create_connector_res.json::<Connector>().await.expect("create connector body");
+        let create_connector_body = create_connector_res
+            .json::<Connector>()
+            .await
+            .expect("create connector body");
 
-        let delete_connector_res = nchain.delete_connector(&create_connector_body.id).await.expect("delete connector res");
+        let delete_connector_res = nchain
+            .delete_connector(&create_connector_body.id)
+            .await
+            .expect("delete connector res");
         assert_eq!(delete_connector_res.status(), 500); // FIXME
     }
 
@@ -482,9 +550,11 @@ mod tests {
 
         let ident: ApiClient = Ident::factory(&access_token);
 
-        let create_application_body = generate_new_application(&ident, &authentication_res_body.user.id).await;
+        let create_application_body =
+            generate_new_application(&ident, &authentication_res_body.user.id).await;
 
-        let application_auth_body = generate_application_auth(&ident, &create_application_body.id).await;
+        let application_auth_body =
+            generate_application_auth(&ident, &create_application_body.id).await;
 
         let application_access_token = match application_auth_body.access_token {
             Some(string) => string,
@@ -493,7 +563,10 @@ mod tests {
 
         let nchain: ApiClient = NChain::factory(&application_access_token);
 
-        let get_contracts_res = nchain.get_contracts().await.expect("get contracts response");
+        let get_contracts_res = nchain
+            .get_contracts()
+            .await
+            .expect("get contracts response");
         assert_eq!(get_contracts_res.status(), 200);
     }
 
@@ -507,9 +580,11 @@ mod tests {
 
         let ident: ApiClient = Ident::factory(&access_token);
 
-        let create_application_body = generate_new_application(&ident, &authentication_res_body.user.id).await;
+        let create_application_body =
+            generate_new_application(&ident, &authentication_res_body.user.id).await;
 
-        let application_auth_body = generate_application_auth(&ident, &create_application_body.id).await;
+        let application_auth_body =
+            generate_application_auth(&ident, &create_application_body.id).await;
 
         let application_access_token = match application_auth_body.access_token {
             Some(string) => string,
@@ -525,7 +600,10 @@ mod tests {
             "address": "0x"
         }));
 
-        let create_contract_res = nchain.create_contract(create_contract_params).await.expect("create contract response");
+        let create_contract_res = nchain
+            .create_contract(create_contract_params)
+            .await
+            .expect("create contract response");
         assert_eq!(create_contract_res.status(), 201);
     }
 
@@ -539,9 +617,11 @@ mod tests {
 
         let ident: ApiClient = Ident::factory(&access_token);
 
-        let create_application_body = generate_new_application(&ident, &authentication_res_body.user.id).await;
+        let create_application_body =
+            generate_new_application(&ident, &authentication_res_body.user.id).await;
 
-        let application_auth_body = generate_application_auth(&ident, &create_application_body.id).await;
+        let application_auth_body =
+            generate_application_auth(&ident, &create_application_body.id).await;
 
         let application_access_token = match application_auth_body.access_token {
             Some(string) => string,
@@ -557,12 +637,21 @@ mod tests {
             "address": "0x"
         }));
 
-        let create_contract_res = nchain.create_contract(create_contract_params).await.expect("create contract response");
+        let create_contract_res = nchain
+            .create_contract(create_contract_params)
+            .await
+            .expect("create contract response");
         assert_eq!(create_contract_res.status(), 201);
 
-        let create_contract_body = create_contract_res.json::<Contract>().await.expect("create contract body");
+        let create_contract_body = create_contract_res
+            .json::<Contract>()
+            .await
+            .expect("create contract body");
 
-        let get_contract_res = nchain.get_contract(&create_contract_body.id).await.expect("get contract response");
+        let get_contract_res = nchain
+            .get_contract(&create_contract_body.id)
+            .await
+            .expect("get contract response");
         assert_eq!(get_contract_res.status(), 200);
     }
 
@@ -576,9 +665,11 @@ mod tests {
 
         let ident: ApiClient = Ident::factory(&access_token);
 
-        let create_application_body = generate_new_application(&ident, &authentication_res_body.user.id).await;
+        let create_application_body =
+            generate_new_application(&ident, &authentication_res_body.user.id).await;
 
-        let application_auth_body = generate_application_auth(&ident, &create_application_body.id).await;
+        let application_auth_body =
+            generate_application_auth(&ident, &create_application_body.id).await;
 
         let application_access_token = match application_auth_body.access_token {
             Some(string) => string,
@@ -594,26 +685,41 @@ mod tests {
             "address": "0x"
         }));
 
-        let create_contract_res = nchain.create_contract(create_contract_params).await.expect("create contract response");
+        let create_contract_res = nchain
+            .create_contract(create_contract_params)
+            .await
+            .expect("create contract response");
         assert_eq!(create_contract_res.status(), 201);
 
-        let create_contract_body = create_contract_res.json::<Contract>().await.expect("create contract body");
+        let create_contract_body = create_contract_res
+            .json::<Contract>()
+            .await
+            .expect("create contract body");
 
         let create_wallet_params = Some(json!({
             "application_id": &create_application_body.id,
         }));
 
-        let create_wallet_res = nchain.create_wallet(create_wallet_params).await.expect("create wallet response");
+        let create_wallet_res = nchain
+            .create_wallet(create_wallet_params)
+            .await
+            .expect("create wallet response");
         assert_eq!(create_wallet_res.status(), 201);
 
-        let create_wallet_body = create_wallet_res.json::<Wallet>().await.expect("create wallet body");
+        let create_wallet_body = create_wallet_res
+            .json::<Wallet>()
+            .await
+            .expect("create wallet body");
 
         let execute_contract_params = Some(json!({
             "value": 0,
             "wallet_id": create_wallet_body.id,
         }));
 
-        let execute_contract_res = nchain.execute_contract(&create_contract_body.id, execute_contract_params).await.expect("execute contract response");
+        let execute_contract_res = nchain
+            .execute_contract(&create_contract_body.id, execute_contract_params)
+            .await
+            .expect("execute contract response");
         assert_eq!(execute_contract_res.status(), 202);
     }
 
@@ -645,7 +751,10 @@ mod tests {
             "user_id": authentication_res_body.user.id,
         }));
 
-        let create_wallet_res = nchain.create_wallet(create_wallet_params).await.expect("create wallet response");
+        let create_wallet_res = nchain
+            .create_wallet(create_wallet_params)
+            .await
+            .expect("create wallet response");
         assert_eq!(create_wallet_res.status(), 201);
     }
 
@@ -663,12 +772,21 @@ mod tests {
             "user_id": authentication_res_body.user.id,
         }));
 
-        let create_wallet_res = nchain.create_wallet(create_wallet_params).await.expect("create wallet response");
+        let create_wallet_res = nchain
+            .create_wallet(create_wallet_params)
+            .await
+            .expect("create wallet response");
         assert_eq!(create_wallet_res.status(), 201);
 
-        let create_wallet_body = create_wallet_res.json::<Wallet>().await.expect("create wallet body");
+        let create_wallet_body = create_wallet_res
+            .json::<Wallet>()
+            .await
+            .expect("create wallet body");
 
-        let get_wallet_accounts_res = nchain.get_wallet_accounts(&create_wallet_body.id).await.expect("get wallet accounts response");
+        let get_wallet_accounts_res = nchain
+            .get_wallet_accounts(&create_wallet_body.id)
+            .await
+            .expect("get wallet accounts response");
         assert_eq!(get_wallet_accounts_res.status(), 200);
     }
 
@@ -696,9 +814,11 @@ mod tests {
 
         let ident: ApiClient = Ident::factory(&access_token);
 
-        let create_application_body = generate_new_application(&ident, &authentication_res_body.user.id).await;
+        let create_application_body =
+            generate_new_application(&ident, &authentication_res_body.user.id).await;
 
-        let application_auth_body = generate_application_auth(&ident, &create_application_body.id).await;
+        let application_auth_body =
+            generate_application_auth(&ident, &create_application_body.id).await;
 
         let application_access_token = match application_auth_body.access_token {
             Some(string) => string,
@@ -742,7 +862,10 @@ mod tests {
             }
         }));
 
-        let create_network_res = nchain.create_network(create_network_params).await.expect("create network response");
+        let create_network_res = nchain
+            .create_network(create_network_params)
+            .await
+            .expect("create network response");
         assert_eq!(create_network_res.status(), 201);
     }
 
@@ -756,7 +879,8 @@ mod tests {
 
         let ident: ApiClient = Ident::factory(&access_token);
 
-        let create_application_body = generate_new_application(&ident, &authentication_res_body.user.id).await;
+        let create_application_body =
+            generate_new_application(&ident, &authentication_res_body.user.id).await;
 
         let nchain: ApiClient = NChain::factory(&access_token);
 
@@ -795,16 +919,25 @@ mod tests {
             }
         }));
 
-        let create_network_res = nchain.create_network(create_network_params).await.expect("create network response");
+        let create_network_res = nchain
+            .create_network(create_network_params)
+            .await
+            .expect("create network response");
         assert_eq!(create_network_res.status(), 201);
 
-        let create_network_body = create_network_res.json::<Network>().await.expect("create network body");
+        let create_network_body = create_network_res
+            .json::<Network>()
+            .await
+            .expect("create network body");
 
         let update_network_params = Some(json!({
             "description": "some network description"
         }));
 
-        let update_network_res = nchain.update_network(&create_network_body.id, update_network_params).await.expect("udpate network response");
+        let update_network_res = nchain
+            .update_network(&create_network_body.id, update_network_params)
+            .await
+            .expect("udpate network response");
         assert_eq!(update_network_res.status(), 204);
     }
 
@@ -818,7 +951,8 @@ mod tests {
 
         let ident: ApiClient = Ident::factory(&access_token);
 
-        let create_application_body = generate_new_application(&ident, &authentication_res_body.user.id).await;
+        let create_application_body =
+            generate_new_application(&ident, &authentication_res_body.user.id).await;
 
         let nchain: ApiClient = NChain::factory(&access_token);
 
@@ -857,12 +991,21 @@ mod tests {
             }
         }));
 
-        let create_network_res = nchain.create_network(create_network_params).await.expect("create network response");
+        let create_network_res = nchain
+            .create_network(create_network_params)
+            .await
+            .expect("create network response");
         assert_eq!(create_network_res.status(), 201);
 
-        let create_network_body = create_network_res.json::<Network>().await.expect("create network body");
+        let create_network_body = create_network_res
+            .json::<Network>()
+            .await
+            .expect("create network body");
 
-        let get_network_res = nchain.get_network(&create_network_body.id).await.expect("get network response");
+        let get_network_res = nchain
+            .get_network(&create_network_body.id)
+            .await
+            .expect("get network response");
         assert_eq!(get_network_res.status(), 200);
     }
 
@@ -890,7 +1033,10 @@ mod tests {
 
         let nchain: ApiClient = NChain::factory(&access_token);
 
-        let get_transactions_res = nchain.get_transactions().await.expect("get transactions response");
+        let get_transactions_res = nchain
+            .get_transactions()
+            .await
+            .expect("get transactions response");
         assert_eq!(get_transactions_res.status(), 200);
     }
 
@@ -908,10 +1054,16 @@ mod tests {
             "user_id": authentication_res_body.user.id,
         }));
 
-        let create_wallet_res = nchain.create_wallet(create_wallet_params).await.expect("create wallet response");
+        let create_wallet_res = nchain
+            .create_wallet(create_wallet_params)
+            .await
+            .expect("create wallet response");
         assert_eq!(create_wallet_res.status(), 201);
 
-        let create_wallet_body = create_wallet_res.json::<Wallet>().await.expect("create wallet body");
+        let create_wallet_body = create_wallet_res
+            .json::<Wallet>()
+            .await
+            .expect("create wallet body");
 
         let create_transaction_params = Some(json!({
             "network_id": ROPSTEN_NETWORK_ID,
@@ -922,7 +1074,10 @@ mod tests {
             "value": 0
         }));
 
-        let create_transaction_res = nchain.create_transaction(create_transaction_params).await.expect("create transaction response");
+        let create_transaction_res = nchain
+            .create_transaction(create_transaction_params)
+            .await
+            .expect("create transaction response");
         assert_eq!(create_transaction_res.status(), 201);
     }
 
@@ -940,10 +1095,16 @@ mod tests {
             "user_id": authentication_res_body.user.id,
         }));
 
-        let create_wallet_res = nchain.create_wallet(create_wallet_params).await.expect("create wallet response");
+        let create_wallet_res = nchain
+            .create_wallet(create_wallet_params)
+            .await
+            .expect("create wallet response");
         assert_eq!(create_wallet_res.status(), 201);
 
-        let create_wallet_body = create_wallet_res.json::<Wallet>().await.expect("create wallet body");
+        let create_wallet_body = create_wallet_res
+            .json::<Wallet>()
+            .await
+            .expect("create wallet body");
 
         let create_transaction_params = Some(json!({
             "network_id": ROPSTEN_NETWORK_ID,
@@ -954,12 +1115,21 @@ mod tests {
             "value": 0
         }));
 
-        let create_transaction_res = nchain.create_transaction(create_transaction_params).await.expect("create transaction response");
+        let create_transaction_res = nchain
+            .create_transaction(create_transaction_params)
+            .await
+            .expect("create transaction response");
         assert_eq!(create_transaction_res.status(), 201);
 
-        let create_transaction_body = create_transaction_res.json::<Transaction>().await.expect("create transaction body");
-        
-        let get_transaction_res = nchain.get_transaction(&create_transaction_body.id).await.expect("get transaction response");
+        let create_transaction_body = create_transaction_res
+            .json::<Transaction>()
+            .await
+            .expect("create transaction body");
+
+        let get_transaction_res = nchain
+            .get_transaction(&create_transaction_body.id)
+            .await
+            .expect("get transaction response");
         assert_eq!(get_transaction_res.status(), 200);
     }
 }
