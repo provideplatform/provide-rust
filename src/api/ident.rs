@@ -59,6 +59,11 @@ pub trait Ident {
         application_id: &str,
         params: Params,
     ) -> Response;
+
+    // async fn create_invitation(
+    //     &self,
+    //     params: Params,
+    // ) -> Response;
 }
 
 #[async_trait]
@@ -833,4 +838,59 @@ mod tests {
 // making services a struct that wraps client vs traits
 // making service arg params structs vs Value, optional?
 
-// add way to run tests that takes a service input and runs only that service vs all
+// use global vars and passing args as config tests for baseline setup vs config file, which sometimes fails
+
+// handlers
+// GET    /.well-known/jwks.json                                            ?
+// GET    /.well-known/jwks                                                 ?
+// GET    /.well-known/keys                                                 ?
+// GET    /.well-known/openid-configuration                                 ?
+// GET    /.well-known/resolve/:did                                         ?
+// GET    /status                                                           X
+// GET    /legal/privacy_policy                                             
+// GET    /legal/terms_of_service                                           
+// POST   /api/v1/authenticate                                              X
+// POST   /api/v1/users                                                     X
+// POST   /api/v1/users/reset_password                                      
+// POST   /api/v1/users/reset_password/:token                               
+// POST   /api/v1/oauth/callback                                            ?
+// GET    /api/v1/applications                                              X
+// POST   /api/v1/applications                                              X
+// GET    /api/v1/applications/:id                                          X
+// PUT    /api/v1/applications/:id                                          X
+// DELETE /api/v1/applications/:id                                          X
+// GET    /api/v1/applications/:id/tokens                                   
+// GET    /api/v1/applications/:id/organizations                            
+// POST   /api/v1/applications/:id/organizations                            X
+// PUT    /api/v1/applications/:id/organizations/:orgId                     
+// DELETE /api/v1/applications/:id/organizations/:orgId                     
+// GET    /api/v1/applications/:id/users                                    X
+// POST   /api/v1/applications/:id/users                                    X
+// PUT    /api/v1/applications/:id/users/:userId                            
+// DELETE /api/v1/applications/:id/users/:userId                            
+// GET    /api/v1/applications/:id/invitations                              
+// GET    /api/v1/organizations                                             X
+// GET    /api/v1/organizations/:id                                         X
+// POST   /api/v1/organizations                                             X
+// PUT    /api/v1/organizations/:id                                         X
+// DELETE /api/v1/organizations/:id                                         
+// GET    /api/v1/organizations/:id/users                                   
+// POST   /api/v1/organizations/:id/users 
+// PUT    /api/v1/organizations/:id/users/:userId 
+// DELETE /api/v1/organizations/:id/users/:userId 
+// GET    /api/v1/organizations/:id/invitations 
+// GET    /api/v1/organizations/:id/vaults 
+// GET    /api/v1/organizations/:id/vaults/:vaultId/keys 
+// POST   /api/v1/organizations/:id/vaults/:vaultId/keys 
+// POST   /api/v1/organizations/:id/vaults/:vaultId/keys/:keyId/sign 
+// POST   /api/v1/organizations/:id/vaults/:vaultId/keys/:keyId/verify 
+// GET    /api/v1/organizations/:id/vaults/:vaultId/secrets 
+// GET    /api/v1/tokens                                                    X
+// POST   /api/v1/tokens                                                    X
+// DELETE /api/v1/tokens/:id        
+// GET    /api/v1/users                                                     X
+// GET    /api/v1/users/:id                                                 X
+// PUT    /api/v1/users/:id                                                 X
+// DELETE /api/v1/users/:id                                                 X
+// POST   /api/v1/invitations       
+

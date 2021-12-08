@@ -54,7 +54,7 @@ pub trait Baseline {
 
     async fn update_business_object(&self, business_object_id: &str, params: Params) -> Response;
 
-    async fn get_workflows(&self) -> Response;
+    async fn get_workflows(&self, params: Params) -> Response;
 
     async fn get_workflow(&self, workflow_id: &str) -> Response;
 
@@ -183,8 +183,8 @@ impl Baseline for ApiClient {
         return self.put(&uri, params, None).await;
     }
 
-    async fn get_workflows(&self) -> Response {
-        return self.get("workflows", None, None).await;
+    async fn get_workflows(&self, params: Params) -> Response {
+        return self.get("workflows", params, None).await;
     }
 
     async fn get_workflow(&self, workflow_id: &str) -> Response {
@@ -437,7 +437,7 @@ mod tests {
             .create_account(Some(create_account_params))
             .await
             .expect("create account response");
-        assert_eq!(create_account_res.status(), 201);
+        assert_eq!(create_account_res.status(), 201, "create account response body: {:?}", create_account_res.json::<Value>().await.unwrap());
         let create_account_body = create_account_res
             .json::<Account>()
             .await
@@ -604,12 +604,13 @@ mod tests {
             std::env::var("VAULT_API_SCHEME").unwrap_or(String::from("http"))
         );
         run_cmd += &format!(" --workgroup={}", &create_application_body.id);
+        run_cmd += &format!(" --postgres-hostname={}-postgres", &create_organization_body.name);
         run_cmd += &format!(" --postgres-port={}", "5433");
 
-        let localhost_regex = regex::Regex::new(r"localhost").expect("localhost regex expression");
-        run_cmd = localhost_regex
-            .replace_all(&run_cmd, "host.docker.internal")
-            .to_string();
+        // let localhost_regex = regex::Regex::new(r"localhost").expect("localhost regex expression");
+        // run_cmd = localhost_regex
+        //     .replace_all(&run_cmd, "host.docker.internal")
+        //     .to_string();
         let baseline_cmd = format!("{} {}", run_env, run_cmd);
 
         Command::new("sh")
@@ -989,10 +990,18 @@ mod tests {
         let org_access_token = serde_json::from_str::<String>(&org_access_token_json)
             .expect("organzation access token");
 
+        let app_id_json = config_vals["app_id"].to_string();
+        let app_id = serde_json::from_str::<String>(&app_id_json)
+                .expect("workgroup id");
+
         let baseline: ApiClient = Baseline::factory(&org_access_token);
 
+        let get_workflows_params = json!({
+            "workgroup_id": &app_id,
+        });
+
         let get_workflows_res = baseline
-            .get_workflows()
+            .get_workflows(Some(get_workflows_params))
             .await
             .expect("get workflows response");
         assert_eq!(get_workflows_res.status(), 200);
@@ -1006,11 +1015,20 @@ mod tests {
         let org_access_token_json = config_vals["org_access_token"].to_string();
         let org_access_token = serde_json::from_str::<String>(&org_access_token_json).expect("organzation access token");
 
+        let app_id_json = config_vals["app_id"].to_string();
+        let app_id = serde_json::from_str::<String>(&app_id_json)
+                .expect("workgroup id");
+
         let baseline: ApiClient = Baseline::factory(&org_access_token);
 
         let create_workflow_params = json!({
-           "participants": [],
-           "worksteps": [],
+            "workgroup_id": &app_id,
+            "name": format!("{} workflow", Name().fake::<String>()),
+            "participants": [],
+            "shield": "",
+            "status": "draft",
+            "version": "1",
+            "worksteps": [],
         });
 
         let create_workflow_res = baseline.create_workflow(Some(create_workflow_params)).await.expect("create workflow response");
@@ -1123,15 +1141,14 @@ mod tests {
 
     // #[tokio::test]
     // async fn create_workgroup() {
-    //     let authentication_res_body = generate_new_user_and_token().await;
-    //     let access_token = match authentication_res_body.token.access_token {
-    //         Some(string) => string,
-    //         None => panic!("authentication response access token not found"),
-    //     };
+    //     let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
+    //     let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
 
-    //     let baseline: ApiClient = Baseline::factory(access_token);
+    //     let org_access_token_json = config_vals["org_access_token"].to_string();
+    //     let org_access_token = serde_json::from_str::<String>(&org_access_token_json)
+    //         .expect("organzation access token");
 
-    //     let create_subject_body = generate_subject(&baseline).await;
+    //     let baseline: ApiClient = Baseline::factory(&org_access_token);
 
     //     let create_workgroup_params = Some(json!({
     //         "subject_id": format!("did:prvd:{}", &create_subject_body.id),
@@ -1340,9 +1357,6 @@ mod tests {
         let org_access_token_json = config_vals["org_access_token"].to_string();
         let org_access_token = serde_json::from_str::<String>(&org_access_token_json)
             .expect("organzation access token");
-
-        let app_id_json = config_vals["app_id"].to_string();
-        let app_id = serde_json::from_str::<String>(&app_id_json).expect("application id");
 
         let baseline: ApiClient = Baseline::factory(&org_access_token);
 

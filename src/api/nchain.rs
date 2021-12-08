@@ -198,7 +198,7 @@ mod tests {
     use fake::faker::internet::en::{FreeEmail, Password};
     use fake::faker::name::en::{FirstName, LastName, Name};
     use fake::Fake;
-    use serde_json::json;
+    use serde_json::{json, Value};
 
     const ROPSTEN_NETWORK_ID: &str = "66d44f30-9092-4182-a3c4-bc02736d6ae5";
 
@@ -291,7 +291,7 @@ mod tests {
             .list_accounts()
             .await
             .expect("list accounts response");
-        assert_eq!(get_accounts_res.status(), 200);
+        assert_eq!(get_accounts_res.status(), 200, "get accounts response body {:?}", get_accounts_res.json::<Value>().await.unwrap());
     }
 
     #[tokio::test]
@@ -312,7 +312,7 @@ mod tests {
             .create_account(create_account_params)
             .await
             .expect("create account response");
-        assert_eq!(create_account_res.status(), 201);
+        assert_eq!(create_account_res.status(), 201, "create account response body {:?}", create_account_res.json::<Value>().await.unwrap());
     }
 
     #[tokio::test]

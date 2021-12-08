@@ -2,6 +2,8 @@ pub use crate::models::client::{AdditionalHeader, ApiClient, Params, Response};
 use http;
 use reqwest;
 
+use super::ident::Ident;
+
 const DEFAULT_API_USER_AGENT: &str = "provide-rust client library";
 
 impl ApiClient {
@@ -25,7 +27,7 @@ impl ApiClient {
         let url = format!("{}/{}", self.base_url, uri);
         self.client
             .get(url)
-            .headers(self.construct_headers(additional_headers))
+            .headers(self.construct_headers(additional_headers, "GET"))
             .json(&params)
             .send()
     }
@@ -39,7 +41,7 @@ impl ApiClient {
         let url = format!("{}/{}", self.base_url, uri);
         self.client
             .patch(url)
-            .headers(self.construct_headers(additional_headers))
+            .headers(self.construct_headers(additional_headers, "PATCH"))
             .json(&params)
             .send()
     }
@@ -53,7 +55,7 @@ impl ApiClient {
         let url = format!("{}/{}", self.base_url, uri);
         self.client
             .put(url)
-            .headers(self.construct_headers(additional_headers))
+            .headers(self.construct_headers(additional_headers, "PUT"))
             .json(&params)
             .send()
     }
@@ -67,7 +69,7 @@ impl ApiClient {
         let url = format!("{}/{}", self.base_url, uri);
         self.client
             .post(url)
-            .headers(self.construct_headers(additional_headers))
+            .headers(self.construct_headers(additional_headers, "POST"))
             .json(&params)
             .send()
     }
@@ -81,7 +83,7 @@ impl ApiClient {
         let url = format!("{}/{}", self.base_url, uri);
         self.client
             .delete(url)
-            .headers(self.construct_headers(additional_headers))
+            .headers(self.construct_headers(additional_headers, "DELETE"))
             .json(&params)
             .send()
     }
@@ -99,15 +101,18 @@ impl ApiClient {
     pub fn construct_headers(
         &self,
         additional_headers: Option<Vec<AdditionalHeader>>,
+        method: &str,
     ) -> http::HeaderMap {
         // make additiona headers reference?
         let mut headers = http::HeaderMap::new();
 
-        // make conditional
-        headers.insert(
-            "content-type",
-            http::HeaderValue::from_static("application/json"),
-        );
+        if method == "POST" || method == "PUT"  || method == "PATCH" {
+            headers.insert(
+                "content-type",
+                http::HeaderValue::from_static("application/json"),
+            );
+        }
+
         headers.insert(
             "user-agent",
             http::HeaderValue::from_str(
