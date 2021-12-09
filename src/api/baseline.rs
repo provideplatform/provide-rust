@@ -642,10 +642,10 @@ mod tests {
         run_cmd += &format!(" --postgres-hostname={}-postgres", &create_organization_body.name);
         run_cmd += &format!(" --postgres-port={}", "5433");
 
-        // let localhost_regex = regex::Regex::new(r"localhost").expect("localhost regex expression");
-        // run_cmd = localhost_regex
-        //     .replace_all(&run_cmd, "host.docker.internal")
-        //     .to_string();
+        let localhost_regex = regex::Regex::new(r"localhost").expect("localhost regex expression");
+        run_cmd = localhost_regex
+            .replace_all(&run_cmd, "host.docker.internal")
+            .to_string();
         let baseline_cmd = format!("{} {}", run_env, run_cmd);
 
         Command::new("sh")
@@ -692,7 +692,7 @@ mod tests {
         let baseline: ApiClient = Baseline::factory(&org_access_token);
 
         let get_workflows_params = json!({
-            "workgroup_id": &app_id,
+            "workgroup_id": &app_id, // i dont think this is necessary, its org scoped
         });
 
         let get_workflows_res = baseline
@@ -747,7 +747,7 @@ mod tests {
         let create_workflow_res = baseline.create_workflow(Some(create_workflow_params)).await.expect("create workflow response");
         assert_eq!(create_workflow_res.status(), 201, "create workflow response body: {:?}", create_workflow_res.json::<Value>().await.unwrap());
 
-        let create_workflow_body = create_workflow_res.json::<Workflow>().await.expect("create workflow res body");
+        let create_workflow_body = create_workflow_res.json::<Workflow>().await.expect("create workflow body");
 
         let update_workflow_params = json!({
             "name": format!("{} workflow", Name().fake::<String>()),
@@ -759,7 +759,6 @@ mod tests {
     
     #[tokio::test]
     async fn deploy_workflow() {
-        // hit deploy endpoint and check that workflow status changes to 
         let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
         let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
 
@@ -780,17 +779,18 @@ mod tests {
         let create_workflow_res = baseline.create_workflow(Some(create_workflow_params)).await.expect("create workflow response");
         assert_eq!(create_workflow_res.status(), 201, "create workflow response body: {:?}", create_workflow_res.json::<Value>().await.unwrap());
 
-        let create_workflow_body = create_workflow_res.json::<Workflow>().await.expect("create workflow res body");
+        let create_workflow_body = create_workflow_res.json::<Workflow>().await.expect("create workflow body");
 
         let deploy_workflow_res = baseline.deploy_workflow(&create_workflow_body.id).await.expect("deploy workflow response");
         assert_eq!(deploy_workflow_res.status(), 201);
 
+        // check that workflow status updates to deployed
         let mut interval = time::interval(Duration::from_millis(500));
         let mut deployed_workflow_status = String::from("");
 
         while deployed_workflow_status != "deployed" {
             let looped_deploy_workflow_res = baseline.get_workflow(&create_workflow_body.id).await.expect("looping deploy workflow response");
-            let looped_deploy_workflow_body = looped_deploy_workflow_res.json::<Workflow>().await.expect("deployed workflow body");
+            let looped_deploy_workflow_body = looped_deploy_workflow_res.json::<Workflow>().await.expect("deploy workflow body");
             deployed_workflow_status = looped_deploy_workflow_body.status;
 
             if deployed_workflow_status != "deployed" {
@@ -798,7 +798,7 @@ mod tests {
             }
         }
 
-        assert_eq!(deployed_workflow_status, "deployed".to_string())
+        assert_eq!(deployed_workflow_status, "deployed".to_string()) // is to_string() necessary
     }
     
     #[tokio::test]
@@ -823,7 +823,7 @@ mod tests {
         let create_workflow_res = baseline.create_workflow(Some(create_workflow_params)).await.expect("create workflow response");
         assert_eq!(create_workflow_res.status(), 201, "create workflow response body: {:?}", create_workflow_res.json::<Value>().await.unwrap());
 
-        let create_workflow_body = create_workflow_res.json::<Workflow>().await.expect("create workflow res body");
+        let create_workflow_body = create_workflow_res.json::<Workflow>().await.expect("create workflow body");
         
         let delete_workflow_res = baseline.delete_workflow(&create_workflow_body.id).await.expect("delete workflow response");
         assert_eq!(delete_workflow_res.status(), 204);
@@ -851,16 +851,14 @@ mod tests {
         let create_workflow_res = baseline.create_workflow(Some(create_workflow_params)).await.expect("create workflow response");
         assert_eq!(create_workflow_res.status(), 201, "create workflow response body: {:?}", create_workflow_res.json::<Value>().await.unwrap());
 
-        let create_workflow_body = create_workflow_res.json::<Workflow>().await.expect("create workflow res body");
+        let create_workflow_body = create_workflow_res.json::<Workflow>().await.expect("create workflow body");
 
-        // create worksteps
-        let create_workstep_res = baseline.create_workstep(&create_workflow_body.id, Some(json!({ "name": format!("{} workflow", Name().fake::<String>()) }))).await.expect("create workstep response");
+        let create_workstep_res = baseline.create_workstep(&create_workflow_body.id, Some(json!({ "name": format!("{} workstep", Name().fake::<String>()) }))).await.expect("create workstep response");
         assert_eq!(create_workstep_res.status(), 201);
     }
 
     #[tokio::test]
     async fn deploy_workflow_worksteps() {
-        // test all worksteps change to deployed status
         let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
         let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
 
@@ -875,20 +873,19 @@ mod tests {
 
         let create_workflow_params = json!({
             "workgroup_id": &app_id,
-            "name": format!("{} workflow", Name().fake::<String>()),
+            "name": format!("{} workstep", Name().fake::<String>()),
         });
 
         let create_workflow_res = baseline.create_workflow(Some(create_workflow_params)).await.expect("create workflow response");
         assert_eq!(create_workflow_res.status(), 201, "create workflow response body: {:?}", create_workflow_res.json::<Value>().await.unwrap());
 
-        let create_workflow_body = create_workflow_res.json::<Workflow>().await.expect("create workflow res body");
+        let create_workflow_body = create_workflow_res.json::<Workflow>().await.expect("create workflow body");
 
-        // create worksteps
-        let create_workstep_res = baseline.create_workstep(&create_workflow_body.id, Some(json!({ "name": format!("{} workflow", Name().fake::<String>()) }))).await.expect("create workstep response");
+        let create_workstep_res = baseline.create_workstep(&create_workflow_body.id, Some(json!({ "name": format!("{} workstep", Name().fake::<String>()) }))).await.expect("create workstep response");
         assert_eq!(create_workstep_res.status(), 201);
 
-        baseline.create_workstep(&create_workflow_body.id, Some(json!({ "name": format!("{} workflow", Name().fake::<String>()) }))).await.expect("create workstep response");
-        baseline.create_workstep(&create_workflow_body.id, Some(json!({ "name": format!("{} workflow", Name().fake::<String>()) }))).await.expect("create workstep response");
+        baseline.create_workstep(&create_workflow_body.id, Some(json!({ "name": format!("{} workstep", Name().fake::<String>()) }))).await.expect("create workstep response");
+        baseline.create_workstep(&create_workflow_body.id, Some(json!({ "name": format!("{} workstep", Name().fake::<String>()) }))).await.expect("create workstep response");
 
         let deploy_workflow_res = baseline.deploy_workflow(&create_workflow_body.id).await.expect("deploy workflow response");
         assert_eq!(deploy_workflow_res.status(), 201);
@@ -896,7 +893,7 @@ mod tests {
         let mut interval = time::interval(Duration::from_millis(500));
         let mut deployed_workflow_worksteps_status = false;
 
-        while deployed_workflow_worksteps_status {
+        while deployed_workflow_worksteps_status != true {
             let fetch_worksteps_res = baseline.fetch_worksteps(&create_workflow_body.id).await.expect("fetch worksteps response");
             let fetch_worksteps_body = fetch_worksteps_res.json::<Vec<Workstep>>().await.expect("fetch worksteps body");
 
@@ -907,6 +904,7 @@ mod tests {
                     count += 1;
                 }
 
+                // test cardinality also
                 assert_eq!(workstep.cardinality, idx)
             }
 
@@ -936,31 +934,30 @@ mod tests {
 
         let create_workflow_params = json!({
             "workgroup_id": &app_id,
-            "name": format!("{} workflow", Name().fake::<String>()),
+            "name": format!("{} workstep", Name().fake::<String>()),
         });
 
         let create_workflow_res = baseline.create_workflow(Some(create_workflow_params)).await.expect("create workflow response");
         assert_eq!(create_workflow_res.status(), 201, "create workflow response body: {:?}", create_workflow_res.json::<Value>().await.unwrap());
 
-        let create_workflow_body = create_workflow_res.json::<Workflow>().await.expect("create workflow res body");
+        let create_workflow_body = create_workflow_res.json::<Workflow>().await.expect("create workflow body");
 
-        // create worksteps
-        let create_workstep_res = baseline.create_workstep(&create_workflow_body.id, Some(json!({ "name": format!("{} workflow", Name().fake::<String>()) }))).await.expect("create workstep response");
+        let create_workstep_res = baseline.create_workstep(&create_workflow_body.id, Some(json!({ "name": format!("{} workstep", Name().fake::<String>()) }))).await.expect("create workstep response");
         assert_eq!(create_workstep_res.status(), 201);
 
         let create_workstep_body = create_workstep_res.json::<Workstep>().await.expect("create workstep body");
 
+        // TODO: test the params you can have / update in a workstep
         let update_workstep_params = json!({
             "description": "an updated workstep description",
         });
 
-        let update_workflow_res = baseline.update_workstep(&create_workflow_body.id, &create_workstep_body.id, Some(update_workstep_params)).await.expect("update workstep response");
-        assert_eq!(update_workflow_res.status(), 201);
+        let update_workstep_res = baseline.update_workstep(&create_workflow_body.id, &create_workstep_body.id, Some(update_workstep_params)).await.expect("update workstep response");
+        assert_eq!(update_workstep_res.status(), 201);
     }
     
     #[tokio::test]
     async fn update_workstep_cardinality() {
-        // test that you can move workstep positions up and down
         let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
         let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
 
@@ -975,20 +972,20 @@ mod tests {
 
         let create_workflow_params = json!({
             "workgroup_id": &app_id,
-            "name": format!("{} workflow", Name().fake::<String>()),
+            "name": format!("{} workstep", Name().fake::<String>()),
         });
 
         let create_workflow_res = baseline.create_workflow(Some(create_workflow_params)).await.expect("create workflow response");
         assert_eq!(create_workflow_res.status(), 201, "create workflow response body: {:?}", create_workflow_res.json::<Value>().await.unwrap());
 
-        let create_workflow_body = create_workflow_res.json::<Workflow>().await.expect("create workflow res body");
+        let create_workflow_body = create_workflow_res.json::<Workflow>().await.expect("create workflow body");
 
         // create worksteps
-        let create_first_workstep_res = baseline.create_workstep(&create_workflow_body.id, Some(json!({ "name": format!("{} workflow", Name().fake::<String>()) }))).await.expect("create workstep response");
+        let create_first_workstep_res = baseline.create_workstep(&create_workflow_body.id, Some(json!({ "name": format!("{} workstep", Name().fake::<String>()) }))).await.expect("create workstep response");
         assert_eq!(create_first_workstep_res.status(), 201);
         let create_first_workstep_body = create_first_workstep_res.json::<Workstep>().await.expect("create first workstep body");
 
-        let create_second_workstep_res = baseline.create_workstep(&create_workflow_body.id, Some(json!({ "name": format!("{} workflow", Name().fake::<String>()) }))).await.expect("create workstep response");
+        let create_second_workstep_res = baseline.create_workstep(&create_workflow_body.id, Some(json!({ "name": format!("{} workstep", Name().fake::<String>()) }))).await.expect("create workstep response");
         assert_eq!(create_second_workstep_res.status(), 201);
         let create_second_workstep_body = create_second_workstep_res.json::<Workstep>().await.expect("create second workstep body");
 
@@ -999,7 +996,7 @@ mod tests {
         });
         
         let update_second_workstep_res = baseline.update_workstep(&create_workflow_body.id, &create_second_workstep_body.id, Some(update_second_workstep_params)).await.expect("update second workstep response");
-        assert_eq!(update_second_workstep_res.status(), 201);
+        assert_eq!(update_second_workstep_res.status(), 204);
 
         let update_first_workstep_params = json!({
             "name": &create_first_workstep_body.name,
@@ -1008,7 +1005,9 @@ mod tests {
         });
 
         let update_first_workstep_res = baseline.update_workstep(&create_workflow_body.id, &create_first_workstep_body.id, Some(update_first_workstep_params)).await.expect("update first workstep response");
-        assert_eq!(update_first_workstep_res.status(), 201);
+        assert_eq!(update_first_workstep_res.status(), 204);
+
+        // TODO: fetch all worksteps after changing the cardinality in each and check they are ordered correctly
     }
 
     #[tokio::test]
@@ -1033,7 +1032,7 @@ mod tests {
         let create_workflow_res = baseline.create_workflow(Some(create_workflow_params)).await.expect("create workflow response");
         assert_eq!(create_workflow_res.status(), 201, "create workflow response body: {:?}", create_workflow_res.json::<Value>().await.unwrap());
 
-        let create_workflow_body = create_workflow_res.json::<Workflow>().await.expect("create workflow res body");
+        let create_workflow_body = create_workflow_res.json::<Workflow>().await.expect("create workflow body");
 
         // create worksteps
         let create_workstep_res = baseline.create_workstep(&create_workflow_body.id, Some(json!({ "name": format!("{} workflow", Name().fake::<String>()) }))).await.expect("create workstep response");
@@ -1163,11 +1162,11 @@ mod tests {
 
         let baseline: ApiClient = Baseline::factory(&org_access_token);
 
-        let mappings_res = baseline
+        let get_mappings_res = baseline
             .get_mappings()
             .await
             .expect("get mappings response");
-        assert_eq!(mappings_res.status(), 200);
+        assert_eq!(get_mappings_res.status(), 200);
     }
 
     #[tokio::test]
@@ -1204,11 +1203,11 @@ mod tests {
             ]
           });
 
-        let mappings_res = baseline
+        let create_mapping_res = baseline
             .create_mapping(Some(create_mapping_params))
             .await
-            .expect("create mappings response");
-        assert_eq!(mappings_res.status(), 201);
+            .expect("create mapping response");
+        assert_eq!(create_mapping_res.status(), 201);
     }
 
     #[tokio::test]
@@ -1245,15 +1244,15 @@ mod tests {
             ]
           });
 
-        let mappings_res = baseline
+        let create_mapping_res = baseline
             .create_mapping(Some(create_mapping_params))
             .await
             .expect("create mapping response");
-        assert_eq!(mappings_res.status(), 201);
+        assert_eq!(create_mapping_res.status(), 201);
 
-        let mappings_body = mappings_res.json::<Mapping>().await.expect("create mapping body");
+        let create_mapping_body = create_mapping_res.json::<Mapping>().await.expect("create mapping body");
 
-        let update_mappings_params = json!({
+        let update_mapping_params = json!({
             "description": "An updated mapping description",
             "models": [
                 {
@@ -1287,11 +1286,11 @@ mod tests {
             ],
         });
 
-        let update_mappings_res = baseline
-            .update_mapping(&mappings_body.id, Some(update_mappings_params))
+        let update_mapping_res = baseline
+            .update_mapping(&create_mapping_body.id, Some(update_mapping_params))
             .await
             .expect("update mapping response");
-        assert_eq!(update_mappings_res.status(), 204);
+        assert_eq!(update_mapping_res.status(), 204);
     }
 
     #[tokio::test]
@@ -1328,15 +1327,15 @@ mod tests {
             ]
           });
 
-        let mappings_res = baseline
+        let create_mapping_res = baseline
             .create_mapping(Some(create_mapping_params))
             .await
             .expect("create mapping response");
-        assert_eq!(mappings_res.status(), 201);
+        assert_eq!(create_mapping_res.status(), 201);
 
-        let mappings_body = mappings_res.json::<Mapping>().await.expect("create mapping body");
+        let create_mapping_body = create_mapping_res.json::<Mapping>().await.expect("create mapping body");
 
-        let delete_mapping_res = baseline.delete_mapping(&mappings_body.id).await.expect("delete mappings response");
+        let delete_mapping_res = baseline.delete_mapping(&create_mapping_body.id).await.expect("delete mapping response");
         assert_eq!(delete_mapping_res.status(), 204);
     }
 }
