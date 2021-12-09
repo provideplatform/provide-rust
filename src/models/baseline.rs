@@ -17,12 +17,16 @@ pub struct BpiAccount {
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
 pub struct Workflow {
-    id: String,
+    pub id: String,
+    pub name: String,
+    pub description: Option<String>,
     created_at: String,
     version: Option<String>,
     participants: Option<Vec<Participant>>,
     worksteps: Option<Vec<Workstep>>,
     workflow_id: Option<String>,
+    pub worksteps_count: Option<i16>,
+    pub status: String,
 }
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
@@ -62,7 +66,8 @@ pub struct Participant {
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
 pub struct Workstep {
-    id: String,
+    pub id: String,
+    pub name: String,
     created_at: String,
     circuit: Option<Circuit>,
     circuit_id: Option<String>,
@@ -70,6 +75,8 @@ pub struct Workstep {
     workflow_id: Option<String>,
     participants: Option<Vec<Participant>>,
     workstep_id: Option<String>,
+    pub cardinality: usize,
+    pub status: String,
 }
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]

@@ -241,7 +241,7 @@ mod tests {
         let application_data = Some(json!({
             "network_id": ROPSTEN_NETWORK_ID,
             "user_id": user_id,
-            "name": format!("{} {}", Name().fake::<String>(), "Application"),
+            "name": format!("{} Application", Name().fake::<String>()),
             "description": "Some application description",
             "type": "baseline",
             "hidden": false

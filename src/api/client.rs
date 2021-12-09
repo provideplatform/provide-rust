@@ -2,8 +2,6 @@ pub use crate::models::client::{AdditionalHeader, ApiClient, Params, Response};
 use http;
 use reqwest;
 
-use super::ident::Ident;
-
 const DEFAULT_API_USER_AGENT: &str = "provide-rust client library";
 
 impl ApiClient {
