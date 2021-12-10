@@ -751,10 +751,11 @@ mod tests {
 
         let update_workflow_params = json!({
             "name": format!("{} workflow", Name().fake::<String>()),
+            "status": "draft",
         });
 
         let update_workflow_res = baseline.update_workflow(&create_workflow_body.id, Some(update_workflow_params)).await.expect("update workflow response");
-        assert_eq!(update_workflow_res.status(), 204)
+        assert_eq!(update_workflow_res.status(), 204, "update workflow response body: {:?}", update_workflow_res.json::<Value>().await.unwrap());
     }
     
     #[tokio::test]
@@ -781,8 +782,12 @@ mod tests {
 
         let create_workflow_body = create_workflow_res.json::<Workflow>().await.expect("create workflow body");
 
+        // workflow needs a workstep to deploy
+        let create_workstep_res = baseline.create_workstep(&create_workflow_body.id, Some(json!({ "name": format!("{} workstep", Name().fake::<String>()), "require_finality": true }))).await.expect("create workstep response");
+        assert_eq!(create_workstep_res.status(), 201);
+
         let deploy_workflow_res = baseline.deploy_workflow(&create_workflow_body.id).await.expect("deploy workflow response");
-        assert_eq!(deploy_workflow_res.status(), 201);
+        assert_eq!(deploy_workflow_res.status(), 202, "deploy workstep response body: {:?}", deploy_workflow_res.json::<Value>().await.unwrap());
 
         // check that workflow status updates to deployed
         let mut interval = time::interval(Duration::from_millis(500));
@@ -884,11 +889,11 @@ mod tests {
         let create_workstep_res = baseline.create_workstep(&create_workflow_body.id, Some(json!({ "name": format!("{} workstep", Name().fake::<String>()) }))).await.expect("create workstep response");
         assert_eq!(create_workstep_res.status(), 201);
 
-        baseline.create_workstep(&create_workflow_body.id, Some(json!({ "name": format!("{} workstep", Name().fake::<String>()) }))).await.expect("create workstep response");
-        baseline.create_workstep(&create_workflow_body.id, Some(json!({ "name": format!("{} workstep", Name().fake::<String>()) }))).await.expect("create workstep response");
+        let _ = baseline.create_workstep(&create_workflow_body.id, Some(json!({ "name": format!("{} workstep", Name().fake::<String>()) }))).await.expect("create workstep response");
+        let _ = baseline.create_workstep(&create_workflow_body.id, Some(json!({ "name": format!("{} workstep", Name().fake::<String>()), "require_finality": true }))).await.expect("create workstep response");
 
         let deploy_workflow_res = baseline.deploy_workflow(&create_workflow_body.id).await.expect("deploy workflow response");
-        assert_eq!(deploy_workflow_res.status(), 201);
+        assert_eq!(deploy_workflow_res.status(), 202);
 
         let mut interval = time::interval(Duration::from_millis(500));
         let mut deployed_workflow_worksteps_status = false;
@@ -950,10 +955,12 @@ mod tests {
         // TODO: test the params you can have / update in a workstep
         let update_workstep_params = json!({
             "description": "an updated workstep description",
+            "status": "draft",
+            "name": &create_workstep_body.name, 
         });
 
         let update_workstep_res = baseline.update_workstep(&create_workflow_body.id, &create_workstep_body.id, Some(update_workstep_params)).await.expect("update workstep response");
-        assert_eq!(update_workstep_res.status(), 201);
+        assert_eq!(update_workstep_res.status(), 204, "update workstep response body: {:?}", update_workstep_res.json::<Value>().await.unwrap());
     }
     
     #[tokio::test]
@@ -1348,3 +1355,47 @@ mod tests {
 // response body types as well as request body type ofc
 
 // 31 methods total
+
+
+// [GIN-debug] GET    /status                   --> main.statusHandler (4 handlers)
+// [GIN-debug] POST   /api/v1/credentials       --> github.com/provideplatform/baseline/baseline.issueVerifiableCredentialHandler (4 handlers)
+// [GIN-debug] POST   /api/v1/pub/invite        --> github.com/provideplatform/baseline/baseline.createPublicWorkgroupInviteHandler (4 handlers)
+// [GIN-debug] GET    /api/v1/bpi_accounts      --> github.com/provideplatform/baseline/baseline.listBPIAccountsHandler (7 handlers)
+// [GIN-debug] GET    /api/v1/bpi_accounts/:id  --> github.com/provideplatform/baseline/baseline.bpiAccountDetailsHandler (7 handlers)
+// [GIN-debug] POST   /api/v1/bpi_accounts      --> github.com/provideplatform/baseline/baseline.createBPIAccountHandler (7 handlers)
+// [GIN-debug] POST   /api/v1/protocol_messages --> github.com/provideplatform/baseline/baseline.createProtocolMessageHandler (7 handlers)
+// [GIN-debug] GET    /api/v1/subjects          --> github.com/provideplatform/baseline/baseline.listSubjectsHandler (7 handlers)
+// [GIN-debug] GET    /api/v1/subjects/:id      --> github.com/provideplatform/baseline/baseline.subjectDetailsHandler (7 handlers)
+// [GIN-debug] POST   /api/v1/subjects          --> github.com/provideplatform/baseline/baseline.createSubjectHandler (7 handlers)
+// [GIN-debug] PUT    /api/v1/subjects/:id      --> github.com/provideplatform/baseline/baseline.updateSubjectHandler (7 handlers)
+// [GIN-debug] GET    /api/v1/subjects/:id/accounts --> github.com/provideplatform/baseline/baseline.listSubjectAccountsHandler (7 handlers)
+// [GIN-debug] GET    /api/v1/subjects/:id/accounts/:accountId --> github.com/provideplatform/baseline/baseline.subjectAccountDetailsHandler (7 handlers)
+// [GIN-debug] POST   /api/v1/subjects/:id/accounts --> github.com/provideplatform/baseline/baseline.createSubjectAccountsHandler (7 handlers)
+// [GIN-debug] PUT    /api/v1/subjects/:id/accounts/:accountId --> github.com/provideplatform/baseline/baseline.updateSubjectAccountsHandler (7 handlers)
+// [GIN-debug] GET    /api/v1/mappings          --> github.com/provideplatform/baseline/baseline.listMappingsHandler (7 handlers)
+// [GIN-debug] POST   /api/v1/mappings          --> github.com/provideplatform/baseline/baseline.createMappingHandler (7 handlers)
+// [GIN-debug] PUT    /api/v1/mappings/:id      --> github.com/provideplatform/baseline/baseline.updateMappingHandler (7 handlers)
+// [GIN-debug] DELETE /api/v1/mappings/:id      --> github.com/provideplatform/baseline/baseline.deleteMappingHandler (7 handlers)
+// [GIN-debug] POST   /api/v1/objects           --> github.com/provideplatform/baseline/baseline.createObjectHandler (7 handlers)
+// [GIN-debug] PUT    /api/v1/objects/:id       --> github.com/provideplatform/baseline/baseline.updateObjectHandler (7 handlers)
+// [GIN-debug] PUT    /api/v1/config            --> github.com/provideplatform/baseline/baseline.configurationHandler (7 handlers)
+// [GIN-debug] POST   /api/v1/business_objects  --> github.com/provideplatform/baseline/baseline.createObjectHandler (7 handlers)
+// [GIN-debug] PUT    /api/v1/business_objects/:id --> github.com/provideplatform/baseline/baseline.updateObjectHandler (7 handlers)
+// [GIN-debug] GET    /api/v1/workflows         --> github.com/provideplatform/baseline/baseline.listWorkflowsHandler (7 handlers)
+// [GIN-debug] GET    /api/v1/workflows/:id     --> github.com/provideplatform/baseline/baseline.workflowDetailsHandler (7 handlers)
+// [GIN-debug] POST   /api/v1/workflows         --> github.com/provideplatform/baseline/baseline.createWorkflowHandler (7 handlers)
+// [GIN-debug] PUT    /api/v1/workflows/:id     --> github.com/provideplatform/baseline/baseline.updateWorkflowHandler (7 handlers)
+// [GIN-debug] POST   /api/v1/workflows/:id/deploy --> github.com/provideplatform/baseline/baseline.deployWorkflowHandler (7 handlers)
+// [GIN-debug] DELETE /api/v1/workflows/:id     --> github.com/provideplatform/baseline/baseline.deleteWorkflowHandler (7 handlers)
+// [GIN-debug] GET    /api/v1/workgroups        --> github.com/provideplatform/baseline/baseline.listWorkgroupsHandler (7 handlers)
+// time="2021-12-09T20:31:26Z" level=debug msg="listening on 0.0.0.0:8080"
+// [GIN-debug] GET    /api/v1/workgroups/:id    --> github.com/provideplatform/baseline/baseline.workgroupDetailsHandler (7 handlers)
+// [GIN-debug] POST   /api/v1/workgroups        --> github.com/provideplatform/baseline/baseline.createWorkgroupHandler (7 handlers)
+// [GIN-debug] GET    /api/v1/worksteps         --> github.com/provideplatform/baseline/baseline.listWorkstepsHandler (7 handlers)
+// [GIN-debug] GET    /api/v1/workflows/:id/worksteps --> github.com/provideplatform/baseline/baseline.listWorkstepsHandler (7 handlers)
+// [GIN-debug] GET    /api/v1/workflows/:id/worksteps/:workstepId --> github.com/provideplatform/baseline/baseline.workstepDetailsHandler (7 handlers)
+// [GIN-debug] POST   /api/v1/workflows/:id/worksteps --> github.com/provideplatform/baseline/baseline.createWorkstepHandler (7 handlers)
+// [GIN-debug] PUT    /api/v1/workflows/:id/worksteps/:workstepId --> github.com/provideplatform/baseline/baseline.updateWorkstepHandler (7 handlers)
+// [GIN-debug] DELETE /api/v1/workflows/:id/worksteps/:workstepId --> github.com/provideplatform/baseline/baseline.deleteWorkstepHandler (7 handlers)
+// [GIN-debug] POST   /api/v1/workflows/:id/worksteps/:workstepId/execute --> github.com/provideplatform/baseline/baseline.executeWorkstepHandler (7 handlers)
+// [GIN-debug] POST   /api/v1/stats             --> github.com/provideplatform/baseline/stats.statsLogHandler (7 handlers)
