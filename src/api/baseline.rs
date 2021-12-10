@@ -786,11 +786,41 @@ mod tests {
         let create_workstep_res = baseline.create_workstep(&create_workflow_body.id, Some(json!({ "name": format!("{} workstep", Name().fake::<String>()), "require_finality": true }))).await.expect("create workstep response");
         assert_eq!(create_workstep_res.status(), 201);
 
+        let _ = baseline.create_workstep(&create_workflow_body.id, Some(json!({ "name": format!("{} workstep", Name().fake::<String>()), "require_finality": true }))).await.expect("create workstep response");
+
         let deploy_workflow_res = baseline.deploy_workflow(&create_workflow_body.id).await.expect("deploy workflow response");
         assert_eq!(deploy_workflow_res.status(), 202, "deploy workstep response body: {:?}", deploy_workflow_res.json::<Value>().await.unwrap());
 
         // check that workflow status updates to deployed
         let mut interval = time::interval(Duration::from_millis(500));
+
+        let mut deployed_worksteps_status = false;
+
+        // TODO: 2 minute timeout
+        // assert that the workstep status
+        while deployed_worksteps_status != true {
+            let fetch_worksteps_res = baseline.fetch_worksteps(&create_workflow_body.id).await.expect("fetch worksteps response");
+            let fetch_worksteps_body = fetch_worksteps_res.json::<Vec<Workstep>>().await.expect("fetch worksteps body");
+
+            let mut count = 0;
+            for idx in 0..fetch_worksteps_body.len() - 1 {
+                let workstep = &fetch_worksteps_body[idx];
+                if workstep.status == "deployed" {
+                    count += 1;
+                }
+
+                // test cardinality also
+                assert_eq!(workstep.cardinality, idx)
+            }
+
+            if count == fetch_worksteps_body.len() {
+                deployed_worksteps_status = true
+            } else {
+                interval.tick().await;
+            }
+        }
+        assert!(deployed_worksteps_status);
+
         let mut deployed_workflow_status = String::from("");
 
         while deployed_workflow_status != "deployed" {
@@ -801,9 +831,8 @@ mod tests {
             if deployed_workflow_status != "deployed" {
                 interval.tick().await;
             }
-        }
-
-        assert_eq!(deployed_workflow_status, "deployed".to_string()) // is to_string() necessary
+        };
+        assert_eq!(deployed_workflow_status, "deployed".to_string()); // is to_string() necessary
     }
     
     #[tokio::test]
@@ -860,67 +889,6 @@ mod tests {
 
         let create_workstep_res = baseline.create_workstep(&create_workflow_body.id, Some(json!({ "name": format!("{} workstep", Name().fake::<String>()) }))).await.expect("create workstep response");
         assert_eq!(create_workstep_res.status(), 201);
-    }
-
-    #[tokio::test]
-    async fn deploy_workflow_worksteps() {
-        let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
-        let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
-
-        let org_access_token_json = config_vals["org_access_token"].to_string();
-        let org_access_token = serde_json::from_str::<String>(&org_access_token_json).expect("organzation access token");
-
-        let app_id_json = config_vals["app_id"].to_string();
-        let app_id = serde_json::from_str::<String>(&app_id_json)
-                .expect("workgroup id");
-
-        let baseline: ApiClient = Baseline::factory(&org_access_token);
-
-        let create_workflow_params = json!({
-            "workgroup_id": &app_id,
-            "name": format!("{} workstep", Name().fake::<String>()),
-        });
-
-        let create_workflow_res = baseline.create_workflow(Some(create_workflow_params)).await.expect("create workflow response");
-        assert_eq!(create_workflow_res.status(), 201, "create workflow response body: {:?}", create_workflow_res.json::<Value>().await.unwrap());
-
-        let create_workflow_body = create_workflow_res.json::<Workflow>().await.expect("create workflow body");
-
-        let create_workstep_res = baseline.create_workstep(&create_workflow_body.id, Some(json!({ "name": format!("{} workstep", Name().fake::<String>()) }))).await.expect("create workstep response");
-        assert_eq!(create_workstep_res.status(), 201);
-
-        let _ = baseline.create_workstep(&create_workflow_body.id, Some(json!({ "name": format!("{} workstep", Name().fake::<String>()) }))).await.expect("create workstep response");
-        let _ = baseline.create_workstep(&create_workflow_body.id, Some(json!({ "name": format!("{} workstep", Name().fake::<String>()), "require_finality": true }))).await.expect("create workstep response");
-
-        let deploy_workflow_res = baseline.deploy_workflow(&create_workflow_body.id).await.expect("deploy workflow response");
-        assert_eq!(deploy_workflow_res.status(), 202);
-
-        let mut interval = time::interval(Duration::from_millis(500));
-        let mut deployed_workflow_worksteps_status = false;
-
-        while deployed_workflow_worksteps_status != true {
-            let fetch_worksteps_res = baseline.fetch_worksteps(&create_workflow_body.id).await.expect("fetch worksteps response");
-            let fetch_worksteps_body = fetch_worksteps_res.json::<Vec<Workstep>>().await.expect("fetch worksteps body");
-
-            let mut count = 0;
-            for idx in 0..fetch_worksteps_body.len() - 1 {
-                let workstep = &fetch_worksteps_body[idx];
-                if workstep.status == "deployed" {
-                    count += 1;
-                }
-
-                // test cardinality also
-                assert_eq!(workstep.cardinality, idx)
-            }
-
-            if count == fetch_worksteps_body.len() {
-                deployed_workflow_worksteps_status = true
-            } else {
-                interval.tick().await;
-            }
-        }
-
-        assert!(deployed_workflow_worksteps_status);
     }
     
     #[tokio::test]
