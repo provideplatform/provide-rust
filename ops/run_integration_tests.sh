@@ -85,6 +85,10 @@ else
     echo "No SUITE set. Running all tests..."
 fi
 
+if [[ $* == *--log-docker-networks* ]]; then
+    docker network ls
+fi
+
 wait_for_ident_container &
 wait_for_vault_container &
 wait_for_privacy_container &
