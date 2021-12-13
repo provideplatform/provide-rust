@@ -148,37 +148,64 @@ pub struct Workflow {
 pub struct WorkflowInstance {
     id: String,
     created_at: String,
-    version: Option<String>,
+
+    deployed_at: Option<String>,
+    metadata: Value,
     participants: Option<Vec<Participant>>,
-    worksteps: Option<Vec<Workstep>>,
-    workflow_id: Option<String>,
     shield: Option<String>,
     status: Option<String>,
+    version: Option<String>,
+    worksteps_count: Option<i32>,
+    // worksteps
+
+    worksteps: Option<Vec<Workstep>>,
+    workflow_id: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
 pub struct Workstep {
     pub id: String,
-    pub name: String,
     created_at: String,
-    circuit: Option<Circuit>,
-    circuit_id: Option<String>,
-    require_finality: bool,
-    workflow_id: Option<String>,
-    participants: Option<Vec<Participant>>,
-    workstep_id: Option<String>,
+    
+    pub name: String,
     pub cardinality: usize,
-    pub status: String,
+    deployed_at: Option<i32>,
+    metadata: Value,
+    prover: Option<Circuit>,
+    prover_id: Option<String>,
+    participants: Option<Vec<Participant>>,
+    require_finality: bool,
+    shield: Option<String>,
+    pub status: Option<String>,
+    workflow_id: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
 pub struct WorkstepInstance {
-    id: String,
+    pub id: String,
     created_at: String,
-    circuit: Option<Circuit>,
-    circuit_id: Option<String>,
-    require_finality: bool,
-    workflow_id: Option<String>,
+    
+    pub name: String,
+    pub cardinality: usize,
+    deployed_at: Option<i32>,
+    metadata: Value,
+    prover: Option<Circuit>,
+    prover_id: Option<String>,
     participants: Option<Vec<Participant>>,
+    require_finality: bool,
+    shield: Option<String>,
+    pub status: Option<String>,
+    workflow_id: Option<String>,
+
     workstep_id: Option<String>,
 }
+
+// subject is organization, application or user
+// bpi account is workgroups
+
+// no business objects or objects
+
+// #[derive(Serialize, Deserialize, Debug, Default, Clone)]
+// pub struct BpiAccount {
+    
+// }
