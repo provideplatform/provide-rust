@@ -176,7 +176,7 @@ pub struct Workstep {
     participants: Option<Vec<Participant>>,
     require_finality: bool,
     shield: Option<String>,
-    pub status: Option<String>,
+    pub status: String,
     workflow_id: Option<String>,
 }
 

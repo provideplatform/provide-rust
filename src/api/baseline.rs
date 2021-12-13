@@ -1652,7 +1652,7 @@ mod tests {
         let create_workstep_body = create_workstep_res.json::<Workstep>().await.expect("create workstep body");
         
         let get_workstep_res = baseline.get_workstep(&create_workflow_body.id, &create_workstep_body.id).await.expect("get workstep response");
-        assert_eq!(create_workstep_res.status(), 200);
+        assert_eq!(get_workstep_res.status(), 200);
     }
     
     #[tokio::test]
@@ -1827,7 +1827,38 @@ mod tests {
 
     #[tokio::test]
     async fn execute_workstep() {
-    
+        let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
+        let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
+
+        let org_access_token_json = config_vals["org_access_token"].to_string();
+        let org_access_token = serde_json::from_str::<String>(&org_access_token_json).expect("organzation access token");
+
+        let app_id_json = config_vals["app_id"].to_string();
+        let app_id = serde_json::from_str::<String>(&app_id_json)
+                .expect("workgroup id");
+
+        let baseline: ApiClient = Baseline::factory(&org_access_token);
+
+        let create_workflow_params = json!({
+            "workgroup_id": &app_id,
+            "name": format!("{} workstep", Name().fake::<String>()),
+        });
+
+        let create_workflow_res = baseline.create_workflow(Some(create_workflow_params)).await.expect("create workflow response");
+        assert_eq!(create_workflow_res.status(), 201, "create workflow response body: {:?}", create_workflow_res.json::<Value>().await.unwrap());
+
+        let create_workflow_body = create_workflow_res.json::<Workflow>().await.expect("create workflow body");
+
+        let create_workstep_res = baseline.create_workstep(&create_workflow_body.id, Some(json!({ "name": format!("{} workstep", Name().fake::<String>()) }))).await.expect("create workstep response");
+        assert_eq!(create_workstep_res.status(), 201);
+
+        let create_workstep_body = create_workstep_res.json::<Workstep>().await.expect("create workstep body");
+
+        // does the workflow need to be deployed to call the this endpoint?
+
+        // test that you cannot execute on workflow prototype
+
+        // you should not be able to execute worksteps when the worksteps before them are not executed
     }
 }
 
