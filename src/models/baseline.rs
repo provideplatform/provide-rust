@@ -52,7 +52,7 @@ pub struct MappingField {
     id: String,
     created_at: String,
 
-    default_value: Value,
+    default_value: Option<Value>,
     is_primary_key: bool,
     name: String,
     description: Option<String>,
@@ -140,8 +140,11 @@ pub struct Workflow {
     participants: Option<Vec<Participant>>,
     worksteps: Option<Vec<Workstep>>,
     workflow_id: Option<String>,
-    pub worksteps_count: Option<i16>,
     pub status: String,
+    
+    updated_at: Option<String>,
+    workgroup_id: Option<String>,
+    pub worksteps_count: Option<i32>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
@@ -156,7 +159,6 @@ pub struct WorkflowInstance {
     status: Option<String>,
     version: Option<String>,
     worksteps_count: Option<i32>,
-    // worksteps
 
     worksteps: Option<Vec<Workstep>>,
     workflow_id: Option<String>,
@@ -170,7 +172,7 @@ pub struct Workstep {
     pub name: String,
     pub cardinality: usize,
     deployed_at: Option<i32>,
-    metadata: Value,
+    metadata: Option<Value>,
     prover: Option<Circuit>,
     prover_id: Option<String>,
     participants: Option<Vec<Participant>>,
@@ -178,6 +180,9 @@ pub struct Workstep {
     shield: Option<String>,
     pub status: String,
     workflow_id: Option<String>,
+
+    description: Option<String>,
+    workstep_id: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
@@ -188,7 +193,7 @@ pub struct WorkstepInstance {
     pub name: String,
     pub cardinality: usize,
     deployed_at: Option<i32>,
-    metadata: Value,
+    metadata: Option<Value>,
     prover: Option<Circuit>,
     prover_id: Option<String>,
     participants: Option<Vec<Participant>>,

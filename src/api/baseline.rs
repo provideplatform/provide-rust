@@ -207,7 +207,8 @@ impl Baseline for ApiClient {
     
     async fn deploy_workflow(&self, workflow_id: &str) -> Response {
         let uri = format!("workflows/{}/deploy", workflow_id);
-        return self.post(&uri, Some(json!({})), None).await
+        // return self.post(&uri, Some(json!({ "": "" })), None).await
+        return self.post(&uri, None, None).await
     }
     
     async fn delete_workflow(&self, workflow_id: &str) -> Response {
@@ -1306,9 +1307,16 @@ mod tests {
         assert_eq!(create_workflow_res.status(), 201, "create workflow response body: {:?}", create_workflow_res.json::<Value>().await.unwrap());
 
         let create_workflow_body = create_workflow_res.json::<Workflow>().await.expect("create workflow body");
-
+        
+        // assertion that the worksteps count is accurate
+        baseline.create_workstep(&create_workflow_body.id, Some(json!({ "name": format!("{} workstep", Name().fake::<String>()) }))).await.expect("create workstep response");
+        baseline.create_workstep(&create_workflow_body.id, Some(json!({ "name": format!("{} workstep", Name().fake::<String>()) }))).await.expect("create workstep response");
+        
         let get_workflow_res = baseline.get_workflow(&create_workflow_body.id).await.expect("get workflow response");
         assert_eq!(get_workflow_res.status(), 200);
+
+        let get_workflow_body = get_workflow_res.json::<Workflow>().await.expect("get workflow body");
+        assert_eq!(get_workflow_body.worksteps_count.unwrap(), 2);
     }
 
     #[tokio::test]
@@ -1332,6 +1340,57 @@ mod tests {
 
         let create_workflow_res = baseline.create_workflow(Some(create_workflow_params)).await.expect("create workflow response");
         assert_eq!(create_workflow_res.status(), 201, "create workflow response body: {:?}", create_workflow_res.json::<Value>().await.unwrap());
+    }
+
+    #[tokio::test]
+    async fn create_workflow_instance() {
+        let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
+        let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
+
+        let org_access_token_json = config_vals["org_access_token"].to_string();
+        let org_access_token = serde_json::from_str::<String>(&org_access_token_json).expect("organzation access token");
+
+        let app_id_json = config_vals["app_id"].to_string();
+        let app_id = serde_json::from_str::<String>(&app_id_json)
+                .expect("workgroup id");
+
+        let baseline: ApiClient = Baseline::factory(&org_access_token);
+
+        let create_workflow_params = json!({
+            "workgroup_id": &app_id,
+            "name": format!("{} workflow", Name().fake::<String>()),
+        });
+
+        let create_workflow_res = baseline.create_workflow(Some(create_workflow_params)).await.expect("create workflow response");
+        assert_eq!(create_workflow_res.status(), 201, "create workflow response body: {:?}", create_workflow_res.json::<Value>().await.unwrap());
+
+        let create_workflow_body = create_workflow_res.json::<Workflow>().await.expect("create workflow body");
+
+        // assertion that workflow instances cannot be created from undeployed workflows
+        let create_workflow_instance_fail_params = json!({
+            "workgroup_id": &app_id,
+            "name": format!("{} workflow", Name().fake::<String>()),
+            "workflow_id": &create_workflow_body.id,
+        });
+
+        let create_workflow_instance_fail_response = baseline.create_workflow(Some(create_workflow_instance_fail_params)).await.expect("create workflow instance response");
+        assert_eq!(create_workflow_instance_fail_response.status(), 422, "Create workflow instance fail response {:?}", create_workflow_instance_fail_response.json::<Value>().await.unwrap());
+
+        baseline.create_workstep(&create_workflow_body.id, Some(json!({ "name": format!("{} workstep", Name().fake::<String>()), "require_finality": true }))).await.expect("create workstep response");
+
+        let deploy_workflow_res = baseline.deploy_workflow(&create_workflow_body.id).await.expect("deploy workflow response");
+        assert_eq!(deploy_workflow_res.status(), 202, "deploy workflow response body: {:?}", deploy_workflow_res.json::<Value>().await.unwrap());
+
+        // do i need to wait for the workflow to be deployed vs pending_deployment?
+
+        let create_workflow_instance_params = json!({
+            "workgroup_id": &app_id,
+            "name": format!("{} workflow", Name().fake::<String>()),
+            "workflow_id": &create_workflow_body.id,
+        });
+
+        let create_workflow_instance_fail_response = baseline.create_workflow(Some(create_workflow_instance_params)).await.expect("create workflow instance response");
+        assert_eq!(create_workflow_instance_fail_response.status(), 201, "Create workflow instance response {:?}", create_workflow_instance_fail_response.json::<Value>().await.unwrap());
     }
     
     #[tokio::test]
@@ -1391,22 +1450,28 @@ mod tests {
 
         let create_workflow_body = create_workflow_res.json::<Workflow>().await.expect("create workflow body");
 
-        // workflow needs a workstep to deploy
+        // assertion that deploying a workflow without worksteps fails
+        let deploy_workflow_fail_worksteps_res = baseline.deploy_workflow(&create_workflow_body.id).await.expect("deploy workflow fail response");
+        assert_eq!(deploy_workflow_fail_worksteps_res.status(), 422, "deploy workflow fail worksteps response {:?}", deploy_workflow_fail_worksteps_res.json::<Value>().await.unwrap());
+
         let create_workstep_res = baseline.create_workstep(&create_workflow_body.id, Some(json!({ "name": format!("{} workstep", Name().fake::<String>()), "require_finality": true }))).await.expect("create workstep response");
         assert_eq!(create_workstep_res.status(), 201);
-
-        let _ = baseline.create_workstep(&create_workflow_body.id, Some(json!({ "name": format!("{} workstep", Name().fake::<String>()), "require_finality": true }))).await.expect("create workstep response");
+        
+        // assertion that deploying a workflow without the last workstep having require finality fails
+        let deploy_workflow_fail_finality_res = baseline.deploy_workflow(&create_workflow_body.id).await.expect("deploy workflow response");
+        assert_eq!(deploy_workflow_fail_finality_res.status(), 202, "deploy workflow fail finality response body: {:?}", deploy_workflow_fail_finality_res.json::<Value>().await.unwrap());
+        
+        baseline.create_workstep(&create_workflow_body.id, Some(json!({ "name": format!("{} workstep", Name().fake::<String>()), "require_finality": true }))).await.expect("create workstep response");
 
         let deploy_workflow_res = baseline.deploy_workflow(&create_workflow_body.id).await.expect("deploy workflow response");
-        assert_eq!(deploy_workflow_res.status(), 202, "deploy workstep response body: {:?}", deploy_workflow_res.json::<Value>().await.unwrap());
+        assert_eq!(deploy_workflow_res.status(), 202, "deploy workflow response body: {:?}", deploy_workflow_res.json::<Value>().await.unwrap());
 
         // check that workflow status updates to deployed
         let mut interval = time::interval(Duration::from_millis(500));
 
         let mut deployed_worksteps_status = false;
 
-        // TODO: 2 minute timeout
-        // assert that the workstep status
+        // assert that the workstep status changed to deployed
         while deployed_worksteps_status != true {
             let fetch_worksteps_res = baseline.fetch_worksteps(&create_workflow_body.id).await.expect("fetch worksteps response");
             let fetch_worksteps_body = fetch_worksteps_res.json::<Vec<Workstep>>().await.expect("fetch worksteps body");
@@ -1594,6 +1659,28 @@ mod tests {
     //     assert_eq!(update_workgroup_res.status(), 204);
     // }
 
+    /*
+        WORKSTEPS
+            fetch worksteps
+            get workstep
+            create workstep
+                cannot create worksteps on deployed workflow (non draft?)
+            update workstep
+                cannot update worksteps on deployed workflow (non draft?)
+                can move cardinality up and down
+                cannot move cardinality out of bounds
+                update executed workstep?
+            delete workstep
+                cannot delete workstep on deployed workflow (non draft?)
+                deleting workstep changes the workflow workstep_count
+                deleting workstep changes the other workstep cardinalities accurately
+                delete executed workstep?
+            create workstep instance
+                cannot create workstep instance on draft workflow
+            execute workstep
+                cannot execute workstep on draft workflow
+    */
+
     #[tokio::test]
     async fn fetch_worksteps() {
         let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
@@ -1669,6 +1756,7 @@ mod tests {
 
         let baseline: ApiClient = Baseline::factory(&org_access_token);
 
+        // use all the possible params
         let create_workflow_params = json!({
             "workgroup_id": &app_id,
             "name": format!("{} workflow", Name().fake::<String>()),
@@ -1679,9 +1767,21 @@ mod tests {
 
         let create_workflow_body = create_workflow_res.json::<Workflow>().await.expect("create workflow body");
 
-        let create_workstep_res = baseline.create_workstep(&create_workflow_body.id, Some(json!({ "name": format!("{} workstep", Name().fake::<String>()) }))).await.expect("create workstep response");
+        let create_workstep_res = baseline.create_workstep(&create_workflow_body.id, Some(json!({ "name": format!("{} workstep", Name().fake::<String>()), "require_finality": true }))).await.expect("create workstep response");
         assert_eq!(create_workstep_res.status(), 201);
+
+        let deploy_workflow_res = baseline.deploy_workflow(&create_workflow_body.id).await.expect("deploy workflow response");
+        assert_eq!(deploy_workflow_res.status(), 202, "deploy workflow response body: {:?}", deploy_workflow_res.json::<Value>().await.unwrap());
+
+        /*
+            cannot create worksteps on deployed workflow (non draft?)
+        */
+        let create_workstep_fail_res = baseline.create_workstep(&create_workflow_body.id, Some(json!({ "name": format!("{} workstep", Name().fake::<String>()) }))).await.expect("create workstep fail response");
+        assert_eq!(create_workstep_fail_res.status(), 400, "create workstep fail response {:?}", create_workstep_fail_res.json::<Value>().await.unwrap());
     }
+
+    // #[tokio::test]
+    // async fn create_workstep_instance {}
     
     #[tokio::test]
     async fn update_workstep() {
@@ -1709,7 +1809,6 @@ mod tests {
 
         let create_workstep_res = baseline.create_workstep(&create_workflow_body.id, Some(json!({ "name": format!("{} workstep", Name().fake::<String>()) }))).await.expect("create workstep response");
         assert_eq!(create_workstep_res.status(), 201);
-
         let create_workstep_body = create_workstep_res.json::<Workstep>().await.expect("create workstep body");
 
         // TODO: test the params you can have / update in a workstep
@@ -1723,33 +1822,55 @@ mod tests {
         assert_eq!(update_workstep_res.status(), 204, "update workstep response body: {:?}", update_workstep_res.json::<Value>().await.unwrap());
 
         // create worksteps
-        let create_first_workstep_res = baseline.create_workstep(&create_workflow_body.id, Some(json!({ "name": format!("{} workstep", Name().fake::<String>()) }))).await.expect("create workstep response");
-        assert_eq!(create_first_workstep_res.status(), 201);
+        let create_first_workstep_res = baseline.create_workstep(&create_workflow_body.id, Some(json!({ "name": format!("{} workstep", Name().fake::<String>()) }))).await.expect("create first workstep response");
+        assert_eq!(create_first_workstep_res.status(), 201, "{:?}", create_first_workstep_res.json::<Value>().await.unwrap());
         let create_first_workstep_body = create_first_workstep_res.json::<Workstep>().await.expect("create first workstep body");
 
-        let create_second_workstep_res = baseline.create_workstep(&create_workflow_body.id, Some(json!({ "name": format!("{} workstep", Name().fake::<String>()) }))).await.expect("create workstep response");
+        let create_second_workstep_res = baseline.create_workstep(&create_workflow_body.id, Some(json!({ "name": format!("{} workstep", Name().fake::<String>()) }))).await.expect("create second workstep response");
         assert_eq!(create_second_workstep_res.status(), 201);
         let create_second_workstep_body = create_second_workstep_res.json::<Workstep>().await.expect("create second workstep body");
 
-        let update_second_workstep_params = json!({
+        /*
+            can move cardinality up and down
+        */
+        let update_second_workstep_down_params = json!({
             "name": &create_second_workstep_body.name,
             "status": &create_second_workstep_body.status,
-            "cardinality": &create_second_workstep_body.cardinality,
+            "cardinality": 1,
         });
         
-        let update_second_workstep_res = baseline.update_workstep(&create_workflow_body.id, &create_second_workstep_body.id, Some(update_second_workstep_params)).await.expect("update second workstep response");
-        assert_eq!(update_second_workstep_res.status(), 204);
+        let update_second_workstep_down_res = baseline.update_workstep(&create_workflow_body.id, &create_second_workstep_body.id, Some(update_second_workstep_down_params)).await.expect("update second workstep cardinality response");
+        assert_eq!(update_second_workstep_down_res.status(), 204);
 
-        let update_first_workstep_params = json!({
-            "name": &create_first_workstep_body.name,
-            "status": &create_first_workstep_body.status,
-            "cardinality": &create_first_workstep_body.cardinality,
+        let update_second_workstep_up_params = json!({
+            "name": &create_second_workstep_body.name,
+            "status": &create_second_workstep_body.status,
+            "cardinality": 2,
         });
+        
+        let update_second_workstep_up_res = baseline.update_workstep(&create_workflow_body.id, &create_second_workstep_body.id, Some(update_second_workstep_up_params)).await.expect("update second workstep cardinality response");
+        assert_eq!(update_second_workstep_up_res.status(), 204);
 
-        let update_first_workstep_res = baseline.update_workstep(&create_workflow_body.id, &create_first_workstep_body.id, Some(update_first_workstep_params)).await.expect("update first workstep response");
-        assert_eq!(update_first_workstep_res.status(), 204);
+        /*
+            cannot move cardinality out of bounds
+        */
+        let update_second_workstep_fail_cardinality_params = json!({
+            "name": &create_second_workstep_body.name,
+            "status": &create_second_workstep_body.status,
+            "cardinality": 10,
+        });
+        
+        let update_second_workstep_fail_cardinality_res = baseline.update_workstep(&create_workflow_body.id, &create_second_workstep_body.id, Some(update_second_workstep_fail_cardinality_params)).await.expect("update second workstep cardinality response");
+        assert_eq!(update_second_workstep_fail_cardinality_res.status(), 422, "update second workstep fail cardinality response {:?}", update_second_workstep_fail_cardinality_res.json::<Value>().await.unwrap());
 
-        // test that you can't move cardinality to out of bounds
+        let update_second_workstep_fail_cardinality_negative_params = json!({
+            "name": &create_second_workstep_body.name,
+            "status": &create_second_workstep_body.status,
+            "cardinality": -1,
+        });
+        
+        let update_second_workstep_fail_cardinality_negative_res = baseline.update_workstep(&create_workflow_body.id, &create_second_workstep_body.id, Some(update_second_workstep_fail_cardinality_negative_params)).await.expect("update second workstep cardinality response");
+        assert_eq!(update_second_workstep_fail_cardinality_negative_res.status(), 422, "update second workstep fail cardinality negative response {:?}", update_second_workstep_fail_cardinality_negative_res.json::<Value>().await.unwrap());
     }
 
     #[tokio::test]
@@ -1776,7 +1897,6 @@ mod tests {
 
         let create_workflow_body = create_workflow_res.json::<Workflow>().await.expect("create workflow body");
 
-        // create worksteps
         let create_workstep_res = baseline.create_workstep(&create_workflow_body.id, Some(json!({ "name": format!("{} workflow", Name().fake::<String>()) }))).await.expect("create workstep response");
         assert_eq!(create_workstep_res.status(), 201);
 
@@ -1784,46 +1904,54 @@ mod tests {
 
         let delete_workstep_res = baseline.delete_workstep(&create_workflow_body.id, &create_workstep_body.id).await.expect("delete workstep response");
         assert_eq!(delete_workstep_res.status(), 204);
+
+        /*
+            deleting workstep changes the workflow workstep_count
+            API IS BROKEN
+        */
+        let get_workflow_res = baseline.get_workflow(&create_workflow_body.id).await.expect("get workflow response");
+        assert_eq!(get_workflow_res.status(), 200);
+
+        let get_workflow_body = get_workflow_res.json::<Workflow>().await.expect("get workflow body");
+        assert_eq!(get_workflow_body.worksteps_count.unwrap(), 0); // worksteps_count may not exist when no worksteps
+
+        /*
+            deleting workstep changes the other workstep cardinalities accurately
+        */
+        let create_workstep_first_res = baseline.create_workstep(&create_workflow_body.id, Some(json!({ "name": format!("{} workflow", Name().fake::<String>()) }))).await.expect("create workstep response");
+        assert_eq!(create_workstep_first_res.status(), 201);
+        let create_workstep_first_body = create_workstep_first_res.json::<Workstep>().await.expect("create workstep first body");
+
+        let create_workstep_second_res = baseline.create_workstep(&create_workflow_body.id, Some(json!({ "name": format!("{} workflow", Name().fake::<String>()) }))).await.expect("create workstep response");
+        assert_eq!(create_workstep_second_res.status(), 201);
+        let create_workstep_second_body = create_workstep_second_res.json::<Workstep>().await.expect("create workstep first body");
+
+        let delete_workstep_first_res = baseline.delete_workstep(&create_workflow_body.id, &create_workstep_first_body.id).await.expect("delete workstep first response");
+        assert_eq!(delete_workstep_first_res.status(), 204);
+
+        let get_workstep_second_res = baseline.get_workstep(&create_workflow_body.id, &create_workstep_second_body.id).await.expect("get workstep second response");
+        assert_eq!(get_workstep_second_res.status(), 200);
+
+        let get_workstep_second_body = get_workstep_second_res.json::<Workstep>().await.expect("get workstep second body");
+        assert_eq!(get_workstep_second_body.cardinality, 1);
+
+        /*
+            cannot delete workstep on deployed workflow (non draft?)
+        */
+        let create_workstep_fail_deployed_res = baseline.create_workstep(&create_workflow_body.id, Some(json!({ "name": format!("{} workflow", Name().fake::<String>()), "require_finality": true }))).await.expect("create workstep fail deployed response");
+        assert_eq!(create_workstep_fail_deployed_res.status(), 201);
+
+        let create_workstep_fail_deployed_body = create_workstep_fail_deployed_res.json::<Workstep>().await.expect("create workstep fail deployed body");
+
+        let deploy_workflow_res = baseline.deploy_workflow(&create_workflow_body.id).await.expect("deploy workflow response");
+        assert_eq!(deploy_workflow_res.status(), 202, "deploy workflow response body: {:?}", deploy_workflow_res.json::<Value>().await.unwrap());
+
+        let delete_workstep_fail_deployed_res = baseline.delete_workstep(&create_workflow_body.id, &create_workstep_fail_deployed_body.id).await.expect("delete workstep fail deployed response");
+        assert_eq!(delete_workstep_fail_deployed_res.status(), 422, "delete workstep fail deployed res {:?}", delete_workstep_fail_deployed_res.json::<Value>().await.unwrap());
     }
 
     // #[tokio::test]
-    // async fn create_workflow_instance() {
-    //     let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
-    //     let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
-
-    //     let org_access_token_json = config_vals["org_access_token"].to_string();
-    //     let org_access_token = serde_json::from_str::<String>(&org_access_token_json).expect("organzation access token");
-
-    //     let baseline: ApiClient = Baseline::factory(&org_access_token);
-
-    //     let create_workflow_params = json!({
-    //        "participants": [],
-    //        "version": "",
-    //        "worksteps": [],
-    //     });
-
-    //     let create_workflow_res = baseline.create_workflow(Some(create_workflow_params)).await.expect("create workflow response");
-    //     assert_eq!(create_workflow_res.status(), 201);
-
-    //     // let create_workflow_body = create_workflow_res.json::<Value>().await.expect("create workflow body");
-
-    //     let create_workflow_instance_params = json!({
-    //         "participants": [],
-    //         "version": "",
-    //         "worksteps": [],
-    //         "workflow_id": "",
-    //         "shield": "",
-    //         "status": "",
-    //     });
-
-    //     let create_workflow_instance_res = baseline.create_workflow(Some(create_workflow_instance_params)).await.expect("create workflow instance response");
-    //     assert_eq!(create_workflow_instance_res.status(), 201);
-    // }
-
-    // #[tokio::test]
-    // async fn create_workstep_instance() {
-
-    // }
+    // async fn create_workstep_instance() {}
 
     #[tokio::test]
     async fn execute_workstep() {
@@ -1849,16 +1977,39 @@ mod tests {
 
         let create_workflow_body = create_workflow_res.json::<Workflow>().await.expect("create workflow body");
 
-        let create_workstep_res = baseline.create_workstep(&create_workflow_body.id, Some(json!({ "name": format!("{} workstep", Name().fake::<String>()) }))).await.expect("create workstep response");
+        let create_workstep_res = baseline.create_workstep(&create_workflow_body.id, Some(json!({ "name": format!("{} workstep", Name().fake::<String>()), "require_finality": true }))).await.expect("create workstep response");
         assert_eq!(create_workstep_res.status(), 201);
 
         let create_workstep_body = create_workstep_res.json::<Workstep>().await.expect("create workstep body");
 
-        // does the workflow need to be deployed to call the this endpoint?
+        // assertion that you cannot execute a workstep on a workflow with "draft" status
+        let execute_workstep_fail_draft_res = baseline.execute_workstep(&create_workflow_body.id, &create_workstep_body.id, None).await.expect("execute workstep fail draft response");
+        assert_eq!(execute_workstep_fail_draft_res.status(), 400, "execute workstep fail draft response {:?}", execute_workstep_fail_draft_res.json::<Value>().await.unwrap());
 
-        // test that you cannot execute on workflow prototype
+        // assertion that you cannot execute a workstep on a workflow with "pending_deployment" status
+        let deploy_workflow_res = baseline.deploy_workflow(&create_workflow_body.id).await.expect("deploy workflow response");
+        assert_eq!(deploy_workflow_res.status(), 202, "deploy workflow response body: {:?}", deploy_workflow_res.json::<Value>().await.unwrap());
 
-        // you should not be able to execute worksteps when the worksteps before them are not executed
+        let execute_workstep_fail_pending_res = baseline.execute_workstep(&create_workflow_body.id, &create_workstep_body.id, None).await.expect("execute workstep fail pending response");
+        assert_eq!(execute_workstep_fail_pending_res.status(), 400, "execute workstep fail pending response {:?}", execute_workstep_fail_pending_res.json::<Value>().await.unwrap());
+
+        // wait for status to change to deployed
+        let mut interval = time::interval(Duration::from_millis(500));
+        let mut deployed_workflow_status = String::from("");
+
+        while deployed_workflow_status != "deployed" {
+            let looped_deploy_workflow_res = baseline.get_workflow(&create_workflow_body.id).await.expect("looping deploy workflow response");
+            let looped_deploy_workflow_body = looped_deploy_workflow_res.json::<Workflow>().await.expect("deploy workflow body");
+            deployed_workflow_status = looped_deploy_workflow_body.status;
+
+            if deployed_workflow_status != "deployed" {
+                interval.tick().await;
+            }
+        };
+        assert_eq!(deployed_workflow_status, "deployed".to_string()); // is to_string() necessary
+
+        let execute_workstep_res = baseline.execute_workstep(&create_workflow_body.id, &create_workstep_body.id, None).await.expect("execute workstep response");
+        assert_eq!(execute_workstep_res.status(), 201, "execute workstep response {:?}", execute_workstep_res.json::<Value>().await.unwrap());        
     }
 }
 
