@@ -1561,12 +1561,6 @@ mod tests {
         
         let delete_workflow_res = baseline.delete_workflow(&create_workflow_body.id).await.expect("delete workflow response");
         assert_eq!(delete_workflow_res.status(), 204);
-
-        /*
-            cannot delete a deployed workflow
-        */
-
-
     }
 
     // #[tokio::test]
@@ -1834,7 +1828,9 @@ mod tests {
 
         let create_workflow_body = create_workflow_res.json::<Workflow>().await.expect("create workflow body");
 
-        // assertion that workflow instances cannot be created from undeployed workflows
+        /*
+            cannot create workstep instance on draft workflow
+        */
         let create_workflow_instance_fail_params = json!({
             "workgroup_id": &app_id,
             "name": format!("{} workflow", Name().fake::<String>()),
