@@ -1248,15 +1248,25 @@ mod tests {
     }
 
     // #[tokio::test]
-    // async fn create_object_baseline_id_infinte() {
-    // }
+    // async fn update_config() {}
 
-    // TODO: test the response here with passing valid vs nonexistent uuid in query string
-
-    // #[tokio::test]
-    // async fn update_config() {
-    
-    // }
+    /*
+        WORKFLOWS
+            get workflows
+            get workflow
+                workflow workstep_count is accurate
+            create workflow
+            update workflow
+            deploy workflow
+            workflow status changes to deployed
+                fails if workflow doesn't have worksteps
+                fails if the last workstep is not require finality
+                all of the workstep statuses on a deployed workflow change to deployed
+                can update deployed workflow status to deprecated
+            delete workflow
+                cannot delete a deployed workflow ?
+            create workflow instance
+    */
 
     #[tokio::test]
     async fn get_workflows() {
@@ -1333,6 +1343,7 @@ mod tests {
 
         let baseline: ApiClient = Baseline::factory(&org_access_token);
 
+        // test all possible params
         let create_workflow_params = json!({
             "workgroup_id": &app_id,
             "name": format!("{} workflow", Name().fake::<String>()),
@@ -1382,7 +1393,6 @@ mod tests {
         assert_eq!(deploy_workflow_res.status(), 202, "deploy workflow response body: {:?}", deploy_workflow_res.json::<Value>().await.unwrap());
 
         // do i need to wait for the workflow to be deployed vs pending_deployment?
-
         let create_workflow_instance_params = json!({
             "workgroup_id": &app_id,
             "name": format!("{} workflow", Name().fake::<String>()),
@@ -1450,14 +1460,18 @@ mod tests {
 
         let create_workflow_body = create_workflow_res.json::<Workflow>().await.expect("create workflow body");
 
-        // assertion that deploying a workflow without worksteps fails
+        /*
+            fails if workflow doesn't have worksteps
+        */
         let deploy_workflow_fail_worksteps_res = baseline.deploy_workflow(&create_workflow_body.id).await.expect("deploy workflow fail response");
         assert_eq!(deploy_workflow_fail_worksteps_res.status(), 422, "deploy workflow fail worksteps response {:?}", deploy_workflow_fail_worksteps_res.json::<Value>().await.unwrap());
 
         let create_workstep_res = baseline.create_workstep(&create_workflow_body.id, Some(json!({ "name": format!("{} workstep", Name().fake::<String>()), "require_finality": true }))).await.expect("create workstep response");
         assert_eq!(create_workstep_res.status(), 201);
         
-        // assertion that deploying a workflow without the last workstep having require finality fails
+        /*
+            fails if the last workstep is not require finality
+        */
         let deploy_workflow_fail_finality_res = baseline.deploy_workflow(&create_workflow_body.id).await.expect("deploy workflow response");
         assert_eq!(deploy_workflow_fail_finality_res.status(), 202, "deploy workflow fail finality response body: {:?}", deploy_workflow_fail_finality_res.json::<Value>().await.unwrap());
         
@@ -1466,12 +1480,13 @@ mod tests {
         let deploy_workflow_res = baseline.deploy_workflow(&create_workflow_body.id).await.expect("deploy workflow response");
         assert_eq!(deploy_workflow_res.status(), 202, "deploy workflow response body: {:?}", deploy_workflow_res.json::<Value>().await.unwrap());
 
-        // check that workflow status updates to deployed
+        /*
+            workstep statuses change to deployed        
+        */
         let mut interval = time::interval(Duration::from_millis(500));
 
         let mut deployed_worksteps_status = false;
-
-        // assert that the workstep status changed to deployed
+        
         while deployed_worksteps_status != true {
             let fetch_worksteps_res = baseline.fetch_worksteps(&create_workflow_body.id).await.expect("fetch worksteps response");
             let fetch_worksteps_body = fetch_worksteps_res.json::<Vec<Workstep>>().await.expect("fetch worksteps body");
@@ -1482,9 +1497,6 @@ mod tests {
                 if workstep.status == "deployed" {
                     count += 1;
                 }
-
-                // test cardinality also
-                assert_eq!(workstep.cardinality, idx)
             }
 
             if count == fetch_worksteps_body.len() {
@@ -1495,6 +1507,9 @@ mod tests {
         }
         assert!(deployed_worksteps_status);
 
+        /*
+            workflow status changes to deployed
+        */
         let mut deployed_workflow_status = String::from("");
 
         while deployed_workflow_status != "deployed" {
@@ -1507,6 +1522,17 @@ mod tests {
             }
         };
         assert_eq!(deployed_workflow_status, "deployed".to_string()); // is to_string() necessary
+
+        /*
+            can update a deployed workflow status to deprecated
+        */
+        let update_deployed_workflow_deprecated = json!({
+            "name": &create_workflow_body.id,
+            "status": "deprecated",
+        });
+
+        let update_deployed_workflow_deprecated_res = baseline.update_workflow(&create_workflow_body.id, Some(update_deployed_workflow_deprecated)).await.expect("update deployed workflow deprecated response");
+        assert_eq!(update_deployed_workflow_deprecated_res.status(), 204);
     }
     
     #[tokio::test]
@@ -1535,6 +1561,12 @@ mod tests {
         
         let delete_workflow_res = baseline.delete_workflow(&create_workflow_body.id).await.expect("delete workflow response");
         assert_eq!(delete_workflow_res.status(), 204);
+
+        /*
+            cannot delete a deployed workflow
+        */
+
+
     }
 
     // #[tokio::test]
@@ -1669,12 +1701,10 @@ mod tests {
                 cannot update worksteps on deployed workflow (non draft?)
                 can move cardinality up and down
                 cannot move cardinality out of bounds
-                update executed workstep?
             delete workstep
                 cannot delete workstep on deployed workflow (non draft?)
                 deleting workstep changes the workflow workstep_count
                 deleting workstep changes the other workstep cardinalities accurately
-                delete executed workstep?
             create workstep instance
                 cannot create workstep instance on draft workflow
             execute workstep
@@ -1780,8 +1810,57 @@ mod tests {
         assert_eq!(create_workstep_fail_res.status(), 400, "create workstep fail response {:?}", create_workstep_fail_res.json::<Value>().await.unwrap());
     }
 
-    // #[tokio::test]
-    // async fn create_workstep_instance {}
+    #[tokio::test]
+    async fn create_workstep_instance() {
+        let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
+        let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
+
+        let org_access_token_json = config_vals["org_access_token"].to_string();
+        let org_access_token = serde_json::from_str::<String>(&org_access_token_json).expect("organzation access token");
+
+        let app_id_json = config_vals["app_id"].to_string();
+        let app_id = serde_json::from_str::<String>(&app_id_json)
+                .expect("workgroup id");
+
+        let baseline: ApiClient = Baseline::factory(&org_access_token);
+
+        let create_workflow_params = json!({
+            "workgroup_id": &app_id,
+            "name": format!("{} workflow", Name().fake::<String>()),
+        });
+
+        let create_workflow_res = baseline.create_workflow(Some(create_workflow_params)).await.expect("create workflow response");
+        assert_eq!(create_workflow_res.status(), 201, "create workflow response body: {:?}", create_workflow_res.json::<Value>().await.unwrap());
+
+        let create_workflow_body = create_workflow_res.json::<Workflow>().await.expect("create workflow body");
+
+        // assertion that workflow instances cannot be created from undeployed workflows
+        let create_workflow_instance_fail_params = json!({
+            "workgroup_id": &app_id,
+            "name": format!("{} workflow", Name().fake::<String>()),
+            "workflow_id": &create_workflow_body.id,
+        });
+
+        let create_workflow_instance_fail_response = baseline.create_workflow(Some(create_workflow_instance_fail_params)).await.expect("create workflow instance response");
+        assert_eq!(create_workflow_instance_fail_response.status(), 422, "Create workflow instance fail response {:?}", create_workflow_instance_fail_response.json::<Value>().await.unwrap());
+
+        let create_workstep_res = baseline.create_workstep(&create_workflow_body.id, Some(json!({ "name": format!("{} workstep", Name().fake::<String>()), "require_finality": true }))).await.expect("create workstep response");
+        assert_eq!(create_workstep_res.status(), 201);
+
+        let create_workstep_body = create_workstep_res.json::<Workstep>().await.expect("create workstep body");
+
+        let deploy_workflow_res = baseline.deploy_workflow(&create_workflow_body.id).await.expect("deploy workflow response");
+        assert_eq!(deploy_workflow_res.status(), 202, "deploy workflow response body: {:?}", deploy_workflow_res.json::<Value>().await.unwrap());
+
+        let create_workstep_instance_params = json!({
+            "name": format!("{} workstep instance", Name().fake::<String>()),
+            "workflow_id": &create_workflow_body.id,
+            "workstep_id": &create_workstep_body.id,
+        });
+
+        let create_workstep_instance_res = baseline.create_workstep(&create_workflow_body.id, Some(create_workstep_instance_params)).await.expect("create workstep instance response");
+        assert_eq!(create_workstep_instance_res.status(), 201);
+    }
     
     #[tokio::test]
     async fn update_workstep() {
