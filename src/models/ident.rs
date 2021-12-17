@@ -28,7 +28,7 @@ pub struct User {
     pub name: String,
     first_name: String,
     last_name: String,
-    email: String,
+    pub email: String,
     permissions: i32,
     privacy_policy_agreed_at: Option<String>,
     terms_of_service_agreed_at: Option<String>,

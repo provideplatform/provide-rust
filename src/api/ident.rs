@@ -1,5 +1,6 @@
 use async_trait::async_trait;
 use http::HeaderValue;
+use serde_json::json;
 
 use crate::api::client::{AdditionalHeader, ApiClient, Params, Response};
 pub use crate::models::ident::*;
@@ -52,18 +53,71 @@ pub trait Ident {
 
     async fn list_application_users(&self, application_id: &str) -> Response;
 
-    async fn associate_application_user(&self, application_id: &str, params: Params) -> Response;
+    async fn create_application_user(&self, application_id: &str, params: Params) -> Response;
 
-    async fn associate_application_organization(
+    async fn create_application_organization(
         &self,
         application_id: &str,
         params: Params,
     ) -> Response;
 
-    // async fn create_invitation(
-    //     &self,
-    //     params: Params,
-    // ) -> Response;
+    async fn fetch_privacy_policy(&self) -> Response;
+    
+    async fn fetch_terms_of_service(&self) -> Response;
+
+    async fn request_password_reset(&self, email: &str) -> Response;
+
+    async fn reset_password(&self, token: &str, params: Params) -> Response;
+
+    async fn fetch_application_organizations(&self, application_id: &str) -> Response;
+
+    async fn update_application_organization(&self, application_id: &str, organization_id: &str, params: Params) -> Response;
+
+    async fn delete_application_organization(&self, application_id: &str, organization_id: &str) -> Response;
+
+    async fn fetch_application_invitations(&self, application_id: &str) -> Response;
+
+    async fn fetch_application_tokens(&self, application_id: &str) -> Response;
+
+    async fn authenticate_application_user(&self, email: &str) -> Response;
+
+    async fn update_application_user(&self, application_id: &str, user_id: &str, params: Params) -> Response;
+
+    async fn delete_application_user(&self, application_id: &str, user_id: &str) -> Response;
+
+    async fn fetch_organization_invitations(&self, organization_id: &str) -> Response;
+
+    async fn fetch_organization_users(&self, organization_id: &str) -> Response;
+
+    async fn create_organization_user(&self, organization_id: &str, params: Params) -> Response;
+
+    async fn update_organization_user(&self, organization_id: &str, user_id: &str, params: Params) -> Response;
+
+    async fn delete_organization_user(&self, organization_id: &str, user_id: &str) -> Response;
+
+    async fn fetch_organization_vaults(&self, organization_id: &str) -> Response;
+
+    async fn fetch_organization_vault_keys(&self, organization_id: &str, vault_id: &str) -> Response;
+
+    async fn create_organization_vault_key(&self, organization_id: &str, vault_id: &str, params: Params) -> Response;
+    
+    async fn delete_organization_vault_key(&self, organization_id: &str, vault_id: &str, key_id: &str) -> Response;
+
+    async fn organization_vault_key_sign_message(&self, organization_id: &str, vault_id: &str, key_id: &str, message: &str) -> Response;
+
+    async fn organization_vault_key_verify_signature(&self, organization_id: &str, vault_id: &str, key_id: &str, message: &str, signature: &str) -> Response;
+
+    async fn fetch_organization_vault_secrets(&self, organization_id: &str, vault_id: &str) -> Response;
+
+    async fn create_organization_vault_secret(&self, organization_id: &str, vault_id: &str, params: Params) -> Response;
+
+    async fn delete_organization_vault_secret(&self, organization_id: &str, vault_id: &str, secret_id: &str) -> Response;
+    
+    async fn get_token(&self, token_id: &str) -> Response;
+
+    async fn delete_token(&self, token_id: &str) -> Response;
+
+    async fn create_invitation(&self, params: Params) -> Response;
 }
 
 #[async_trait]
@@ -169,7 +223,7 @@ impl Ident for ApiClient {
         return self.delete(&uri, None, None).await;
     }
 
-    async fn associate_application_user(&self, application_id: &str, params: Params) -> Response {
+    async fn create_application_user(&self, application_id: &str, params: Params) -> Response {
         let uri = format!("applications/{}/users", application_id);
         return self.post(&uri, params, None).await;
     }
@@ -179,13 +233,157 @@ impl Ident for ApiClient {
         return self.delete(&uri, None, None).await;
     }
 
-    async fn associate_application_organization(
+    async fn create_application_organization(
         &self,
         application_id: &str,
         params: Params,
     ) -> Response {
         let uri = format!("applications/{}/organizations", application_id);
         return self.post(&uri, params, None).await;
+    }
+
+    async fn fetch_privacy_policy(&self) -> Response {
+        return self.get("legal/privacy_policy", None, None).await;
+    }
+    
+    async fn fetch_terms_of_service(&self) -> Response {
+        return self.get("legal/terms_of_service", None, None).await;
+    }
+
+    async fn request_password_reset(&self, email: &str) -> Response {
+        let params = json!({ "email": email });
+        return self.post("reset_password", Some(params), None).await;
+    }
+
+    async fn reset_password(&self, token: &str, params: Params) -> Response {
+        let uri = format!("reset_password/{}", token);
+        return self.post(&uri, params, None).await;
+    }
+
+    async fn fetch_application_organizations(&self, application_id: &str) -> Response {
+        let uri = format!("applications/{}/organizations", application_id);
+        return self.get(&uri, None, None).await;
+    }
+
+    async fn update_application_organization(&self, application_id: &str, organization_id: &str, params: Params) -> Response {
+        let uri = format!("applications/{}/organizations/{}", application_id, organization_id);
+        return self.put(&uri, params, None).await;
+    }
+
+    async fn delete_application_organization(&self, application_id: &str, organization_id: &str) -> Response {
+        let uri = format!("applications/{}/organizations/{}", application_id, organization_id);
+        return self.delete(&uri, None, None).await;
+    }
+
+    async fn fetch_application_invitations(&self, application_id: &str) -> Response {
+        let uri = format!("applications/{}/invitations", application_id);
+        return self.get(&uri, None, None).await;
+    }
+
+    async fn fetch_application_tokens(&self, application_id: &str) -> Response {
+        let uri = format!("applications/{}/tokens", application_id);
+        return self.get(&uri, None, None).await;
+    }
+
+    async fn authenticate_application_user(&self, email: &str) -> Response {
+        let params = json!({ "email": &email });
+        return self.post("authenticate", Some(params), None).await;
+    }
+
+    async fn update_application_user(&self, application_id: &str, user_id: &str, params: Params) -> Response {
+        let uri = format!("applications/{}/users/{}", application_id, user_id);
+        return self.put(&uri, params, None).await;
+    }
+
+    async fn delete_application_user(&self, application_id: &str, user_id: &str) -> Response {
+        let uri = format!("applications/{}/users/{}", application_id, user_id);
+        return self.delete(&uri, None, None).await;
+    }
+
+    async fn fetch_organization_invitations(&self, organization_id: &str) -> Response {
+        let uri = format!("organizations/{}/invitations", organization_id);
+        return self.get(&uri, None, None).await;
+    }
+
+    async fn fetch_organization_users(&self, organization_id: &str) -> Response {
+        let uri = format!("organizations/{}/users", organization_id);
+        return self.get(&uri, None, None).await;
+    }
+
+    async fn create_organization_user(&self, organization_id: &str, params: Params) -> Response {
+        let uri = format!("organizations/{}/users", organization_id);
+        return self.post(&uri, params, None).await;
+    }
+
+    async fn update_organization_user(&self, organization_id: &str, user_id: &str, params: Params) -> Response {
+        let uri = format!("organizations/{}/users/{}", organization_id, user_id);
+        return self.put(&uri, params, None).await;
+    }
+
+    async fn delete_organization_user(&self, organization_id: &str, user_id: &str) -> Response {
+        let uri = format!("organizations/{}/users/{}", organization_id, user_id);
+        return self.delete(&uri, None, None).await;
+    }
+
+    async fn fetch_organization_vaults(&self, organization_id: &str) -> Response {
+        let uri = format!("organizations/{}/vaults", organization_id);
+        return self.get(&uri, None, None).await;
+    }
+
+    async fn fetch_organization_vault_keys(&self, organization_id: &str, vault_id: &str) -> Response {
+        let uri = format!("organizations/{}/vaults/{}/keys", organization_id, vault_id);
+        return self.get(&uri, None, None).await;
+    }
+
+    async fn create_organization_vault_key(&self, organization_id: &str, vault_id: &str, params: Params) -> Response {
+        let uri = format!("organizations/{}/vaults/{}/keys", organization_id, vault_id);
+        return self.post(&uri, params, None).await;
+    }
+    
+    async fn delete_organization_vault_key(&self, organization_id: &str, vault_id: &str, key_id: &str) -> Response {
+        let uri = format!("organizations/{}/vaults/{}/keys/{}", organization_id, vault_id, key_id);
+        return self.delete(&uri, None, None).await;
+    }
+
+    async fn organization_vault_key_sign_message(&self, organization_id: &str, vault_id: &str, key_id: &str, message: &str) -> Response {
+        let uri = format!("organizations/{}/vaults/{}/keys/{}/sign", organization_id, vault_id, key_id);
+        let params = json!({ "message": message });
+        return self.post(&uri, Some(params), None).await;
+    }
+
+    async fn organization_vault_key_verify_signature(&self, organization_id: &str, vault_id: &str, key_id: &str, message: &str, signature: &str) -> Response {
+        let uri = format!("organizations/{}/vaults/{}/keys/{}/verify", organization_id, vault_id, key_id);
+        let params = json!({ "message": message, "signature": signature });
+        return self.post(&uri, Some(params), None).await;
+    }
+
+    async fn fetch_organization_vault_secrets(&self, organization_id: &str, vault_id: &str) -> Response {
+        let uri = format!("organizations/{}/vaults/{}/secrets", organization_id, vault_id);
+        return self.get(&uri, None, None).await;
+    }
+
+    async fn create_organization_vault_secret(&self, organization_id: &str, vault_id: &str, params: Params) -> Response {
+        let uri = format!("organizations/{}/vaults/{}/secrets", organization_id, vault_id);
+        return self.post(&uri, params, None).await;
+    }
+
+    async fn delete_organization_vault_secret(&self, organization_id: &str, vault_id: &str, secret_id: &str) -> Response {
+        let uri = format!("organizations/{}/vaults/{}/secrets/{}", organization_id, vault_id, secret_id);
+        return self.delete(&uri, None, None).await;
+    }
+    
+    async fn get_token(&self, token_id: &str) -> Response {
+        let uri = format!("tokens/{}", token_id);
+        return self.get(&uri, None, None).await;
+    }
+
+    async fn delete_token(&self, token_id: &str) -> Response {
+        let uri = format!("tokens/{}", token_id);
+        return self.delete(&uri, None, None).await;
+    }
+
+    async fn create_invitation(&self, params: Params) -> Response {
+        return self.post("invitations", params, None).await;
     }
 }
 
@@ -631,7 +829,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn associate_application_user() {
+    async fn create_application_user() {
         let authentication_res_body = generate_new_user_and_token().await;
         let access_token = match authentication_res_body.token.access_token {
             Some(string) => string,
@@ -679,18 +877,18 @@ mod tests {
             .json::<User>()
             .await
             .expect("another user body");
-        let associate_application_user_params = json!({
+        let create_application_user_params = json!({
             "user_id": another_user_body.id
         });
 
-        let associate_application_user_res = ident
-            .associate_application_user(
+        let create_application_user_res = ident
+            .create_application_user(
                 &create_application_body.id,
-                Some(associate_application_user_params),
+                Some(create_application_user_params),
             )
             .await
             .expect("associate application user response");
-        assert_eq!(associate_application_user_res.status(), 204);
+        assert_eq!(create_application_user_res.status(), 204);
     }
 
     #[tokio::test]
@@ -752,7 +950,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn associate_application_organization() {
+    async fn create_application_organization() {
         let authentication_res_body = generate_new_user_and_token().await;
         let access_token = match authentication_res_body.token.access_token {
             Some(string) => string,
@@ -792,13 +990,663 @@ mod tests {
         });
 
         let associate_application_org_res = ident
-            .associate_application_organization(
+            .create_application_organization(
                 &create_application_body.id,
                 Some(associate_application_org_params),
             )
             .await
             .expect("associate application user response");
         assert_eq!(associate_application_org_res.status(), 204);
+    }
+
+    // #[tokio::test]
+    // async fn fetch_privacy_policy() {}
+
+    // #[tokio::test]
+    // async fn fetch_terms_of_service() {}
+
+    #[tokio::test]
+    async fn request_password_reset() {
+        let authentication_res_body = generate_new_user_and_token().await;
+
+        let ident = ApiClient::factory("");
+
+        let request_password_reset_res = ident.request_password_reset(&authentication_res_body.user.email).await.expect("request password reset response");
+        assert_eq!(request_password_reset_res.status(), 201);
+    }
+
+    // #[tokio::test]
+    // async fn reset_passwprd() {}
+
+    #[tokio::test]
+    async fn fetch_application_organizations() {
+        let authentication_res_body = generate_new_user_and_token().await;
+        let access_token = match authentication_res_body.token.access_token {
+            Some(string) => string,
+            None => panic!("authentication response access token not found"),
+        };
+
+        let ident: ApiClient = Ident::factory(&access_token);
+
+        let create_application_body =
+            generate_new_application(&ident, &authentication_res_body.user.id).await;
+
+        let fetch_application_organizations_res = ident
+            .fetch_application_organizations(&create_application_body.id)
+            .await
+            .expect("fetch application organizations response");
+        assert_eq!(fetch_application_organizations_res.status(), 200);
+    }
+
+    #[tokio::test]
+    async fn update_application_organization() {
+        let authentication_res_body = generate_new_user_and_token().await;
+        let access_token = match authentication_res_body.token.access_token {
+            Some(string) => string,
+            None => panic!("authentication response access token not found"),
+        };
+
+        let mut ident: ApiClient = Ident::factory(&access_token);
+
+        let create_application_body =
+            generate_new_application(&ident, &authentication_res_body.user.id).await;
+
+        let application_authorization_params = json!({
+            "application_id": create_application_body.id,
+            "scope": "offline_access"
+        });
+        let application_authorization_res = ident
+            .application_authorization(Some(application_authorization_params))
+            .await
+            .expect("application authorization response");
+        assert_eq!(application_authorization_res.status(), 201);
+
+        let application_authorization_body = application_authorization_res
+            .json::<Token>()
+            .await
+            .expect("organization authorization body");
+        let app_access_token = match application_authorization_body.access_token {
+            Some(string) => string,
+            None => panic!("application authentication response access token not found"),
+        };
+        ident.set_bearer_token(&app_access_token);
+
+        let create_organization_body =
+            generate_organization(&ident, &authentication_res_body.user.id).await;
+
+        let associate_application_org_params = json!({
+            "organization_id": &create_organization_body.id,
+        });
+
+        let associate_application_org_res = ident
+            .create_application_organization(
+                &create_application_body.id,
+                Some(associate_application_org_params),
+            )
+            .await
+            .expect("associate application user response");
+        assert_eq!(associate_application_org_res.status(), 204);
+
+        let update_application_organization_params = json!({
+            "description": "some updated description",
+        });
+
+        let update_application_organization_res = ident.update_application_organization(&create_application_body.id, &create_organization_body.id, Some(update_application_organization_params)).await.expect("update application organization response");
+        assert_eq!(update_application_organization_res.status(), 204);
+    }
+
+    #[tokio::test]
+    async fn delete_application_organization() {
+        let authentication_res_body = generate_new_user_and_token().await;
+        let access_token = match authentication_res_body.token.access_token {
+            Some(string) => string,
+            None => panic!("authentication response access token not found"),
+        };
+
+        let mut ident: ApiClient = Ident::factory(&access_token);
+
+        let create_application_body =
+            generate_new_application(&ident, &authentication_res_body.user.id).await;
+
+        let application_authorization_params = json!({
+            "application_id": create_application_body.id,
+            "scope": "offline_access"
+        });
+        let application_authorization_res = ident
+            .application_authorization(Some(application_authorization_params))
+            .await
+            .expect("application authorization response");
+        assert_eq!(application_authorization_res.status(), 201);
+
+        let application_authorization_body = application_authorization_res
+            .json::<Token>()
+            .await
+            .expect("organization authorization body");
+        let app_access_token = match application_authorization_body.access_token {
+            Some(string) => string,
+            None => panic!("application authentication response access token not found"),
+        };
+        ident.set_bearer_token(&app_access_token);
+
+        let create_organization_body =
+            generate_organization(&ident, &authentication_res_body.user.id).await;
+
+        let associate_application_org_params = json!({
+            "organization_id": &create_organization_body.id,
+        });
+
+        let associate_application_org_res = ident
+            .create_application_organization(
+                &create_application_body.id,
+                Some(associate_application_org_params),
+            )
+            .await
+            .expect("associate application user response");
+        assert_eq!(associate_application_org_res.status(), 204);
+
+        let update_application_organization_res = ident.delete_application_organization(&create_application_body.id, &create_organization_body.id).await.expect("delete application organization response");
+        assert_eq!(update_application_organization_res.status(), 204);
+    }
+
+    #[tokio::test]
+    async fn fetch_application_invitations() {
+        let authentication_res_body = generate_new_user_and_token().await;
+        let access_token = match authentication_res_body.token.access_token {
+            Some(string) => string,
+            None => panic!("authentication response access token not found"),
+        };
+
+        let ident: ApiClient = Ident::factory(&access_token);
+
+        let create_application_body =
+            generate_new_application(&ident, &authentication_res_body.user.id).await;
+
+        let fetch_application_invitations_res = ident
+            .fetch_application_invitations(&create_application_body.id)
+            .await
+            .expect("fetch application invitations response");
+        assert_eq!(fetch_application_invitations_res.status(), 200);
+    }
+
+    #[tokio::test]
+    async fn fetch_application_tokens() {
+        let authentication_res_body = generate_new_user_and_token().await;
+        let access_token = match authentication_res_body.token.access_token {
+            Some(string) => string,
+            None => panic!("authentication response access token not found"),
+        };
+
+        let ident: ApiClient = Ident::factory(&access_token);
+
+        let create_application_body =
+            generate_new_application(&ident, &authentication_res_body.user.id).await;
+
+        let fetch_application_tokens_res = ident
+            .fetch_application_tokens(&create_application_body.id)
+            .await
+            .expect("fetch application tokens response");
+        assert_eq!(fetch_application_tokens_res.status(), 200);
+    }
+
+    #[tokio::test]
+    async fn authenticate_application_user() {
+        let authentication_res_body = generate_new_user_and_token().await;
+        let access_token = match authentication_res_body.token.access_token {
+            Some(string) => string,
+            None => panic!("authentication response access token not found"),
+        };
+
+        let mut ident: ApiClient = Ident::factory(&access_token);
+
+        let create_application_body =
+            generate_new_application(&ident, &authentication_res_body.user.id).await;
+
+        let application_authorization_params = json!({
+            "application_id": create_application_body.id,
+            "scope": "offline_access"
+        });
+        let application_authorization_res = ident
+            .application_authorization(Some(application_authorization_params))
+            .await
+            .expect("application authorization response");
+        assert_eq!(application_authorization_res.status(), 201);
+
+        let application_authorization_body = application_authorization_res
+            .json::<Token>()
+            .await
+            .expect("organization authorization body");
+        let app_access_token = match application_authorization_body.access_token {
+            Some(string) => string,
+            None => panic!("application authentication response access token not found"),
+        };
+        ident.set_bearer_token(&app_access_token);
+
+        let another_user_params = json!({
+            "first_name": FirstName().fake::<String>(),
+            "last_name": LastName().fake::<String>(),
+            "email": FreeEmail().fake::<String>(),
+            "password": Password(std::ops::Range { start: 8, end: 15 }).fake::<String>(),
+        });
+        let create_another_user_res = ident
+            .create_user(Some(another_user_params))
+            .await
+            .expect("create another user response");
+        assert_eq!(create_another_user_res.status(), 201);
+
+        let another_user_body = create_another_user_res
+            .json::<User>()
+            .await
+            .expect("another user body");
+        let create_application_user_params = json!({
+            "user_id": another_user_body.id
+        });
+
+        let create_application_user_res = ident
+            .create_application_user(
+                &create_application_body.id,
+                Some(create_application_user_params),
+            )
+            .await
+            .expect("associate application user response");
+        assert_eq!(create_application_user_res.status(), 204);
+
+        let authenticate_application_user = ident.authenticate_application_user(&another_user_body.email).await.expect("authenticate application user response");
+        assert_eq!(authenticate_application_user.status(), 201);
+    }
+
+    #[tokio::test]
+    async fn update_application_user() {
+        let authentication_res_body = generate_new_user_and_token().await;
+        let access_token = match authentication_res_body.token.access_token {
+            Some(string) => string,
+            None => panic!("authentication response access token not found"),
+        };
+
+        let mut ident: ApiClient = Ident::factory(&access_token);
+
+        let create_application_body =
+            generate_new_application(&ident, &authentication_res_body.user.id).await;
+
+        let application_authorization_params = json!({
+            "application_id": create_application_body.id,
+            "scope": "offline_access"
+        });
+        let application_authorization_res = ident
+            .application_authorization(Some(application_authorization_params))
+            .await
+            .expect("application authorization response");
+        assert_eq!(application_authorization_res.status(), 201);
+
+        let application_authorization_body = application_authorization_res
+            .json::<Token>()
+            .await
+            .expect("organization authorization body");
+        let app_access_token = match application_authorization_body.access_token {
+            Some(string) => string,
+            None => panic!("application authentication response access token not found"),
+        };
+        ident.set_bearer_token(&app_access_token);
+
+        let another_user_params = json!({
+            "first_name": FirstName().fake::<String>(),
+            "last_name": LastName().fake::<String>(),
+            "email": FreeEmail().fake::<String>(),
+            "password": Password(std::ops::Range { start: 8, end: 15 }).fake::<String>(),
+        });
+        let create_another_user_res = ident
+            .create_user(Some(another_user_params))
+            .await
+            .expect("create another user response");
+        assert_eq!(create_another_user_res.status(), 201);
+
+        let another_user_body = create_another_user_res
+            .json::<User>()
+            .await
+            .expect("another user body");
+        let create_application_user_params = json!({
+            "user_id": another_user_body.id
+        });
+
+        let create_application_user_res = ident
+            .create_application_user(
+                &create_application_body.id,
+                Some(create_application_user_params),
+            )
+            .await
+            .expect("associate application user response");
+        assert_eq!(create_application_user_res.status(), 204);
+
+        let update_application_user_params = json!({
+            "name": Name().fake::<String>(),
+        });
+
+        let update_application_user_response = ident.update_application_user(&create_application_body.id, &another_user_body.id, Some(update_application_user_params)).await.expect("update application user response");
+        assert_eq!(update_application_user_response.status(), 204);
+    }
+
+    #[tokio::test]
+    async fn delete_application_user() {
+        let authentication_res_body = generate_new_user_and_token().await;
+        let access_token = match authentication_res_body.token.access_token {
+            Some(string) => string,
+            None => panic!("authentication response access token not found"),
+        };
+
+        let mut ident: ApiClient = Ident::factory(&access_token);
+
+        let create_application_body =
+            generate_new_application(&ident, &authentication_res_body.user.id).await;
+
+        let application_authorization_params = json!({
+            "application_id": create_application_body.id,
+            "scope": "offline_access"
+        });
+        let application_authorization_res = ident
+            .application_authorization(Some(application_authorization_params))
+            .await
+            .expect("application authorization response");
+        assert_eq!(application_authorization_res.status(), 201);
+
+        let application_authorization_body = application_authorization_res
+            .json::<Token>()
+            .await
+            .expect("organization authorization body");
+        let app_access_token = match application_authorization_body.access_token {
+            Some(string) => string,
+            None => panic!("application authentication response access token not found"),
+        };
+        ident.set_bearer_token(&app_access_token);
+
+        let another_user_params = json!({
+            "first_name": FirstName().fake::<String>(),
+            "last_name": LastName().fake::<String>(),
+            "email": FreeEmail().fake::<String>(),
+            "password": Password(std::ops::Range { start: 8, end: 15 }).fake::<String>(),
+        });
+        let create_another_user_res = ident
+            .create_user(Some(another_user_params))
+            .await
+            .expect("create another user response");
+        assert_eq!(create_another_user_res.status(), 201);
+
+        let another_user_body = create_another_user_res
+            .json::<User>()
+            .await
+            .expect("another user body");
+        let create_application_user_params = json!({
+            "user_id": another_user_body.id
+        });
+
+        let create_application_user_res = ident
+            .create_application_user(
+                &create_application_body.id,
+                Some(create_application_user_params),
+            )
+            .await
+            .expect("associate application user response");
+        assert_eq!(create_application_user_res.status(), 204);
+
+        let update_application_user_response = ident.delete_application_user(&create_application_body.id, &another_user_body.id).await.expect("delete application user response");
+        assert_eq!(update_application_user_response.status(), 204);
+    }
+
+    #[tokio::test]
+    async fn fetch_organization_invitations() {
+        let authentication_res_body = generate_new_user_and_token().await;
+        let access_token = match authentication_res_body.token.access_token {
+            Some(string) => string,
+            None => panic!("authentication response access token not found"),
+        };
+
+        let ident: ApiClient = Ident::factory(&access_token);
+
+        let create_organization_body =
+            generate_organization(&ident, &authentication_res_body.user.id).await;
+
+        let fetch_organization_invitations_res = ident
+            .fetch_organization_invitations(&create_organization_body.id)
+            .await
+            .expect("fetch organization invitations response");
+        assert_eq!(fetch_organization_invitations_res.status(), 200);
+    }
+
+    #[tokio::test]
+    async fn fetch_organization_users() {
+        let authentication_res_body = generate_new_user_and_token().await;
+        let access_token = match authentication_res_body.token.access_token {
+            Some(string) => string,
+            None => panic!("authentication response access token not found"),
+        };
+
+        let ident: ApiClient = Ident::factory(&access_token);
+
+        let create_organization_body =
+            generate_organization(&ident, &authentication_res_body.user.id).await;
+
+        let fetch_organization_users_res = ident
+            .fetch_organization_users(&create_organization_body.id)
+            .await
+            .expect("fetch organization users response");
+        assert_eq!(fetch_organization_users_res.status(), 200);
+    }
+
+    #[tokio::test]
+    async fn create_organization_user() {
+        let authentication_res_body = generate_new_user_and_token().await;
+        let access_token = match authentication_res_body.token.access_token {
+            Some(string) => string,
+            None => panic!("authentication response access token not found"),
+        };
+
+        let mut ident: ApiClient = Ident::factory(&access_token);
+
+        let create_organization_body =
+            generate_organization(&ident, &authentication_res_body.user.id).await;
+
+        let organization_authorization_params = json!({
+            "organization_id": create_organization_body.id,
+            "scope": "offline_access"
+        });
+        let organization_authorization_res = ident
+            .organization_authorization(Some(organization_authorization_params))
+            .await
+            .expect("organization authorization response");
+        assert_eq!(organization_authorization_res.status(), 201);
+
+        let organization_authorization_body = organization_authorization_res
+            .json::<Token>()
+            .await
+            .expect("organization authorization body");
+        let app_access_token = match organization_authorization_body.access_token {
+            Some(string) => string,
+            None => panic!("organization authentication response access token not found"),
+        };
+        ident.set_bearer_token(&app_access_token);
+
+        let another_user_params = json!({
+            "first_name": FirstName().fake::<String>(),
+            "last_name": LastName().fake::<String>(),
+            "email": FreeEmail().fake::<String>(),
+            "password": Password(std::ops::Range { start: 8, end: 15 }).fake::<String>(),
+        });
+        let create_another_user_res = ident
+            .create_user(Some(another_user_params))
+            .await
+            .expect("create another user response");
+        assert_eq!(create_another_user_res.status(), 201);
+
+        let another_user_body = create_another_user_res
+            .json::<User>()
+            .await
+            .expect("another user body");
+        let create_organization_user_params = json!({
+            "user_id": another_user_body.id
+        });
+
+        let create_organization_user_res = ident
+            .create_organization_user(
+                &create_organization_body.id,
+                Some(create_organization_user_params),
+            )
+            .await
+            .expect("associate organization user response");
+        assert_eq!(create_organization_user_res.status(), 204);
+    }
+
+    #[tokio::test]
+    async fn update_organization_user() {
+        let authentication_res_body = generate_new_user_and_token().await;
+        let access_token = match authentication_res_body.token.access_token {
+            Some(string) => string,
+            None => panic!("authentication response access token not found"),
+        };
+
+        let mut ident: ApiClient = Ident::factory(&access_token);
+
+        let create_organization_body =
+            generate_organization(&ident, &authentication_res_body.user.id).await;
+
+        let organization_authorization_params = json!({
+            "organization_id": create_organization_body.id,
+            "scope": "offline_access"
+        });
+        let organization_authorization_res = ident
+            .organization_authorization(Some(organization_authorization_params))
+            .await
+            .expect("organization authorization response");
+        assert_eq!(organization_authorization_res.status(), 201);
+
+        let organization_authorization_body = organization_authorization_res
+            .json::<Token>()
+            .await
+            .expect("organization authorization body");
+        let app_access_token = match organization_authorization_body.access_token {
+            Some(string) => string,
+            None => panic!("organization authentication response access token not found"),
+        };
+        ident.set_bearer_token(&app_access_token);
+
+        let another_user_params = json!({
+            "first_name": FirstName().fake::<String>(),
+            "last_name": LastName().fake::<String>(),
+            "email": FreeEmail().fake::<String>(),
+            "password": Password(std::ops::Range { start: 8, end: 15 }).fake::<String>(),
+        });
+        let create_another_user_res = ident
+            .create_user(Some(another_user_params))
+            .await
+            .expect("create another user response");
+        assert_eq!(create_another_user_res.status(), 201);
+
+        let another_user_body = create_another_user_res
+            .json::<User>()
+            .await
+            .expect("another user body");
+        let create_organization_user_params = json!({
+            "user_id": another_user_body.id
+        });
+
+        let create_organization_user_res = ident
+            .create_organization_user(
+                &create_organization_body.id,
+                Some(create_organization_user_params),
+            )
+            .await
+            .expect("associate organization user response");
+        assert_eq!(create_organization_user_res.status(), 204);
+
+        let update_organization_user_params = json!({
+            "name": Name().fake::<String>(),
+        });
+
+        let update_organization_user_response = ident.update_organization_user(&create_organization_body.id, &another_user_body.id, Some(update_organization_user_params)).await.expect("update organization user response");
+        assert_eq!(update_organization_user_response.status(), 204);
+    }
+
+    #[tokio::test]
+    async fn delete_organization_user() {
+        let authentication_res_body = generate_new_user_and_token().await;
+        let access_token = match authentication_res_body.token.access_token {
+            Some(string) => string,
+            None => panic!("authentication response access token not found"),
+        };
+
+        let mut ident: ApiClient = Ident::factory(&access_token);
+
+        let create_organization_body =
+            generate_organization(&ident, &authentication_res_body.user.id).await;
+
+        let organization_authorization_params = json!({
+            "organization_id": create_organization_body.id,
+            "scope": "offline_access"
+        });
+        let organization_authorization_res = ident
+            .organization_authorization(Some(organization_authorization_params))
+            .await
+            .expect("organization authorization response");
+        assert_eq!(organization_authorization_res.status(), 201);
+
+        let organization_authorization_body = organization_authorization_res
+            .json::<Token>()
+            .await
+            .expect("organization authorization body");
+        let app_access_token = match organization_authorization_body.access_token {
+            Some(string) => string,
+            None => panic!("organization authentication response access token not found"),
+        };
+        ident.set_bearer_token(&app_access_token);
+
+        let another_user_params = json!({
+            "first_name": FirstName().fake::<String>(),
+            "last_name": LastName().fake::<String>(),
+            "email": FreeEmail().fake::<String>(),
+            "password": Password(std::ops::Range { start: 8, end: 15 }).fake::<String>(),
+        });
+        let create_another_user_res = ident
+            .create_user(Some(another_user_params))
+            .await
+            .expect("create another user response");
+        assert_eq!(create_another_user_res.status(), 201);
+
+        let another_user_body = create_another_user_res
+            .json::<User>()
+            .await
+            .expect("another user body");
+        let create_organization_user_params = json!({
+            "user_id": another_user_body.id
+        });
+
+        let create_organization_user_res = ident
+            .create_organization_user(
+                &create_organization_body.id,
+                Some(create_organization_user_params),
+            )
+            .await
+            .expect("associate organization user response");
+        assert_eq!(create_organization_user_res.status(), 204);
+
+        let update_organization_user_response = ident.delete_organization_user(&create_organization_body.id, &another_user_body.id).await.expect("delete organization user response");
+        assert_eq!(update_organization_user_response.status(), 204);
+    }
+
+    #[tokio::test]
+    async fn fetch_organization_vaults() {
+        let authentication_res_body = generate_new_user_and_token().await;
+        let access_token = match authentication_res_body.token.access_token {
+            Some(string) => string,
+            None => panic!("authentication response access token not found"),
+        };
+
+        let ident: ApiClient = Ident::factory(&access_token);
+
+        let create_organization_body =
+            generate_organization(&ident, &authentication_res_body.user.id).await;
+
+        let fetch_organization_vaults_res = ident
+            .fetch_organization_vaults(&create_organization_body.id)
+            .await
+            .expect("fetch organization vaults response");
+        assert_eq!(fetch_organization_vaults_res.status(), 200);
     }
 }
 

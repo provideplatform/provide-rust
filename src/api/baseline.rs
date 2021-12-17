@@ -446,7 +446,7 @@ mod tests {
             "organization_id": &create_organization_body.id,
         });
         let associate_application_org_res = ident
-            .associate_application_organization(
+            .create_application_organization(
                 &create_application_body.id,
                 Some(associate_application_org_params),
             )
