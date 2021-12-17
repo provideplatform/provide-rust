@@ -394,6 +394,8 @@ mod tests {
     use fake::faker::name::en::{FirstName, LastName, Name};
     use fake::Fake;
     use serde_json::json;
+    use crate::models::vault::{VaultContainer, VaultKey, VaultSecret};
+    use crate::api::vault::Vault;
 
     const ROPSTEN_NETWORK_ID: &str = "66d44f30-9092-4182-a3c4-bc02736d6ae5";
 
@@ -474,6 +476,25 @@ mod tests {
             .json::<Organization>()
             .await
             .expect("generate organization body");
+    }
+
+    async fn generate_vault(vault: &ApiClient, organization_id: &str) -> VaultContainer {
+        let create_vault_params = json!({
+            "name": format!("{} {}", Name().fake::<String>(), "Vault"),
+            "description": "Some vault description",
+            "organization_id": &organization_id,
+        });
+
+        let create_vault_res = vault
+            .create_vault(Some(create_vault_params))
+            .await
+            .expect("create vault response");
+        assert_eq!(create_vault_res.status(), 201);
+
+        return create_vault_res
+            .json::<VaultContainer>()
+            .await
+            .expect("create vault response");
     }
 
     #[tokio::test]
@@ -1009,7 +1030,7 @@ mod tests {
     async fn request_password_reset() {
         let authentication_res_body = generate_new_user_and_token().await;
 
-        let ident = ApiClient::factory("");
+        let ident: ApiClient = Ident::factory("");
 
         let request_password_reset_res = ident.request_password_reset(&authentication_res_body.user.email).await.expect("request password reset response");
         assert_eq!(request_password_reset_res.status(), 201);
@@ -1648,6 +1669,179 @@ mod tests {
             .expect("fetch organization vaults response");
         assert_eq!(fetch_organization_vaults_res.status(), 200);
     }
+
+    #[tokio::test]
+    async fn fetch_organization_vault_keys() {
+        let authentication_res_body = generate_new_user_and_token().await;
+        let access_token = match authentication_res_body.token.access_token {
+            Some(string) => string,
+            None => panic!("authentication response access token not found"),
+        };
+
+        let ident: ApiClient = Ident::factory(&access_token);
+        let vault: ApiClient = Vault::factory(&access_token);
+        
+        let create_organization_body = generate_organization(&ident, &authentication_res_body.user.id).await;
+        
+        let create_organization_vault_body = generate_vault(&vault, &create_organization_body.id).await;
+
+        let fetch_organization_vault_keys_res = ident.fetch_organization_vault_keys(&create_organization_body.id, &create_organization_vault_body.id).await.expect("fetch organization vault keys response");
+        assert_eq!(fetch_organization_vault_keys_res.status(), 200);
+    }
+
+    #[tokio::test]
+    async fn create_organization_vault_key() {
+        let authentication_res_body = generate_new_user_and_token().await;
+        let access_token = match authentication_res_body.token.access_token {
+            Some(string) => string,
+            None => panic!("authentication response access token not found"),
+        };
+
+        let ident: ApiClient = Ident::factory(&access_token);
+        let vault: ApiClient = Vault::factory(&access_token);
+        
+        let create_organization_body = generate_organization(&ident, &authentication_res_body.user.id).await;
+        
+        let create_organization_vault_body = generate_vault(&vault, &create_organization_body.id).await;
+
+        let create_organization_vault_key_params = json!({
+            "type": "symmetric",
+            "usage": "encrypt/decrypt",
+            "spec": "ChaCha20",
+            "name": Name().fake::<String>(),
+            "description": "Some organization key description",
+            "organization_id": &create_organization_body.id,
+        });
+
+        let create_organization_vault_key_res = ident.create_organization_vault_key(&create_organization_body.id, &create_organization_vault_body.id, Some(create_organization_vault_key_params)).await.expect("create organization vault key response");
+        assert_eq!(create_organization_vault_key_res.status(), 201);
+    }
+
+    #[tokio::test]
+    async fn delete_organization_vault_key() {
+        let authentication_res_body = generate_new_user_and_token().await;
+        let access_token = match authentication_res_body.token.access_token {
+            Some(string) => string,
+            None => panic!("authentication response access token not found"),
+        };
+
+        let ident: ApiClient = Ident::factory(&access_token);
+        let vault: ApiClient = Vault::factory(&access_token);
+        
+        let create_organization_body = generate_organization(&ident, &authentication_res_body.user.id).await;
+        
+        let create_organization_vault_body = generate_vault(&vault, &create_organization_body.id).await;
+
+        let create_organization_vault_key_params = json!({
+            "type": "symmetric",
+            "usage": "encrypt/decrypt",
+            "spec": "ChaCha20",
+            "name": Name().fake::<String>(),
+            "description": "Some organization key description",
+            "organization_id": &create_organization_body.id,
+        });
+
+        let create_organization_vault_key_res = ident.create_organization_vault_key(&create_organization_body.id, &create_organization_vault_body.id, Some(create_organization_vault_key_params)).await.expect("create organization vault key response");
+        assert_eq!(create_organization_vault_key_res.status(), 201);
+
+        let create_organization_vault_key_body = create_organization_vault_key_res.json::<VaultKey>().await.expect("create organization vault key body");
+
+        let delete_organization_vault_key_res = ident.delete_organization_vault_key(&create_organization_body.id, &create_organization_vault_body.id, &create_organization_vault_key_body.id).await.expect("delete organization vault key response");
+        assert_eq!(delete_organization_vault_key_res.status(), 204);
+    }
+
+    // #[tokio::test]
+    // async fn organization_vault_key_sign_message() {}
+
+    // #[tokio::test]
+    // async fn organization_vault_key_verify_signature() {}
+
+    #[tokio::test]
+    async fn fetch_organization_vault_secrets() {
+        let authentication_res_body = generate_new_user_and_token().await;
+        let access_token = match authentication_res_body.token.access_token {
+            Some(string) => string,
+            None => panic!("authentication response access token not found"),
+        };
+
+        let ident: ApiClient = Ident::factory(&access_token);
+        let vault: ApiClient = Vault::factory(&access_token);
+        
+        let create_organization_body = generate_organization(&ident, &authentication_res_body.user.id).await;
+        
+        let create_organization_vault_body = generate_vault(&vault, &create_organization_body.id).await;
+
+        let fetch_organization_vault_secrets_res = ident.fetch_organization_vault_secrets(&create_organization_body.id, &create_organization_vault_body.id).await.expect("fetch organization vault secrets response");
+        assert_eq!(fetch_organization_vault_secrets_res.status(), 200);
+    }
+
+    #[tokio::test]
+    async fn create_organization_vault_secret() {
+        let authentication_res_body = generate_new_user_and_token().await;
+        let access_token = match authentication_res_body.token.access_token {
+            Some(string) => string,
+            None => panic!("authentication response access token not found"),
+        };
+
+        let ident: ApiClient = Ident::factory(&access_token);
+        let vault: ApiClient = Vault::factory(&access_token);
+        
+        let create_organization_body = generate_organization(&ident, &authentication_res_body.user.id).await;
+        
+        let create_organization_vault_body = generate_vault(&vault, &create_organization_body.id).await;
+
+        let create_organization_vault_secret_params = json!({
+            "type": "sample secret",
+            "name": Name().fake::<String>(),
+            "description": "this secret is being stored for demonstration purposes",
+            "value": "0x",
+            "organization_id": &create_organization_body.id,
+        });
+
+        let create_organization_vault_secret_res = ident.create_organization_vault_secret(&create_organization_body.id, &create_organization_vault_body.id, Some(create_organization_vault_secret_params)).await.expect("create organization vault secret response");
+        assert_eq!(create_organization_vault_secret_res.status(), 201);
+    }
+
+    #[tokio::test]
+    async fn delete_organization_vault_secret() {
+        let authentication_res_body = generate_new_user_and_token().await;
+        let access_token = match authentication_res_body.token.access_token {
+            Some(string) => string,
+            None => panic!("authentication response access token not found"),
+        };
+
+        let ident: ApiClient = Ident::factory(&access_token);
+        let vault: ApiClient = Vault::factory(&access_token);
+        
+        let create_organization_body = generate_organization(&ident, &authentication_res_body.user.id).await;
+        
+        let create_organization_vault_body = generate_vault(&vault, &create_organization_body.id).await;
+
+        let create_organization_vault_secret_params = json!({
+            "type": "sample secret",
+            "name": Name().fake::<String>(),
+            "description": "this secret is being stored for demonstration purposes",
+            "value": "0x",
+            "organization_id": &create_organization_body.id,
+        });
+
+        let create_organization_vault_secret_res = ident.create_organization_vault_secret(&create_organization_body.id, &create_organization_vault_body.id, Some(create_organization_vault_secret_params)).await.expect("create organization vault secret response");
+        assert_eq!(create_organization_vault_secret_res.status(), 201);
+
+        let create_organization_vault_secret_body = create_organization_vault_secret_res.json::<VaultSecret>().await.expect("create organization vault secret body");
+
+        let delete_organization_vault_secret_res = ident.delete_organization_vault_secret(&create_organization_body.id, &create_organization_vault_body.id, &create_organization_vault_secret_body.id).await.expect("delete organization vault secret response");
+        assert_eq!(delete_organization_vault_secret_res.status(), 204);
+    }
+
+    // #[tokio::test]
+    // async fn get_token() {}
+
+    // #[tokio::test]
+    // async fn delete_token() {}
+
+    // #[tokio::test]
+    // async fn create_invitation() {}
 }
 
 // TODO
