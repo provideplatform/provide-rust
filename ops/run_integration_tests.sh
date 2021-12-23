@@ -2,6 +2,59 @@
 
 trap handle_shutdown INT
 
+# WARNING-- the bounce_docker command below will do some potentially unwanted
+# things in your local environment!!!
+#
+# This command requires the docker daemon to be running... if it is not running
+# or for some reason docker is not installed or not available on your PATH,
+# this command will exit with a non-zero status.
+#
+# 1. All your running containers, if any, will be killed
+# 2. All your docker networks, if any, will be pruned
+# 3. All your docker volumes, if any, will be pruned
+# 4. The docker daemon itself will be gracefully restarted
+#
+# Why is this needed here?! (Keep reading...)
+#
+# This is here to workaround a strange issue related to the docker network
+# stack that intermittently causes the simulated test suite to hang, causing
+# massive frustration for users! For some months, it has been a misconception
+# that the BRI-1 stack is "unstable" for example, because numerous developers
+# were unable to successfully run the environment consistently. This is a workaround
+# we have come across that will prevent us from needing to investigate docker
+# itself... we will however provide some additional details on the issue
+# and a few links to others reporting similar behavior. After the docker daemon
+# starts, the network stack plays nicely... until it doesn't. Then the simulation,
+# which demonstrates the Provide production stack in the context of a a multi-network
+# multi-party workflow across the private network of each party and the WAN for
+# workflow state synchronization...
+#
+# Some liquor has now been poured out at this juncture to commemorate the
+# sanity and endurance of one Lucas Rodriguez, who investigated this issue :D
+#
+# Additional notes:
+#
+# This has been tested exclusively on the following operating systems and Docker versions:
+#   - MacOS 12.0.1 with Apple Silicon
+#   - Docker v4.3.2 (72729).
+#
+# YMMV! Would love to hear what OS/version and Docker version others are running
+# and if this workaround consistently helps them run the simulation, which turns
+# out to be quite robust! :D
+#
+# Ahhhh... software! ....... 0_o
+bounce_docker() {
+    # FIXME-- make sure $(which docker) is a thing...
+
+    docker kill $(docker ps -q) 2>/dev/null
+    docker rm $(docker ps -a -q) 2>/dev/null
+    docker network prune -f 2>/dev/null
+    docker volume prune -f 2>/dev/null
+
+    # alternatively... the following might be a little nicer...
+    # `docker system prune`
+}
+
 # could dump logs into tmp file
 dump_container_logs() {
     if [[ "$CONTAINER_REGEX" != "" ]]; then
@@ -85,10 +138,11 @@ else
     echo "No SUITE set. Running all tests..."
 fi
 
-if [[ $* == *--log-docker-networks* ]]; then
-    echo "docker networks on init"
-    docker network ls
+if [[ $* == *--log-docker-info* ]]; then
+    docker info
 fi
+
+bounce_docker &
 
 wait_for_ident_container &
 wait_for_vault_container &
@@ -99,7 +153,7 @@ docker-compose -f ./ops/docker-compose.yml build --no-cache &
 docker-compose -f ./ops/docker-compose.yml up -d &
 wait
 
-# if [[ $* == *--log-docker-networks* ]]; then
+# if [[ $* == *--log-docker-info* ]]; then
 #     echo "docker networks pre setup"
 #     docker network ls
 # fi
