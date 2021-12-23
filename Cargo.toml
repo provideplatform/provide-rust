@@ -1,25 +1,19 @@
 [package]
 name = "provide-rust"
 version = "0.1.0"
-authors = ["adunne09"]
+authors = ["Alex Dunne <alex@provide.services>"]
 edition = "2021"
-description = "Provide rust client implementation"
-license = "Apache-2.0"
+description = "Provide rust client"
+license = "MIT"
 publish = false
 
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
-reqwest = { version = "0.11", features = ["json"] }
-tokio = { version = "1.12.0", features = ["full"] }
-serde_json = "1.0.68"
-http = "0.2.5"
-serde = { version = "1.0.114", features = ["derive"] }
 async-trait = "0.1.51"
 fake = { version = "2.4", features = ["derive"] }
-regex = "1.5.4"
-
 getrandom = { version = "0.2.3", features = ["js"] }
-
-# do i need a README in the examples?
+http = "0.2.5"
+regex = "1.5.4"
+reqwest = { version = "0.11", features = ["json"] }
+serde = { version = "1.0.114", features = ["derive"] }
+serde_json = "1.0.68"
+tokio = { version = "1.12.0", features = ["full"] }
