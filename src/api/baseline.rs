@@ -1,5 +1,4 @@
 use async_trait::async_trait;
-use serde_json::json;
 use crate::api::client::{ApiClient, Params, Response};
 pub use crate::models::baseline::*;
 
@@ -1258,11 +1257,12 @@ mod tests {
             create workflow
             update workflow
             deploy workflow
-            workflow status changes to deployed
+                workflow status changes to deployed
                 fails if workflow doesn't have worksteps
                 fails if the last workstep is not require finality
                 all of the workstep statuses on a deployed workflow change to deployed
                 can update deployed workflow status to deprecated
+                deploy workflow fails if version is unset <- not implemented
             delete workflow
                 cannot delete a deployed workflow ?
             create workflow instance
@@ -1387,7 +1387,19 @@ mod tests {
         let create_workflow_instance_fail_response = baseline.create_workflow(Some(create_workflow_instance_fail_params)).await.expect("create workflow instance response");
         assert_eq!(create_workflow_instance_fail_response.status(), 422, "Create workflow instance fail response {:?}", create_workflow_instance_fail_response.json::<Value>().await.unwrap());
 
-        baseline.create_workstep(&create_workflow_body.id, Some(json!({ "name": format!("{} workstep", Name().fake::<String>()), "require_finality": true }))).await.expect("create workstep response");
+        baseline.create_workstep(&create_workflow_body.id, Some(json!({
+            "name": format!("{} workstep", Name().fake::<String>()),
+            "require_finality": true,
+            "metadata": {
+                "prover": {
+                    "identifier": "cubic",
+                    "name": "cubic groth16",
+                    "provider": "gnark",
+                    "proving_scheme": "groth16",
+                    "curve": "BN254",
+                },
+            },
+        }))).await.expect("create workstep response");
 
         let deploy_workflow_res = baseline.deploy_workflow(&create_workflow_body.id).await.expect("deploy workflow response");
         assert_eq!(deploy_workflow_res.status(), 202, "deploy workflow response body: {:?}", deploy_workflow_res.json::<Value>().await.unwrap());
@@ -1466,16 +1478,60 @@ mod tests {
         let deploy_workflow_fail_worksteps_res = baseline.deploy_workflow(&create_workflow_body.id).await.expect("deploy workflow fail response");
         assert_eq!(deploy_workflow_fail_worksteps_res.status(), 422, "deploy workflow fail worksteps response {:?}", deploy_workflow_fail_worksteps_res.json::<Value>().await.unwrap());
 
-        let create_workstep_res = baseline.create_workstep(&create_workflow_body.id, Some(json!({ "name": format!("{} workstep", Name().fake::<String>()), "require_finality": true }))).await.expect("create workstep response");
+        let create_workstep_res = baseline.create_workstep(&create_workflow_body.id, Some(json!({
+            "name": format!("{} workstep", Name().fake::<String>()),
+            "metadata": {
+                "prover": {
+                    "identifier": "cubic",
+                    "name": "cubic groth16",
+                    "provider": "gnark",
+                    "proving_scheme": "groth16",
+                    "curve": "BN254",
+                },
+            },
+        }))).await.expect("create workstep response");
         assert_eq!(create_workstep_res.status(), 201);
         
         /*
             fails if the last workstep is not require finality
         */
         let deploy_workflow_fail_finality_res = baseline.deploy_workflow(&create_workflow_body.id).await.expect("deploy workflow response");
-        assert_eq!(deploy_workflow_fail_finality_res.status(), 202, "deploy workflow fail finality response body: {:?}", deploy_workflow_fail_finality_res.json::<Value>().await.unwrap());
+        assert_eq!(deploy_workflow_fail_finality_res.status(), 422, "deploy workflow fail finality response body: {:?}", deploy_workflow_fail_finality_res.json::<Value>().await.unwrap());
         
-        baseline.create_workstep(&create_workflow_body.id, Some(json!({ "name": format!("{} workstep", Name().fake::<String>()), "require_finality": true }))).await.expect("create workstep response");
+        baseline.create_workstep(&create_workflow_body.id, Some(json!({
+            "name": format!("{} workstep", Name().fake::<String>()),
+            "require_finality": true,
+            "metadata": {
+                "prover": {
+                    "identifier": "cubic",
+                    "name": "cubic groth16",
+                    "provider": "gnark",
+                    "proving_scheme": "groth16",
+                    "curve": "BN254",
+                },
+            },
+        }))).await.expect("create workstep response");
+
+        /*
+            fails to deploy if version is not set
+        */
+        let deploy_workflow_fail_version_res = baseline.deploy_workflow(&create_workflow_body.id).await.expect("");
+        assert_eq!(deploy_workflow_fail_version_res.status(), 422, "deploy workflow fail version response {:?}", deploy_workflow_fail_version_res.json::<Value>().await.unwrap());
+        
+        let update_workflow_version_params = json!({
+            "status": "draft",
+            "version": "1",
+        });
+        let update_workflow_version_res = baseline.update_workflow(&create_workflow_body.id, Some(update_workflow_version_params)).await.expect("update workflow version response");
+        assert_eq!(update_workflow_version_res.status(), 204);
+        
+        
+        let workflow = baseline.get_workflow(&create_workflow_body.id).await.unwrap();
+        println!("deploy workflow {:?}", workflow.json::<Value>().await.unwrap());
+
+        let worksteps = baseline.fetch_worksteps(&create_workflow_body.id).await.unwrap();
+        println!("deploy worksteps {:?}", worksteps.json::<Value>().await.unwrap());
+
 
         let deploy_workflow_res = baseline.deploy_workflow(&create_workflow_body.id).await.expect("deploy workflow response");
         assert_eq!(deploy_workflow_res.status(), 202, "deploy workflow response body: {:?}", deploy_workflow_res.json::<Value>().await.unwrap());
@@ -1791,7 +1847,19 @@ mod tests {
 
         let create_workflow_body = create_workflow_res.json::<Workflow>().await.expect("create workflow body");
 
-        let create_workstep_res = baseline.create_workstep(&create_workflow_body.id, Some(json!({ "name": format!("{} workstep", Name().fake::<String>()), "require_finality": true }))).await.expect("create workstep response");
+        let create_workstep_res = baseline.create_workstep(&create_workflow_body.id, Some(json!({
+            "name": format!("{} workstep", Name().fake::<String>()),
+            "require_finality": true,
+            "metadata": {
+                "prover": {
+                    "identifier": "cubic",
+                    "name": "cubic groth16",
+                    "provider": "gnark",
+                    "proving_scheme": "groth16",
+                    "curve": "BN254",
+                },
+            },
+        }))).await.expect("create workstep response");
         assert_eq!(create_workstep_res.status(), 201);
 
         let deploy_workflow_res = baseline.deploy_workflow(&create_workflow_body.id).await.expect("deploy workflow response");
@@ -1840,7 +1908,19 @@ mod tests {
         let create_workflow_instance_fail_response = baseline.create_workflow(Some(create_workflow_instance_fail_params)).await.expect("create workflow instance response");
         assert_eq!(create_workflow_instance_fail_response.status(), 422, "Create workflow instance fail response {:?}", create_workflow_instance_fail_response.json::<Value>().await.unwrap());
 
-        let create_workstep_res = baseline.create_workstep(&create_workflow_body.id, Some(json!({ "name": format!("{} workstep", Name().fake::<String>()), "require_finality": true }))).await.expect("create workstep response");
+        let create_workstep_res = baseline.create_workstep(&create_workflow_body.id, Some(json!({
+            "name": format!("{} workstep", Name().fake::<String>()),
+            "require_finality": true,
+            "metadata": {
+                "prover": {
+                    "identifier": "cubic",
+                    "name": "cubic groth16",
+                    "provider": "gnark",
+                    "proving_scheme": "groth16",
+                    "curve": "BN254",
+                },
+            },
+        }))).await.expect("create workstep response");
         assert_eq!(create_workstep_res.status(), 201);
 
         let create_workstep_body = create_workstep_res.json::<Workstep>().await.expect("create workstep body");
@@ -1899,7 +1979,7 @@ mod tests {
         // create worksteps
         let create_first_workstep_res = baseline.create_workstep(&create_workflow_body.id, Some(json!({ "name": format!("{} workstep", Name().fake::<String>()) }))).await.expect("create first workstep response");
         assert_eq!(create_first_workstep_res.status(), 201, "{:?}", create_first_workstep_res.json::<Value>().await.unwrap());
-        let create_first_workstep_body = create_first_workstep_res.json::<Workstep>().await.expect("create first workstep body");
+        // let create_first_workstep_body = create_first_workstep_res.json::<Workstep>().await.expect("create first workstep body");
 
         let create_second_workstep_res = baseline.create_workstep(&create_workflow_body.id, Some(json!({ "name": format!("{} workstep", Name().fake::<String>()) }))).await.expect("create second workstep response");
         assert_eq!(create_second_workstep_res.status(), 201);
@@ -2013,7 +2093,19 @@ mod tests {
         /*
             cannot delete workstep on deployed workflow (non draft?)
         */
-        let create_workstep_fail_deployed_res = baseline.create_workstep(&create_workflow_body.id, Some(json!({ "name": format!("{} workflow", Name().fake::<String>()), "require_finality": true }))).await.expect("create workstep fail deployed response");
+        let create_workstep_fail_deployed_res = baseline.create_workstep(&create_workflow_body.id, Some(json!({
+            "name": format!("{} workflow", Name().fake::<String>()),
+            "require_finality": true,
+            "metadata": {
+                "prover": {
+                    "identifier": "cubic",
+                    "name": "cubic groth16",
+                    "provider": "gnark",
+                    "proving_scheme": "groth16",
+                    "curve": "BN254",
+                },
+            },
+        }))).await.expect("create workstep fail deployed response");
         assert_eq!(create_workstep_fail_deployed_res.status(), 201);
 
         let create_workstep_fail_deployed_body = create_workstep_fail_deployed_res.json::<Workstep>().await.expect("create workstep fail deployed body");
@@ -2052,7 +2144,19 @@ mod tests {
 
         let create_workflow_body = create_workflow_res.json::<Workflow>().await.expect("create workflow body");
 
-        let create_workstep_res = baseline.create_workstep(&create_workflow_body.id, Some(json!({ "name": format!("{} workstep", Name().fake::<String>()), "require_finality": true }))).await.expect("create workstep response");
+        let create_workstep_res = baseline.create_workstep(&create_workflow_body.id, Some(json!({
+            "name": format!("{} workstep", Name().fake::<String>()),
+            "require_finality": true,
+            "metadata": {
+                "prover": {
+                    "identifier": "cubic",
+                    "name": "cubic groth16",
+                    "provider": "gnark",
+                    "proving_scheme": "groth16",
+                    "curve": "BN254",
+                },
+            },
+        }))).await.expect("create workstep response");
         assert_eq!(create_workstep_res.status(), 201);
 
         let create_workstep_body = create_workstep_res.json::<Workstep>().await.expect("create workstep body");
