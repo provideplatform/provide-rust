@@ -46,13 +46,13 @@ trap handle_shutdown INT
 bounce_docker() {
     # FIXME-- make sure $(which docker) is a thing...
 
-    docker kill $(docker ps -q) 2>/dev/null
-    docker rm $(docker ps -a -q) 2>/dev/null
-    docker network prune -f 2>/dev/null
-    docker volume prune -f 2>/dev/null
+    $(docker kill $(docker ps -q)) &2>/dev/null
+    $(docker rm $(docker ps -a -q)) &2>/dev/null
+    $(docker network prune -f) &2>/dev/null
+    $(docker volume prune -f) &2>/dev/null
 
     # alternatively... the following might be a little nicer...
-    # `docker system prune`
+    # docker system prune 2>/dev/null
 }
 
 # could dump logs into tmp file
@@ -142,22 +142,31 @@ if [[ $* == *--log-docker-info* ]]; then
     docker info
 fi
 
-bounce_docker &
+bounce_docker
 
-wait_for_ident_container &
-wait_for_vault_container &
-wait_for_privacy_container &
-wait_for_nchain_container &
+# docker-compose -f ./ops/docker-compose.yml build --no-cache
+docker-compose -f ./ops/docker-compose.yml up --build -d
 
-docker-compose -f ./ops/docker-compose.yml build --no-cache &
-docker-compose -f ./ops/docker-compose.yml up -d &
-wait
+wait_for_ident_container
+wait_for_vault_container
+wait_for_privacy_container
+wait_for_nchain_container
 
 # if [[ $* == *--log-docker-info* ]]; then
 #     echo "docker networks pre setup"
 #     docker network ls
 # fi
 
-IDENT_API_HOST=localhost:8081 IDENT_API_SCHEME=http VAULT_API_HOST=localhost:8082 VAULT_API_SCHEME=http PRIVACY_API_HOST=localhost:8083 PRIVACY_API_SCHEME=http NCHAIN_API_HOST=localhost:8084 NCHAIN_API_SCHEME=http BASELINE_API_HOST=localhost:8085 BASELINE_API_SCHEME=http cargo test $SUITE -- --test-threads=1
+IDENT_API_HOST=localhost:8081 \
+IDENT_API_SCHEME=http \
+VAULT_API_HOST=localhost:8082 \
+VAULT_API_SCHEME=http \
+PRIVACY_API_HOST=localhost:8083 \
+PRIVACY_API_SCHEME=http \
+NCHAIN_API_HOST=localhost:8084 \
+NCHAIN_API_SCHEME=http \
+BASELINE_API_HOST=localhost:8085 \
+BASELINE_API_SCHEME=http \
+cargo test $SUITE -- --test-threads=1
 
 handle_shutdown
