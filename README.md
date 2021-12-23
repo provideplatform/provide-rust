@@ -38,7 +38,7 @@ Bug reports and pull requests are welcome on [GitHub](https://github.com/provide
 
 # License
 
-Rand is distributed under the terms of both the MIT license and the
+provide-rust is distributed under the terms of both the MIT license and the
 Apache License (Version 2.0).
 
 See [LICENSE-APACHE](LICENSE-APACHE) and [LICENSE-MIT](LICENSE-MIT), and
