@@ -1,6 +1,7 @@
 use async_trait::async_trait;
 use crate::api::client::{ApiClient, Params, Response};
 pub use crate::models::baseline::*;
+use serde_json::json;
 
 const DEFAULT_SCHEME: &str = "https";
 const DEFAULT_HOST: &str = "baseline.provide.network";
@@ -207,7 +208,7 @@ impl Baseline for ApiClient {
     async fn deploy_workflow(&self, workflow_id: &str) -> Response {
         let uri = format!("workflows/{}/deploy", workflow_id);
         // return self.post(&uri, Some(json!({ "": "" })), None).await
-        return self.post(&uri, None, None).await
+        return self.post(&uri, Some(json!({})), None).await
     }
     
     async fn delete_workflow(&self, workflow_id: &str) -> Response {
@@ -1540,7 +1541,6 @@ mod tests {
         let create_workflow_params = json!({
             "workgroup_id": &app_id,
             "name": format!("{} workflow", Name().fake::<String>()),
-            "version": "1",
         });
 
         let create_workflow_body = _create_workflow(&baseline, create_workflow_params, 201).await;
