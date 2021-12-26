@@ -1266,6 +1266,7 @@ mod tests {
             delete workflow
                 cannot delete a deployed workflow ?
             create workflow instance
+                cannot create workflow instance from undeployed workflow
     */
 
     #[tokio::test]
@@ -1377,7 +1378,9 @@ mod tests {
 
         let create_workflow_body = create_workflow_res.json::<Workflow>().await.expect("create workflow body");
 
-        // assertion that workflow instances cannot be created from undeployed workflows
+        /*
+            cannot create workflow instance from undeployed workflow
+        */
         let create_workflow_instance_fail_params = json!({
             "workgroup_id": &app_id,
             "name": format!("{} workflow", Name().fake::<String>()),
@@ -1515,6 +1518,12 @@ mod tests {
         /*
             fails to deploy if version is not set
         */
+        let workflow_res = baseline.get_workflow(&create_workflow_body.id).await.expect("workflow");
+        println!("{:?}", workflow_res.json::<Value>().await.unwrap());
+
+        let worksteps_res = baseline.fetch_worksteps(&create_workflow_body.id).await.expect("worksteps");
+        println!("{:?}", worksteps_res.json::<Value>().await.unwrap());
+
         let deploy_workflow_fail_version_res = baseline.deploy_workflow(&create_workflow_body.id).await.expect("");
         assert_eq!(deploy_workflow_fail_version_res.status(), 422, "deploy workflow fail version response {:?}", deploy_workflow_fail_version_res.json::<Value>().await.unwrap());
         
