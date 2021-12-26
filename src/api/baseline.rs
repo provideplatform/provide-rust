@@ -357,7 +357,7 @@ mod tests {
 
     async fn generate_baseline_organization(ident: &ApiClient, user_id: &str) -> Organization {
         let create_organization_params = Some(json!({
-            "name": format!("{} organization", Name().fake::<String>()).chars().filter(|c| !c.is_whitespace()).collect::<String>(),
+            "name": format!("{} organization", Name().fake::<String>()).chars().filter(|c| !c.is_whitespace()).collect::<String>().replace("'", ""),
             "description": "Organization for testing",
             "user_id": user_id,
             "metadata": {
@@ -1549,19 +1549,23 @@ mod tests {
             "name": format!("{} workstep", Name().fake::<String>()),
             "require_finality": true,
             "metadata": {
-                "metadata": {
-                    "prover": {
-                        "identifier": "cubic",
-                        "name": "cubic groth16",
-                        "provider": "gnark",
-                        "proving_scheme": "groth16",
-                        "curve": "BN254",
-                    },
+                "prover": {
+                    "identifier": "cubic",
+                    "name": "cubic groth16",
+                    "provider": "gnark",
+                    "proving_scheme": "groth16",
+                    "curve": "BN254",
                 },
             }
         });
 
         let _ = _create_workstep(&baseline, &create_workflow_body.id, create_workstep_params, 201).await;
+
+        let workflow = baseline.get_workflow(&create_workflow_body.id).await.unwrap();
+        println!("{:?}", workflow.json::<Value>().await.unwrap());
+        let worksteps = baseline.fetch_worksteps(&create_workflow_body.id).await.unwrap();
+        println!("{:?}", worksteps.json::<Value>().await.unwrap());
+        
 
         let _ = _deploy_workflow(&baseline, &create_workflow_body.id, 202).await;
     }
@@ -2143,18 +2147,20 @@ mod tests {
         let update_first_workstep_up_params = json!({
             "name": format!("{} workstep", Name().fake::<String>()),
             "cardinality": 2,
+            "status": "draft",
         });
 
         let update_first_workstep_up_res = baseline.update_workstep(&create_workflow_body.id, &create_first_workstep_body.id, Some(update_first_workstep_up_params)).await.expect("update workstep response");
-        assert_eq!(update_first_workstep_up_res.status(), 204); // , "update workstep response body: {:?}", update_first_workstep_up_res.json::<Value>().await.unwrap());
+        assert_eq!(update_first_workstep_up_res.status(), 204, "update workstep response body: {:?}", update_first_workstep_up_res.json::<Value>().await.unwrap());
 
         let update_second_workstep_down_params = json!({
             "name": format!("{} workstep", Name().fake::<String>()),
             "cardinality": 1,
+            "status": "draft",
         });
 
         let update_second_workstep_down_res = baseline.update_workstep(&create_workflow_body.id, &create_first_workstep_body.id, Some(update_second_workstep_down_params)).await.expect("update workstep response");
-        assert_eq!(update_second_workstep_down_res.status(), 204); // , "update workstep response body: {:?}", update_second_workstep_down_res.json::<Value>().await.unwrap());
+        assert_eq!(update_second_workstep_down_res.status(), 204, "update workstep response body: {:?}", update_second_workstep_down_res.json::<Value>().await.unwrap());
     }
 
     #[tokio::test]
