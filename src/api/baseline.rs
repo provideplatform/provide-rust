@@ -1,7 +1,6 @@
 use async_trait::async_trait;
 use crate::api::client::{ApiClient, Params, Response};
 pub use crate::models::baseline::*;
-use serde_json::json;
 
 const DEFAULT_SCHEME: &str = "https";
 const DEFAULT_HOST: &str = "baseline.provide.network";
@@ -207,8 +206,7 @@ impl Baseline for ApiClient {
     
     async fn deploy_workflow(&self, workflow_id: &str) -> Response {
         let uri = format!("workflows/{}/deploy", workflow_id);
-        // return self.post(&uri, Some(json!({ "": "" })), None).await
-        return self.post(&uri, Some(json!({})), None).await
+        return self.post(&uri, None, None).await
     }
     
     async fn delete_workflow(&self, workflow_id: &str) -> Response {
@@ -331,17 +329,34 @@ mod tests {
                 }
             }
             assert!(deployed_worksteps_status);
+
+            let mut deployed_workflow_status = false;
+
+            while deployed_workflow_status != true {
+                let get_workflow_res = baseline.get_workflow(workflow_id).await.expect("get workflow response");
+                let get_workflow_body = get_workflow_res.json::<Workflow>().await.expect("get workflow body");
+
+                if get_workflow_body.status == "deployed" {
+                    deployed_workflow_status = true;
+                } else {
+                    interval.tick().await;
+                }
+            }
+            assert!(deployed_workflow_status);
         }
     }
 
-    async fn generate_application(ident: &ApiClient, user_id: &str) -> Application {
+    async fn generate_baseline_application(ident: &ApiClient, user_id: &str) -> Application {
         let application_data = json!({
             "network_id": ROPSTEN_NETWORK_ID,
             "user_id": user_id,
             "name": format!("{} application", Name().fake::<String>()),
             "description": "Some application description",
             "type": "baseline",
-            "hidden": false
+            "hidden": false,
+            "config": {
+                "onboarding_complete": true,
+            }
         });
 
         let create_application_res = ident
@@ -473,7 +488,7 @@ mod tests {
 
         // create application
         let create_application_body =
-            generate_application(&ident, &authentication_res_body.user.id).await;
+            generate_baseline_application(&ident, &authentication_res_body.user.id).await;
         let application_authorization_params = json!({
             "application_id": &create_application_body.id,
             "scope": "offline_access",
@@ -546,6 +561,10 @@ mod tests {
             .await
             .expect("create contract response");
         assert_eq!(create_contract_res.status(), 201);
+
+        let organization_before = ident.get_organization(&create_organization_body.id).await.expect("get organization response");
+        println!("organization before {}", serde_json::to_string_pretty(&organization_before.json::<Value>().await.unwrap()).unwrap());
+
         let mut registry_contract = create_contract_res
             .json::<Contract>()
             .await
@@ -564,6 +583,9 @@ mod tests {
                 .expect("get contract body");
         }
         let registry_contract_address = registry_contract.address;
+
+        let organization_after = ident.get_organization(&create_organization_body.id).await.expect("get organization response");
+        println!("organization after {}", serde_json::to_string_pretty(&organization_after.json::<Value>().await.unwrap()).unwrap());
 
         let vault: ApiClient = Vault::factory(&app_access_token);
 
@@ -638,6 +660,9 @@ mod tests {
         // start command & environment
         let run_env = format!("LOG_LEVEL=TRACE IDENT_API_HOST=localhost:8081 IDENT_API_SCHEME=http NCHAIN_API_HOST=localhost:8084 NCHAIN_API_SCHEME=http VAULT_API_HOST=localhost:8082 VAULT_API_SCHEME=http PROVIDE_ORGANIZATION_REFRESH_TOKEN={}", &org_refresh_token);
 
+        let organization_before_startup = ident.get_organization(&create_organization_body.id).await.expect("get organization response");
+        println!("organization before startup {}", serde_json::to_string_pretty(&organization_before_startup.json::<Value>().await.unwrap()).unwrap());
+
         let mut run_cmd = String::from("prvd baseline stack start");
         run_cmd += &format!(" --api-endpoint={}", "http://localhost:8086");
         run_cmd += &format!(" --config={}", &config_file_name);
@@ -695,6 +720,9 @@ mod tests {
         run_cmd += &format!(" --postgres-hostname={}-postgres", &create_organization_body.name);
         run_cmd += &format!(" --postgres-port={}", "5433");
 
+        let key_str = r"\n-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAqU/GXp8MqmugQyRk5FUF\nBvlJt1/h7L3Crzlzejz/OxriZdq/lBNQW9S1kzGc7qjXprZ1Kg3zP6irr6wmvP0W\nYBGltWs2cWUAmxh0PSxuKdT/OyL9w+rjKLh4yo3ex6DX3Ij0iP01Ej2POe5WrPDS\n8j6LT0s4HZ1FprL5h7RUQWV3cO4pF+1kl6HlBpNzEQzocW9ig4DNdSeUENARHWoC\nixE1gFYo9RXm7acqgqCk3ihdJRIbO4e/m1aZq2mvAFK+yHTIWBL0p5PF0Fe8zcWd\nNeEATYB+eRdNJ3jjS8447YrcbQcBQmhFjk8hbCnc3Rv3HvAapk8xDFhImdVF1ffD\nFwIDAQAB\n-----END PUBLIC KEY-----";
+        run_cmd += &format!(" --jwt-signer-public-key='{}'", &key_str);
+
         let localhost_regex = regex::Regex::new(r"localhost").expect("localhost regex expression");
         run_cmd = localhost_regex
             .replace_all(&run_cmd, "host.docker.internal")
@@ -726,6 +754,10 @@ mod tests {
             interval.tick().await;
         }
 
+        let organization_after_startup = ident.get_organization(&create_organization_body.id).await.expect("get organization response");
+        println!("organization after startup {}", serde_json::to_string_pretty(&organization_after_startup.json::<Value>().await.unwrap()).unwrap());
+
+        assert!(false);
         assert_eq!(baseline_container_status, "204 No Content"); // these logs probably shouldn't show unless baseline suite is specified
     }
 
@@ -1541,6 +1573,7 @@ mod tests {
         let create_workflow_params = json!({
             "workgroup_id": &app_id,
             "name": format!("{} workflow", Name().fake::<String>()),
+            "version": "1"
         });
 
         let create_workflow_body = _create_workflow(&baseline, create_workflow_params, 201).await;
@@ -1561,10 +1594,24 @@ mod tests {
 
         let _ = _create_workstep(&baseline, &create_workflow_body.id, create_workstep_params, 201).await;
 
+        let user_access_token_json = config_vals["user_access_token"].to_string();
+        let user_access_token = serde_json::from_str::<String>(&user_access_token_json).expect("user access token");
+
+        let org_id_json = config_vals["org_id"].to_string();
+        let org_id = serde_json::from_str::<String>(&org_id_json)
+                .expect("workgroup id");
+
+        let ident: ApiClient = Ident::factory(&user_access_token);
+        let organization = ident.get_organization(&org_id).await.unwrap();
+        let workgroup = ident.get_application(&app_id).await.unwrap();
+
+        println!("Organization {}\n", serde_json::to_string_pretty(&organization.json::<Value>().await.unwrap()).unwrap());
+        println!("Workgroup {}\n", serde_json::to_string_pretty(&workgroup.json::<Value>().await.unwrap()).unwrap());
+
         let workflow = baseline.get_workflow(&create_workflow_body.id).await.unwrap();
-        println!("{:?}", workflow.json::<Value>().await.unwrap());
+        println!("Workflow {}\n", serde_json::to_string_pretty(&workflow.json::<Value>().await.unwrap()).unwrap());
         let worksteps = baseline.fetch_worksteps(&create_workflow_body.id).await.unwrap();
-        println!("{:?}", worksteps.json::<Value>().await.unwrap());
+        println!("Worksteps {}\n", serde_json::to_string_pretty(&worksteps.json::<Value>().await.unwrap()).unwrap());
         
 
         let _ = _deploy_workflow(&baseline, &create_workflow_body.id, 202).await;
@@ -1683,21 +1730,19 @@ mod tests {
             "name": format!("{} workstep", Name().fake::<String>()),
             "require_finality": true,
             "metadata": {
-                "metadata": {
-                    "prover": {
-                        "identifier": "cubic",
-                        "name": "cubic groth16",
-                        "provider": "gnark",
-                        "proving_scheme": "groth16",
-                        "curve": "BN254",
-                    },
+                "prover": {
+                    "identifier": "cubic",
+                    "name": "cubic groth16",
+                    "provider": "gnark",
+                    "proving_scheme": "groth16",
+                    "curve": "BN254",
                 },
             }
         });
 
         let _ = _create_workstep(&baseline, &create_workflow_body.id, create_workstep_params, 201).await;
 
-        let _ = _deploy_workflow(&baseline, &create_workflow_body.id, 202).await;
+        let _ = _deploy_workflow(&baseline, &create_workflow_body.id, 422).await;
     }
 
     #[tokio::test]
@@ -1717,6 +1762,7 @@ mod tests {
         let create_workflow_params = json!({
             "workgroup_id": &app_id,
             "name": format!("{} workflow", Name().fake::<String>()),
+            "version": "1",
         });
 
         let create_workflow_body = _create_workflow(&baseline, create_workflow_params, 201).await;
@@ -1725,14 +1771,12 @@ mod tests {
             "name": format!("{} workstep", Name().fake::<String>()),
             "require_finality": true,
             "metadata": {
-                "metadata": {
-                    "prover": {
-                        "identifier": "cubic",
-                        "name": "cubic groth16",
-                        "provider": "gnark",
-                        "proving_scheme": "groth16",
-                        "curve": "BN254",
-                    },
+                "prover": {
+                    "identifier": "cubic",
+                    "name": "cubic groth16",
+                    "provider": "gnark",
+                    "proving_scheme": "groth16",
+                    "curve": "BN254",
                 },
             }
         });
