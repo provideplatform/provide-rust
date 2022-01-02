@@ -140,6 +140,7 @@ fi
 
 if [[ $* == *--log-docker-info* ]]; then
     docker info
+    docker network ls
 fi
 
 bounce_docker
@@ -151,11 +152,6 @@ wait_for_ident_container
 wait_for_vault_container
 wait_for_privacy_container
 wait_for_nchain_container
-
-# if [[ $* == *--log-docker-info* ]]; then
-#     echo "docker networks pre setup"
-#     docker network ls
-# fi
 
 IDENT_API_HOST=localhost:8081 \
 IDENT_API_SCHEME=http \
