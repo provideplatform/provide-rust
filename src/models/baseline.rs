@@ -171,7 +171,7 @@ pub struct Workstep {
     
     pub name: String,
     pub cardinality: usize,
-    deployed_at: Option<i32>,
+    deployed_at: Option<String>,
     metadata: Option<Value>,
     prover: Option<Circuit>,
     prover_id: Option<String>,
@@ -192,7 +192,7 @@ pub struct WorkstepInstance {
     
     pub name: String,
     pub cardinality: usize,
-    deployed_at: Option<i32>,
+    deployed_at: Option<String>,
     metadata: Option<Value>,
     prover: Option<Circuit>,
     prover_id: Option<String>,

@@ -167,6 +167,6 @@ NCHAIN_API_HOST=localhost:8084 \
 NCHAIN_API_SCHEME=http \
 BASELINE_API_HOST=localhost:8085 \
 BASELINE_API_SCHEME=http \
-cargo test $SUITE -- --test-threads=1
+cargo test $SUITE -- --test-threads=1 --show-output
 
 handle_shutdown
