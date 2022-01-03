@@ -71,7 +71,7 @@ handle_shutdown() {
     docker-compose -f ./ops/docker-compose.yml down
     docker volume rm ops_provide-db
 
-    if [[ "$SUITE" == "" || "$SUITE" == "baseline" ]]; then
+    if [[ "$INVOKE_PRVD_CLI" == "true" && ("$SUITE" == "" || "$SUITE" == "baseline") ]]; then
         if [[ -f ".test-config.tmp.json" ]]; then
             prvd baseline stack stop --name $(jq '.org_name' .test-config.tmp.json | xargs)
             rm .local-baseline-test-config.tmp.yaml
@@ -143,7 +143,14 @@ if [[ $* == *--log-docker-info* ]]; then
     docker network ls
 fi
 
-bounce_docker
+INVOKE_PRVD_CLI=true
+if [[ $* == *--without-prvd-invocation* ]]; then
+    INVOKE_PRVD_CLI=false
+fi
+
+if [[ "$INVOKE_PRVD_CLI" == "true" ]]; then
+    bounce_docker
+fi
 
 # docker-compose -f ./ops/docker-compose.yml build --no-cache
 docker-compose -f ./ops/docker-compose.yml up --build -d
@@ -163,6 +170,7 @@ NCHAIN_API_HOST=localhost:8084 \
 NCHAIN_API_SCHEME=http \
 BASELINE_API_HOST=localhost:8085 \
 BASELINE_API_SCHEME=http \
+INVOKE_PRVD_CLI=$INVOKE_PRVD_CLI \
 cargo test $SUITE -- --test-threads=1 --show-output
 
 handle_shutdown

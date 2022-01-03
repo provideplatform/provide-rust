@@ -396,16 +396,7 @@ mod tests {
 
     #[tokio::test]
     async fn _setup() {
-        // check if prvd cli is installed
-        let prvd_cli_cmd = Command::new("sh")
-            .arg("-c")
-            .arg("prvd")
-            .output()
-            .expect("provide cli install check");
-        if !prvd_cli_cmd.status.success() {
-            panic!("Provide cli not installed. Please install to run the baseline integration test SUITE")
-            // link to cli?
-        }
+        
 
         // create user
         let mut ident: ApiClient = Ident::factory("");
@@ -607,6 +598,7 @@ mod tests {
         };
 
         // json config file
+        // TODO: refactor to use memory
         let json_config_params = json!({
             "user_access_token": &user_access_token,
             "user_refresh_token": &user_refresh_token,
@@ -618,122 +610,152 @@ mod tests {
             "app_id": &create_application_body.id,
         });
         serde_json::to_writer_pretty(
-            std::fs::File::create(".test-config.tmp.json").expect("baseline json config"),
+            std::fs::File::create(".test-config.tmp.json").expect("baseline integration suite setup json config"),
             &json_config_params,
         )
         .expect("write json");
 
-        // yaml config file
-        let config_file_contents = format!(
-            "access-token: {}\nrefresh-token: {}\n{}:\n  api-token: {}\n",
-            &user_access_token, &user_refresh_token, &create_application_body.id, &app_access_token
-        );
-        let cwd = match std::env::current_dir() {
-            Ok(path) => path
-                .into_os_string()
-                .into_string()
-                .expect("current working directory"),
-            Err(v) => panic!("{:?}", v),
-        };
-        let config_file_name = format!("{}/.local-baseline-test-config.tmp.yaml", cwd);
-        let mut config_file = std::fs::File::create(&config_file_name).expect("config file name");
-        write!(config_file, "{}", config_file_contents).expect("config contents");
+        let invoke_prvd_cli = std::env::var("INVOKE_PRVD_CLI").unwrap_or(String::from("true")).to_lowercase() == "true";
+        if invoke_prvd_cli {
+            // check if prvd cli is installed
+            let prvd_cli_cmd = Command::new("sh")
+                .arg("-c")
+                .arg("prvd")
+                .output()
+                .expect("provide cli install check");
+            if !prvd_cli_cmd.status.success() {
+                panic!("Provide cli not installed. Please install to run the baseline integration test SUITE")
+                // link to cli?
+            }
 
-        // start command & environment
-        let run_env = format!("LOG_LEVEL=TRACE IDENT_API_HOST=localhost:8081 IDENT_API_SCHEME=http NCHAIN_API_HOST=localhost:8084 NCHAIN_API_SCHEME=http VAULT_API_HOST=localhost:8082 VAULT_API_SCHEME=http PROVIDE_ORGANIZATION_REFRESH_TOKEN={}", &org_refresh_token);
-
-        let mut run_cmd = String::from("prvd baseline stack start");
-        run_cmd += &format!(" --api-endpoint={}", "http://localhost:8086");
-        run_cmd += &format!(" --config={}", &config_file_name);
-        run_cmd += &format!(
-            " --ident-host={}",
-            std::env::var("IDENT_API_HOST").unwrap_or(String::from("localhost:8081"))
-        ); // TODO: use env
-        run_cmd += &format!(
-            " --ident-scheme={}",
-            std::env::var("IDENT_API_SCHEME").unwrap_or(String::from("http"))
-        );
-        run_cmd += &format!(" --messaging-endpoint={}", "nats://localhost:4223");
-        run_cmd += &format!(" --name=\"{}\"", &create_organization_body.name);
-        run_cmd += &format!(" --nats-auth-token={}", "testtoken");
-        run_cmd += &format!(" --nats-port={}", "4223");
-        run_cmd += &format!(" --nats-ws-port={}", "4224");
-        run_cmd += &format!(
-            " --nchain-host={}",
-            std::env::var("NCHAIN_API_HOST").unwrap_or(String::from("localhost:8084"))
-        );
-        run_cmd += &format!(
-            " --nchain-scheme={}",
-            std::env::var("NCHAIN_API_SCHEME").unwrap_or(String::from("http"))
-        );
-        run_cmd += &format!(" --nchain-network-id={}", ROPSTEN_NETWORK_ID);
-        run_cmd += &format!(" --organization={}", &create_organization_body.id);
-        run_cmd += &format!(" --organization-address={}", &org_address);
-        run_cmd += &format!(" --organization-refresh-token={}", &org_refresh_token);
-        run_cmd += &format!(" --port={}", "8085");
-        run_cmd += &format!(
-            " --privacy-host={}",
-            std::env::var("PRIVACY_API_HOST").unwrap_or(String::from("localhost:8083"))
-        );
-        run_cmd += &format!(
-            " --privacy-scheme={}",
-            std::env::var("PRIVACY_API_SCHEME").unwrap_or(String::from("http"))
-        );
-        run_cmd += &format!(
-            " --registry-contract-address={}",
-            &registry_contract_address
-        );
-        run_cmd += &format!(" --redis-hostname={}-redis", &create_organization_body.name);
-        run_cmd += &format!(" --redis-port={}", "6380");
-        run_cmd += &format!(" --sor={}", "ephemeral");
-        run_cmd += &format!(
-            " --vault-host={}",
-            std::env::var("VAULT_API_HOST").unwrap_or(String::from("localhost:8082"))
-        );
-        run_cmd += &format!(" --vault-refresh-token={}", &org_refresh_token);
-        run_cmd += &format!(
-            " --vault-scheme={}",
-            std::env::var("VAULT_API_SCHEME").unwrap_or(String::from("http"))
-        );
-        run_cmd += &format!(" --workgroup={}", &create_application_body.id);
-        run_cmd += &format!(" --postgres-hostname={}-postgres", &create_organization_body.name);
-        run_cmd += &format!(" --postgres-port={}", "5433");
-
-        let key_str = r"\n-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAqU/GXp8MqmugQyRk5FUF\nBvlJt1/h7L3Crzlzejz/OxriZdq/lBNQW9S1kzGc7qjXprZ1Kg3zP6irr6wmvP0W\nYBGltWs2cWUAmxh0PSxuKdT/OyL9w+rjKLh4yo3ex6DX3Ij0iP01Ej2POe5WrPDS\n8j6LT0s4HZ1FprL5h7RUQWV3cO4pF+1kl6HlBpNzEQzocW9ig4DNdSeUENARHWoC\nixE1gFYo9RXm7acqgqCk3ihdJRIbO4e/m1aZq2mvAFK+yHTIWBL0p5PF0Fe8zcWd\nNeEATYB+eRdNJ3jjS8447YrcbQcBQmhFjk8hbCnc3Rv3HvAapk8xDFhImdVF1ffD\nFwIDAQAB\n-----END PUBLIC KEY-----";
-        run_cmd += &format!(" --jwt-signer-public-key='{}'", &key_str);
-
-        let localhost_regex = regex::Regex::new(r"localhost").expect("localhost regex expression");
-        run_cmd = localhost_regex
-            .replace_all(&run_cmd, "host.docker.internal")
-            .to_string();
-        let baseline_cmd = format!("{} {}", run_env, run_cmd);
-
-        Command::new("sh")
-            .arg("-c")
-            .arg(&baseline_cmd)
-            .spawn()
-            .expect("baseline tests init process"); // attach to some sort of log level?
-
-        let mut baseline_status_client = ApiClient::new("", "", "", "");
-        baseline_status_client.set_base_url(&format!(
-            "{}://{}",
-            std::env::var("BASELINE_API_SCHEME").expect("baseline api scheme"),
-            std::env::var("BASELINE_API_HOST").expect("baseline api host")
-        ));
-
-        let mut baseline_container_status = String::from("");
-
-        while baseline_container_status == "" {
-            baseline_container_status = match baseline_status_client.get("status", None, None).await
-            {
-                Ok(res) => res.status().to_string(),
-                Err(_) => String::from(""),
+            // yaml config file
+            let config_file_contents = format!(
+                "access-token: {}\nrefresh-token: {}\n{}:\n  api-token: {}\n",
+                &user_access_token, &user_refresh_token, &create_application_body.id, &app_access_token
+            );
+            let cwd = match std::env::current_dir() {
+                Ok(path) => path
+                    .into_os_string()
+                    .into_string()
+                    .expect("current working directory"),
+                Err(v) => panic!("{:?}", v),
             };
+            let config_file_name = format!("{}/.local-baseline-test-config.tmp.yaml", cwd);
+            let mut config_file = std::fs::File::create(&config_file_name).expect("prvd cli config file name");
+            write!(config_file, "{}", config_file_contents).expect("config contents");
 
-            interval.tick().await;
+            // start command & environment
+            let run_env = format!("LOG_LEVEL=TRACE IDENT_API_HOST=localhost:8081 IDENT_API_SCHEME=http NCHAIN_API_HOST=localhost:8084 NCHAIN_API_SCHEME=http VAULT_API_HOST=localhost:8082 VAULT_API_SCHEME=http PROVIDE_ORGANIZATION_REFRESH_TOKEN={}", &org_refresh_token);
+
+            let mut run_cmd = String::from("prvd baseline stack start");
+            run_cmd += &format!(" --api-endpoint={}", "http://localhost:8086");
+            run_cmd += &format!(" --config={}", &config_file_name);
+            run_cmd += &format!(
+                " --ident-host={}",
+                std::env::var("IDENT_API_HOST").unwrap_or(String::from("localhost:8081"))
+            ); // TODO: use env
+            run_cmd += &format!(
+                " --ident-scheme={}",
+                std::env::var("IDENT_API_SCHEME").unwrap_or(String::from("http"))
+            );
+            run_cmd += &format!(" --messaging-endpoint={}", "nats://localhost:4223");
+            // run_cmd += &format!(" --name=\"{}\"", &create_organization_body.name);
+            run_cmd += &format!(" --nats-auth-token={}", "testtoken");
+            run_cmd += &format!(" --nats-port={}", "4223");
+            run_cmd += &format!(" --nats-ws-port={}", "4224");
+            run_cmd += &format!(
+                " --nchain-host={}",
+                std::env::var("NCHAIN_API_HOST").unwrap_or(String::from("localhost:8084"))
+            );
+            run_cmd += &format!(
+                " --nchain-scheme={}",
+                std::env::var("NCHAIN_API_SCHEME").unwrap_or(String::from("http"))
+            );
+            run_cmd += &format!(" --nchain-network-id={}", ROPSTEN_NETWORK_ID);
+            run_cmd += &format!(" --organization={}", &create_organization_body.id);
+            run_cmd += &format!(" --organization-address={}", &org_address);
+            run_cmd += &format!(" --organization-refresh-token={}", &org_refresh_token);
+            run_cmd += &format!(" --port={}", "8085");
+            run_cmd += &format!(
+                " --privacy-host={}",
+                std::env::var("PRIVACY_API_HOST").unwrap_or(String::from("localhost:8083"))
+            );
+            run_cmd += &format!(
+                " --privacy-scheme={}",
+                std::env::var("PRIVACY_API_SCHEME").unwrap_or(String::from("http"))
+            );
+            run_cmd += &format!(
+                " --registry-contract-address={}",
+                &registry_contract_address
+            );
+            run_cmd += &format!(" --redis-hostname={}-redis", &create_organization_body.name);
+            run_cmd += &format!(" --redis-port={}", "6380");
+            run_cmd += &format!(" --sor={}", "ephemeral");
+            run_cmd += &format!(
+                " --vault-host={}",
+                std::env::var("VAULT_API_HOST").unwrap_or(String::from("localhost:8082"))
+            );
+            run_cmd += &format!(" --vault-refresh-token={}", &org_refresh_token);
+            run_cmd += &format!(
+                " --vault-scheme={}",
+                std::env::var("VAULT_API_SCHEME").unwrap_or(String::from("http"))
+            );
+            run_cmd += &format!(" --workgroup={}", &create_application_body.id);
+            run_cmd += &format!(" --postgres-hostname={}-postgres", &create_organization_body.name);
+            run_cmd += &format!(" --postgres-port={}", "5433");
+
+            let key_str = r"\n-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAqU/GXp8MqmugQyRk5FUF\nBvlJt1/h7L3Crzlzejz/OxriZdq/lBNQW9S1kzGc7qjXprZ1Kg3zP6irr6wmvP0W\nYBGltWs2cWUAmxh0PSxuKdT/OyL9w+rjKLh4yo3ex6DX3Ij0iP01Ej2POe5WrPDS\n8j6LT0s4HZ1FprL5h7RUQWV3cO4pF+1kl6HlBpNzEQzocW9ig4DNdSeUENARHWoC\nixE1gFYo9RXm7acqgqCk3ihdJRIbO4e/m1aZq2mvAFK+yHTIWBL0p5PF0Fe8zcWd\nNeEATYB+eRdNJ3jjS8447YrcbQcBQmhFjk8hbCnc3Rv3HvAapk8xDFhImdVF1ffD\nFwIDAQAB\n-----END PUBLIC KEY-----";
+            run_cmd += &format!(" --jwt-signer-public-key='{}'", &key_str);
+
+            let localhost_regex = regex::Regex::new(r"localhost").expect("localhost regex expression");
+            run_cmd = localhost_regex
+                .replace_all(&run_cmd, "host.docker.internal")
+                .to_string();
+            let baseline_cmd = format!("{} {}", run_env, run_cmd);
+
+            Command::new("sh")
+                .arg("-c")
+                .arg(&baseline_cmd)
+                .spawn()
+                .expect("baseline tests init process"); // attach to some sort of log level?
+
+            let mut baseline_status_client = ApiClient::new("", "", "", "");
+            baseline_status_client.set_base_url(&format!(
+                "{}://{}",
+                std::env::var("BASELINE_API_SCHEME").expect("baseline api scheme"),
+                std::env::var("BASELINE_API_HOST").expect("baseline api host")
+            ));
+
+            let mut baseline_container_status = String::from("");
+
+            while baseline_container_status == "" {
+                baseline_container_status = match baseline_status_client.get("status", None, None).await
+                {
+                    Ok(res) => res.status().to_string(),
+                    Err(_) => String::from(""),
+                };
+
+                interval.tick().await;
+            }
+
+            assert_eq!(baseline_container_status, "204 No Content"); // these logs probably shouldn't show unless baseline suite is specified
+        } else {
+            let baseline: ApiClient = Baseline::factory(&org_access_token);
+
+            let seconds = time::Duration::from_secs(10);
+            std::thread::sleep(seconds);
+
+            let update_config_params = json!({
+                "network_id": ROPSTEN_NETWORK_ID,
+                "organization_address": &create_organization_body.metadata["address"],
+                "organization_id": &create_organization_body.id,
+                "organization_refresh_token": &org_refresh_token,
+                "registry_contract_address": &registry_contract_address,
+            });
+
+            let update_config_res = baseline.update_config(Some(update_config_params)).await.expect("update config response");
+            assert_eq!(update_config_res.status(), 204);
         }
-
-        assert_eq!(baseline_container_status, "204 No Content"); // these logs probably shouldn't show unless baseline suite is specified
     }
 
     // #[tokio::test]

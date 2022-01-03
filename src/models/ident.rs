@@ -58,5 +58,5 @@ pub struct Organization {
     pub name: String,
     user_id: String,
     description: String,
-    metadata: serde_json::Value,
+    pub metadata: serde_json::Value,
 }
