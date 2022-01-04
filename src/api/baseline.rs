@@ -396,8 +396,6 @@ mod tests {
 
     #[tokio::test]
     async fn _setup() {
-        
-
         // create user
         let mut ident: ApiClient = Ident::factory("");
         let user_email = Some(FreeEmail().fake::<String>());
@@ -653,13 +651,13 @@ mod tests {
             run_cmd += &format!(
                 " --ident-host={}",
                 std::env::var("IDENT_API_HOST").unwrap_or(String::from("localhost:8081"))
-            ); // TODO: use env
+            );
             run_cmd += &format!(
                 " --ident-scheme={}",
                 std::env::var("IDENT_API_SCHEME").unwrap_or(String::from("http"))
             );
             run_cmd += &format!(" --messaging-endpoint={}", "nats://localhost:4223");
-            // run_cmd += &format!(" --name=\"{}\"", &create_organization_body.name);
+            run_cmd += &format!(" --name=\"{}\"", &create_organization_body.name);
             run_cmd += &format!(" --nats-auth-token={}", "testtoken");
             run_cmd += &format!(" --nats-port={}", "4223");
             run_cmd += &format!(" --nats-ws-port={}", "4224");
@@ -751,6 +749,7 @@ mod tests {
                 "organization_id": &create_organization_body.id,
                 "organization_refresh_token": &org_refresh_token,
                 "registry_contract_address": &registry_contract_address,
+                "workgroup_id": &create_application_body.id,
             });
 
             let update_config_res = baseline.update_config(Some(update_config_params)).await.expect("update config response");
