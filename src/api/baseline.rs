@@ -1196,7 +1196,7 @@ mod tests {
             .create_mapping(Some(create_mapping_params))
             .await
             .expect("create mapping response");
-        assert_eq!(create_mapping_res.status(), 201);
+        assert_eq!(create_mapping_res.status(), 201, "create mapping response body: {:?}", create_mapping_res.json::<Value>().await.unwrap());
     }
 
     #[tokio::test]
@@ -1237,7 +1237,7 @@ mod tests {
             .create_mapping(Some(create_mapping_params))
             .await
             .expect("create mapping response");
-        assert_eq!(create_mapping_res.status(), 201);
+        assert_eq!(create_mapping_res.status(), 201, "create mapping response body: {:?}", create_mapping_res.json::<Value>().await.unwrap());
 
         let create_mapping_body = create_mapping_res.json::<Mapping>().await.expect("create mapping body");
 
@@ -1320,7 +1320,7 @@ mod tests {
             .create_mapping(Some(create_mapping_params))
             .await
             .expect("create mapping response");
-        assert_eq!(create_mapping_res.status(), 201);
+        assert_eq!(create_mapping_res.status(), 201, "create mapping response body: {:?}", create_mapping_res.json::<Value>().await.unwrap());
 
         let create_mapping_body = create_mapping_res.json::<Mapping>().await.expect("create mapping body");
 
