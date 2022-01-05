@@ -395,7 +395,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn _setup() {
+    async fn _setup_one() {
         // create user
         let mut ident: ApiClient = Ident::factory("");
         let user_email = Some(FreeEmail().fake::<String>());
@@ -2255,7 +2255,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn update_workstep_move_cardinality_12_worksteps() {
+    async fn update_workstep_move_cardinality_12_worksteps_one() {
         let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
         let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
 
@@ -2301,6 +2301,19 @@ mod tests {
 
                 let update_workstep_res = baseline.update_workstep(&create_workflow_body.id, &current_workstep.id, Some(update_workstep_params)).await.expect("update workstep response");
                 assert_eq!(update_workstep_res.status(), 204, "update workstep response body: {:?}", update_workstep_res.json::<Value>().await.unwrap());
+
+                let updated_worksteps_res = baseline.fetch_worksteps(&create_workflow_body.id).await.expect("fetch updated worksteps response");
+                assert_eq!(updated_worksteps_res.status(), 200);
+
+                let updated_worksteps_body = updated_worksteps_res.json::<Vec<Workstep>>().await.expect("updated worksteps body");
+
+                for idx in 0..updated_worksteps_body.len() {
+                    let workstep = &updated_worksteps_body[idx];
+
+                    if workstep.id == current_workstep.id {
+                        assert_eq!(workstep.cardinality, cardinality)
+                    };
+                }
             };
         };
     }
