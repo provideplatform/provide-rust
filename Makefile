@@ -15,4 +15,4 @@ baseline-integration:
 	SUITE="baseline" CONTAINER_REGEX="organization-api" ./ops/run_integration_tests.sh --log-docker-info
 
 baseline-integration-dev:
-	SUITE="baseline" CONTAINER_REGEX="organization-api" ./ops/run_integration_tests.sh --log-docker-info --without-prvd-invocation
+	SUITE="baseline" CONTAINER_REGEX="organization-api" ./ops/run_integration_tests.sh --log-docker-info --without-prvd-invocation --with-registry-contract-address

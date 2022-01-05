@@ -522,8 +522,11 @@ mod tests {
             .json::<Account>()
             .await
             .expect("create account body");
+
+        let baseline_registry_contract_address = std::env::var("BASELINE_REGISTRY_CONTRACT_ADDRESS").unwrap_or(String::from("0x"));
+
         let create_contract_params = json!({
-            "address": "0x",
+            "address": &baseline_registry_contract_address,
             "params": {
                 "account_id": &create_account_body.id,
                 "compiled_artifact": shuttle_contract,
@@ -584,7 +587,7 @@ mod tests {
         let create_key_res = vault
             .create_key(&create_vault_body.id, Some(create_key_params))
             .await
-            .expect("create key resposne");
+            .expect("create key response");
         assert_eq!(create_key_res.status(), 201);
         let create_key_body = create_key_res
             .json::<VaultKey>()
@@ -2437,7 +2440,7 @@ mod tests {
 
         let get_workstep_body = get_workflow_res.json::<Workflow>().await.expect("get workstep body");
 
-        assert_eq!(get_workstep_body.worksteps_count.unwrap(), 0);
+        assert_eq!(get_workstep_body.worksteps_count, None);
     }
 
     #[tokio::test]

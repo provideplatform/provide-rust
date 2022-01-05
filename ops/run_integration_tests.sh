@@ -152,6 +152,11 @@ if [[ "$INVOKE_PRVD_CLI" == "true" ]]; then
     bounce_docker
 fi
 
+BASELINE_REGISTRY_CONTRACT_ADDRESS=
+if [[ $* == *--with-registry-contract-address* ]]; then
+    BASELINE_REGISTRY_CONTRACT_ADDRESS=0xCecCb4eA6B06F8990A305cafd1a9B43a9eF9c689
+fi
+
 # docker-compose -f ./ops/docker-compose.yml build --no-cache
 docker-compose -f ./ops/docker-compose.yml up --build -d
 
@@ -160,6 +165,7 @@ wait_for_vault_container
 wait_for_privacy_container
 wait_for_nchain_container
 
+BASELINE_REGISTRY_CONTRACT_ADDRESS=$BASELINE_REGISTRY_CONTRACT_ADDRESS \
 IDENT_API_HOST=localhost:8081 \
 IDENT_API_SCHEME=http \
 VAULT_API_HOST=localhost:8082 \
@@ -174,3 +180,5 @@ INVOKE_PRVD_CLI=$INVOKE_PRVD_CLI \
 cargo test $SUITE -- --test-threads=1 --show-output
 
 handle_shutdown
+
+# parallel flag
