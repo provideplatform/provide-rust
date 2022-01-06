@@ -2151,7 +2151,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn update_workstep_move_cardinality_2_worksteps() {
+    async fn update_workstep_move_cardinality_2_worksteps_one() {
         let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
         let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
 
@@ -2204,7 +2204,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn update_workstep_move_cardinality_3_worksteps() {
+    async fn update_workstep_move_cardinality_3_worksteps_one() {
         let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
         let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
 
@@ -2240,16 +2240,39 @@ mod tests {
 
         for workstep_idx in 0..3 {
             let current_workstep = &fetch_worksteps_body[workstep_idx];
+            let original_cardinality = current_workstep.cardinality;
 
             for cardinality in 1..4 {
                 let update_workstep_params = json!({
-                    "name": current_workstep.name,
+                    "name": &current_workstep.name,
                     "cardinality": cardinality,
                     "status": "draft",
                 });
 
                 let update_workstep_res = baseline.update_workstep(&create_workflow_body.id, &current_workstep.id, Some(update_workstep_params)).await.expect("update workstep response");
                 assert_eq!(update_workstep_res.status(), 204, "update workstep response body: {:?}", update_workstep_res.json::<Value>().await.unwrap());
+
+                let updated_workstep_res = baseline.get_workstep(&create_workflow_body.id, &current_workstep.id).await.expect("fetch updated workstep response");
+                assert_eq!(updated_workstep_res.status(), 200);
+
+                let updated_workstep_body = updated_workstep_res.json::<Workstep>().await.expect("updated workstep body");
+                assert_eq!(updated_workstep_body.cardinality, cardinality);
+
+                // reset the cardinality back to its original after each shift
+                let revert_workstep_cardinality_params = json!({
+                    "name": &current_workstep.name,
+                    "cardinality": original_cardinality,
+                    "status": "draft",
+                });
+
+                let revert_workstep_cardinality_res = baseline.update_workstep(&create_workflow_body.id, &current_workstep.id, Some(revert_workstep_cardinality_params)).await.expect("revert workstep cardinality response");
+                assert_eq!(revert_workstep_cardinality_res.status(), 204, "revert workstep cardinality response body: {:?}", update_workstep_res.json::<Value>().await.unwrap());
+
+                let get_reverted_cardinality_workstep_res = baseline.get_workstep(&create_workflow_body.id, &current_workstep.id).await.expect("get reverted cardinality workstep response");
+                assert_eq!(get_reverted_cardinality_workstep_res.status(), 200);
+
+                let get_reverted_cardinality_workstep_res = get_reverted_cardinality_workstep_res.json::<Workstep>().await.expect("get reverted cardinality workstep body");
+                assert_eq!(get_reverted_cardinality_workstep_res.cardinality, original_cardinality);
             };
         };
     }
@@ -2291,10 +2314,11 @@ mod tests {
 
         for workstep_idx in 0..12 {
             let current_workstep = &fetch_worksteps_body[workstep_idx];
+            let original_cardinality = current_workstep.cardinality;
 
             for cardinality in 1..13 {
                 let update_workstep_params = json!({
-                    "name": current_workstep.name,
+                    "name": &current_workstep.name,
                     "cardinality": cardinality,
                     "status": "draft",
                 });
@@ -2302,18 +2326,27 @@ mod tests {
                 let update_workstep_res = baseline.update_workstep(&create_workflow_body.id, &current_workstep.id, Some(update_workstep_params)).await.expect("update workstep response");
                 assert_eq!(update_workstep_res.status(), 204, "update workstep response body: {:?}", update_workstep_res.json::<Value>().await.unwrap());
 
-                let updated_worksteps_res = baseline.fetch_worksteps(&create_workflow_body.id).await.expect("fetch updated worksteps response");
-                assert_eq!(updated_worksteps_res.status(), 200);
+                let updated_workstep_res = baseline.get_workstep(&create_workflow_body.id, &current_workstep.id).await.expect("fetch updated workstep response");
+                assert_eq!(updated_workstep_res.status(), 200);
 
-                let updated_worksteps_body = updated_worksteps_res.json::<Vec<Workstep>>().await.expect("updated worksteps body");
+                let updated_workstep_body = updated_workstep_res.json::<Workstep>().await.expect("updated workstep body");
+                assert_eq!(updated_workstep_body.cardinality, cardinality);
 
-                for idx in 0..updated_worksteps_body.len() {
-                    let workstep = &updated_worksteps_body[idx];
+                // reset the cardinality back to its original after each shift
+                let revert_workstep_cardinality_params = json!({
+                    "name": &current_workstep.name,
+                    "cardinality": original_cardinality,
+                    "status": "draft",
+                });
 
-                    if workstep.id == current_workstep.id {
-                        assert_eq!(workstep.cardinality, cardinality)
-                    };
-                }
+                let revert_workstep_cardinality_res = baseline.update_workstep(&create_workflow_body.id, &current_workstep.id, Some(revert_workstep_cardinality_params)).await.expect("revert workstep cardinality response");
+                assert_eq!(revert_workstep_cardinality_res.status(), 204, "revert workstep cardinality response body: {:?}", update_workstep_res.json::<Value>().await.unwrap());
+
+                let get_reverted_cardinality_workstep_res = baseline.get_workstep(&create_workflow_body.id, &current_workstep.id).await.expect("get reverted cardinality workstep response");
+                assert_eq!(get_reverted_cardinality_workstep_res.status(), 200);
+
+                let get_reverted_cardinality_workstep_res = get_reverted_cardinality_workstep_res.json::<Workstep>().await.expect("get reverted cardinality workstep body");
+                assert_eq!(get_reverted_cardinality_workstep_res.cardinality, original_cardinality);
             };
         };
     }
