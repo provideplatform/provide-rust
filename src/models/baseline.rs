@@ -1,6 +1,6 @@
+use crate::models::privacy::Circuit;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use crate::models::privacy::Circuit;
 
 // pub struct BaselineContext {
 // 	id: Option<String>,
@@ -98,7 +98,6 @@ pub struct Participant {
     worksteps: Option<Vec<Workstep>>,
 }
 
-
 // pub struct ProtocolMessage {
 //     baseline_id: Option<String>,
 //     opcode: Option<String>,
@@ -141,7 +140,7 @@ pub struct Workflow {
     worksteps: Option<Vec<Workstep>>,
     workflow_id: Option<String>,
     pub status: String,
-    
+
     updated_at: Option<String>,
     workgroup_id: Option<String>,
     pub worksteps_count: Option<i32>,
@@ -168,7 +167,7 @@ pub struct WorkflowInstance {
 pub struct Workstep {
     pub id: String,
     created_at: String,
-    
+
     pub name: String,
     pub cardinality: usize,
     deployed_at: Option<String>,
@@ -189,7 +188,7 @@ pub struct Workstep {
 pub struct WorkstepInstance {
     pub id: String,
     created_at: String,
-    
+
     pub name: String,
     pub cardinality: usize,
     deployed_at: Option<String>,
@@ -212,5 +211,5 @@ pub struct WorkstepInstance {
 
 // #[derive(Serialize, Deserialize, Debug, Default, Clone)]
 // pub struct BpiAccount {
-    
+
 // }

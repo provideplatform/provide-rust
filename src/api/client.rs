@@ -104,7 +104,7 @@ impl ApiClient {
         // make additiona headers reference?
         let mut headers = http::HeaderMap::new();
 
-        if method == "POST" || method == "PUT"  || method == "PATCH" {
+        if method == "POST" || method == "PUT" || method == "PATCH" {
             headers.insert(
                 "content-type",
                 http::HeaderValue::from_static("application/json"),
