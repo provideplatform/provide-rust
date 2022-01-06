@@ -395,7 +395,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn _setup_one() {
+    async fn _setup() {
         // create user
         let mut ident: ApiClient = Ident::factory("");
         let user_email = Some(FreeEmail().fake::<String>());
@@ -2104,6 +2104,55 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn update_workstep_cardinality_zero_fail() {
+        let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
+        let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
+
+        let org_access_token_json = config_vals["org_access_token"].to_string();
+        let org_access_token = serde_json::from_str::<String>(&org_access_token_json).expect("organzation access token");
+
+        let app_id_json = config_vals["app_id"].to_string();
+        let app_id = serde_json::from_str::<String>(&app_id_json)
+                .expect("workgroup id");
+
+        let baseline: ApiClient = Baseline::factory(&org_access_token);
+
+        let create_workflow_params = json!({
+            "workgroup_id": &app_id,
+            "name": format!("{} workstep", Name().fake::<String>()),
+            "version": "1",
+        });
+
+        let create_workflow_body = _create_workflow(&baseline, create_workflow_params, 201).await;
+
+        let create_workstep_params = json!({
+            "name": format!("{} workstep", Name().fake::<String>()),
+        });
+
+        let create_workstep_body = _create_workstep(&baseline, &create_workflow_body.id, create_workstep_params, 201).await;
+
+        let update_workstep_params = json!({
+            "name": format!("{} workstep", Name().fake::<String>()),
+            "description": "an updated workstep description",
+            "status": "draft",
+            "require_finality": true,
+            "metadata": {
+                "prover": {
+                    "identifier": "cubic",
+                    "name": "cubic groth16",
+                    "provider": "gnark",
+                    "proving_scheme": "groth16",
+                    "curve": "BN254",
+                },
+            },
+            "cardinality": 0,
+        });
+
+        let update_workstep_res = baseline.update_workstep(&create_workflow_body.id, &create_workstep_body.id, Some(update_workstep_params)).await.expect("update workstep response");
+        assert_eq!(update_workstep_res.status(), 422, "update workstep response body: {:?}", update_workstep_res.json::<Value>().await.unwrap());
+    }
+
+    #[tokio::test]
     async fn update_workstep_fail_updating_on_deployed() {
         let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
         let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
@@ -2151,7 +2200,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn update_workstep_move_cardinality_2_worksteps_one() {
+    async fn update_workstep_move_cardinality_2_worksteps() {
         let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
         let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
 
@@ -2204,7 +2253,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn update_workstep_move_cardinality_3_worksteps_one() {
+    async fn update_workstep_move_cardinality_3_worksteps() {
         let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
         let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
 
@@ -2278,7 +2327,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn update_workstep_move_cardinality_12_worksteps_one() {
+    async fn update_workstep_move_cardinality_12_worksteps() {
         let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
         let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
 

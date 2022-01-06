@@ -177,7 +177,7 @@ NCHAIN_API_SCHEME=http \
 BASELINE_API_HOST=localhost:8085 \
 BASELINE_API_SCHEME=http \
 INVOKE_PRVD_CLI=$INVOKE_PRVD_CLI \
-cargo test one -- --test-threads=1 --show-output
+cargo test $SUITE -- --test-threads=1 --show-output
 
 handle_shutdown
 
