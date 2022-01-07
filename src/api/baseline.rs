@@ -470,6 +470,13 @@ mod tests {
 
     #[tokio::test]
     async fn _setup() {
+        let skip_setup =
+            std::env::var("SKIP_SETUP").unwrap_or(String::from("")) == "true";
+        if skip_setup {
+            assert!(true);
+            return;
+        }
+
         // create user
         let mut ident: ApiClient = Ident::factory("");
         let user_email = Some(FreeEmail().fake::<String>());
@@ -823,11 +830,11 @@ mod tests {
             let mut baseline_container_status = String::from("");
 
             while baseline_container_status == "" {
-                baseline_container_status = match baseline_status_client.get("status", None, None).await
-                {
-                    Ok(res) => res.status().to_string(),
-                    Err(_) => String::from(""),
-                };
+                baseline_container_status =
+                    match baseline_status_client.get("status", None, None).await {
+                        Ok(res) => res.status().to_string(),
+                        Err(_) => String::from(""),
+                    };
 
                 interval.tick().await;
             }
@@ -1353,37 +1360,26 @@ mod tests {
             .await
             .expect("create mapping body");
 
+        let updated_description = format!("{} description", Name().fake::<String>());
+        let updated_model = json!({
+            "type": "PurchaseOrder",
+            "fields": [
+                {
+                    "name": "id",
+                    "is_primary_key": true,
+                },
+                {
+                    "name": "id",
+                    "is_primary_key": false,
+                },
+            ],
+            "primary_key": "id",
+        });
+
         let update_mapping_params = json!({
-            "description": "An updated mapping description",
+            "description": &updated_description,
             "models": [
-                {
-                    "type": "PurchaseOrder",
-                    "fields": [
-                        {
-                            "name": "id",
-                            "is_primary_key": true,
-                        },
-                        {
-                            "name": "id",
-                            "is_primary_key": false,
-                        },
-                    ],
-                    "primary_key": "id",
-                },
-                {
-                    "type": "SalesOrder",
-                    "fields": [
-                        {
-                            "name": "id",
-                            "is_primary_key": false,
-                        },
-                        {
-                            "name": "identifier",
-                            "is_primary_key": true,
-                        },
-                    ],
-                    "primary_key": "id",
-                },
+               updated_model,
             ],
         });
 
@@ -1392,6 +1388,18 @@ mod tests {
             .await
             .expect("update mapping response");
         assert_eq!(update_mapping_res.status(), 204);
+
+        // let get_updated_mapping_res = baseline
+        //     .get_mappings()
+        //     .await
+        //     .expect("get updated mapping response");
+        // assert_eq!(get_updated_mapping_res.status(), 200);
+
+        // let updated_model = &get_updated_mapping_res.json::<Vec<Mapping>>().await.unwrap().to_owned()[0].models[0];
+        // println!(
+        //     "updated model: {:?}",
+        //     serde_json::to_string_pretty(updated_model).unwrap()
+        // );
     }
 
     #[tokio::test]
@@ -1747,6 +1755,16 @@ mod tests {
             "update workflow response body: {:?}",
             update_workflow_res.json::<Value>().await.unwrap()
         );
+
+        // let get_updated_workflow_res = baseline
+        //     .get_workflow(&create_workflow_body.id)
+        //     .await
+        //     .expect("get updated workflow response");
+        // println!(
+        //     "updated workflow response body: {}",
+        //     serde_json::to_string_pretty(&get_updated_workflow_res.json::<Value>().await.unwrap())
+        //         .unwrap()
+        // );
     }
 
     #[tokio::test]
@@ -1997,6 +2015,16 @@ mod tests {
             .await
             .expect("update workflow response");
         assert_eq!(update_workflow_res.status(), 204);
+
+        // let get_updated_workflow_res = baseline
+        //     .get_workflow(&create_workflow_body.id)
+        //     .await
+        //     .expect("get updated workflow response");
+        // println!(
+        //     "updated workflow response body: {}",
+        //     serde_json::to_string_pretty(&get_updated_workflow_res.json::<Value>().await.unwrap())
+        //         .unwrap()
+        // );
     }
 
     #[tokio::test]
@@ -2338,6 +2366,16 @@ mod tests {
             "update workstep response body: {:?}",
             update_workstep_res.json::<Value>().await.unwrap()
         );
+
+        // let get_updated_workstep_res = baseline
+        //     .get_workstep(&create_workflow_body.id, &create_workstep_body.id)
+        //     .await
+        //     .expect("get updated workstep response");
+        // println!(
+        //     "updated workstep response body: {}",
+        //     serde_json::to_string_pretty(&get_updated_workstep_res.json::<Value>().await.unwrap())
+        //         .unwrap()
+        // );
     }
 
     #[tokio::test]

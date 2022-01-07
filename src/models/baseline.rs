@@ -38,7 +38,7 @@ pub struct Mapping {
     pub id: String,
     created_at: String,
 
-    models: Option<Vec<MappingModel>>,
+    pub models: Vec<MappingModel>,
     name: String,
     description: Option<String>,
     r#type: Option<String>,
