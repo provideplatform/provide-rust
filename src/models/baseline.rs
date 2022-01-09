@@ -171,16 +171,16 @@ pub struct Workstep {
     pub name: String,
     pub cardinality: usize,
     deployed_at: Option<String>,
-    metadata: Option<Value>,
+    pub metadata: Option<Value>,
     prover: Option<Circuit>,
     prover_id: Option<String>,
     participants: Option<Vec<Participant>>,
-    require_finality: bool,
+    pub require_finality: bool,
     shield: Option<String>,
     pub status: String,
     workflow_id: Option<String>,
 
-    description: Option<String>,
+    pub description: Option<String>,
     workstep_id: Option<String>,
 }
 

@@ -2348,6 +2348,7 @@ mod tests {
                     "proving_scheme": "groth16",
                     "curve": "BN254",
                 },
+                "mapping_model_id": null,
             },
         });
         let _ = _create_workstep(
@@ -2393,8 +2394,9 @@ mod tests {
         )
         .await;
 
+        let updated_workstep_name = format!("{} workstep", Name().fake::<String>());
         let update_workstep_params = json!({
-            "name": format!("{} workstep", Name().fake::<String>()),
+            "name": &updated_workstep_name,
             "description": "an updated workstep description",
             "status": "draft",
             "require_finality": true,
@@ -2424,15 +2426,27 @@ mod tests {
             update_workstep_res.json::<Value>().await.unwrap()
         );
 
-        // let get_updated_workstep_res = baseline
-        //     .get_workstep(&create_workflow_body.id, &create_workstep_body.id)
-        //     .await
-        //     .expect("get updated workstep response");
-        // println!(
-        //     "updated workstep response body: {}",
-        //     serde_json::to_string_pretty(&get_updated_workstep_res.json::<Value>().await.unwrap())
-        //         .unwrap()
-        // );
+        let get_updated_workstep_res = baseline
+            .get_workstep(&create_workflow_body.id, &create_workstep_body.id)
+            .await
+            .expect("get updated workstep response");
+        assert_eq!(get_updated_workstep_res.status(), 200);
+
+        let get_updated_workstep_body = get_updated_workstep_res.json::<Workstep>().await.expect("get updated workstep body");
+
+        assert_eq!(&get_updated_workstep_body.name, &updated_workstep_name);
+        assert_eq!(&get_updated_workstep_body.description.unwrap(), "an updated workstep description");
+        assert_eq!(&get_updated_workstep_body.status, "draft");
+        assert_eq!(&get_updated_workstep_body.require_finality, &true);
+        assert_eq!(&get_updated_workstep_body.cardinality, &1);
+
+        let workstep_metadata = get_updated_workstep_body.metadata.unwrap();
+
+        assert_eq!(&workstep_metadata["prover"]["identifier"], "cubic");
+        assert_eq!(&workstep_metadata["prover"]["name"], "cubic groth16");
+        assert_eq!(&workstep_metadata["prover"]["provider"], "gnark");
+        assert_eq!(&workstep_metadata["prover"]["proving_scheme"], "groth16");
+        assert_eq!(&workstep_metadata["prover"]["curve"], "BN254");
     }
 
     #[tokio::test]
