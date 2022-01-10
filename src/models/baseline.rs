@@ -135,14 +135,14 @@ pub struct Workflow {
     pub name: String,
     pub description: Option<String>,
     created_at: String,
-    version: Option<String>,
+    pub version: Option<String>,
     participants: Option<Vec<Participant>>,
     worksteps: Option<Vec<Workstep>>,
     workflow_id: Option<String>,
     pub status: String,
 
     updated_at: Option<String>,
-    workgroup_id: Option<String>,
+    pub workgroup_id: String,
     pub worksteps_count: Option<i32>,
 }
 
