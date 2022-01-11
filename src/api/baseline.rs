@@ -96,6 +96,12 @@ pub trait Baseline {
         workstep_id: &str,
         params: Params,
     ) -> Response;
+
+    async fn fetch_workstep_participants(&self, workflow_id: &str, workstep_id: &str) -> Response;
+
+    async fn create_workstep_participant(&self, workflow_id: &str, workstep_id: &str, params: Params) -> Response;
+
+    async fn delete_workstep_participant(&self, workflow_id: &str, workstep_id: &str, participant_address: &str) -> Response;
 }
 
 #[async_trait]
@@ -290,6 +296,21 @@ impl Baseline for ApiClient {
             workflow_id, workstep_id
         );
         return self.post(&uri, params, None).await;
+    }
+
+    async fn fetch_workstep_participants(&self, workflow_id: &str, workstep_id: &str) -> Response {
+        let uri = format!("workflows/{}/worksteps/{}/participants", workflow_id, workstep_id);
+        return self.get(&uri, None, None).await;
+    }
+
+    async fn create_workstep_participant(&self, workflow_id: &str, workstep_id: &str, params: Params) -> Response {
+        let uri = format!("workflows/{}/worksteps/{}/participants", workflow_id, workstep_id);
+        return self.post(&uri, params, None).await;
+    }
+
+    async fn delete_workstep_participant(&self, workflow_id: &str, workstep_id: &str, participant_address: &str) -> Response {
+        let uri = format!("workflows/{}/worksteps/{}/participants/{}", workflow_id, workstep_id, participant_address);
+        return self.delete(&uri, None, None).await;
     }
 }
 
@@ -3794,4 +3815,320 @@ mod tests {
             execute_workstep_res.json::<Value>().await.unwrap()
         );
     }
+
+    #[tokio::test]
+    async fn fetch_workstep_participants() {
+        let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
+        let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
+
+        let org_access_token_json = config_vals["org_access_token"].to_string();
+        let org_access_token = serde_json::from_str::<String>(&org_access_token_json)
+            .expect("organzation access token");
+
+        let app_id_json = config_vals["app_id"].to_string();
+        let app_id = serde_json::from_str::<String>(&app_id_json).expect("workgroup id");
+
+        let baseline: ApiClient = Baseline::factory(&org_access_token);
+
+        let create_workflow_params = json!({
+            "workgroup_id": &app_id,
+            "name": format!("{} workstep", Name().fake::<String>()),
+            "version": "1",
+        });
+
+        let create_workflow_body = _create_workflow(&baseline, create_workflow_params, 201).await;
+
+        let create_workstep_params = json!({
+            "name": format!("{} workstep", Name().fake::<String>()),
+            "require_finality": true,
+            "metadata": {
+                "prover": {
+                    "identifier": "cubic",
+                    "name": "cubic groth16",
+                    "provider": "gnark",
+                    "proving_scheme": "groth16",
+                    "curve": "BN254",
+                },
+            },
+        });
+
+        let create_workstep_body = _create_workstep(
+            &baseline,
+            &create_workflow_body.id,
+            create_workstep_params,
+            201,
+        )
+        .await;
+
+        let fetch_workstep_participants_res = baseline.fetch_workstep_participants(&create_workflow_body.id, &create_workstep_body.id).await.expect("fetch workstep participants response");
+        assert_eq!(fetch_workstep_participants_res.status(), 200);
+    }
+
+    #[tokio::test]
+    async fn create_workstep_participant() {
+        let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
+        let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
+
+        let org_access_token_json = config_vals["org_access_token"].to_string();
+        let org_access_token = serde_json::from_str::<String>(&org_access_token_json)
+            .expect("organzation access token");
+
+        let app_id_json = config_vals["app_id"].to_string();
+        let app_id = serde_json::from_str::<String>(&app_id_json).expect("workgroup id");
+
+        let baseline: ApiClient = Baseline::factory(&org_access_token);
+
+        let create_workflow_params = json!({
+            "workgroup_id": &app_id,
+            "name": format!("{} workstep", Name().fake::<String>()),
+            "version": "1",
+        });
+
+        let create_workflow_body = _create_workflow(&baseline, create_workflow_params, 201).await;
+
+        let create_workstep_params = json!({
+            "name": format!("{} workstep", Name().fake::<String>()),
+            "require_finality": true,
+            "metadata": {
+                "prover": {
+                    "identifier": "cubic",
+                    "name": "cubic groth16",
+                    "provider": "gnark",
+                    "proving_scheme": "groth16",
+                    "curve": "BN254",
+                },
+            },
+        });
+
+        let create_workstep_body = _create_workstep(
+            &baseline,
+            &create_workflow_body.id,
+            create_workstep_params,
+            201,
+        )
+        .await;
+
+        let nchain: ApiClient = NChain::factory(&org_access_token);
+
+        let create_account_params = json!({
+            "network_id": ROPSTEN_NETWORK_ID,
+        });
+
+        let create_account_res = nchain.create_account(Some(create_account_params)).await.expect("create account response");
+        assert_eq!(create_account_res.status(), 201);
+
+        let create_account_body = create_account_res.json::<Account>().await.expect("create account body");
+
+        // TODO: add other params: proof, witness, witnessed_at, and create WorkstepParticipant struct
+        let create_workstep_participant_params = json!({
+            "address": &create_account_body.address,
+        });
+
+        let create_workstep_participant_res = baseline.create_workstep_participant(&create_workflow_body.id, &create_workstep_body.id, Some(create_workstep_participant_params)).await.expect("create workstep participant response");
+        assert_eq!(create_workstep_participant_res.status(), 204, "create workstep participant response body: {}", create_workstep_participant_res.json::<Value>().await.unwrap());
+    }
+
+    #[tokio::test]
+    async fn create_workstep_participant_fail_on_deployed() {
+        let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
+        let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
+
+        let org_access_token_json = config_vals["org_access_token"].to_string();
+        let org_access_token = serde_json::from_str::<String>(&org_access_token_json)
+            .expect("organzation access token");
+
+        let app_id_json = config_vals["app_id"].to_string();
+        let app_id = serde_json::from_str::<String>(&app_id_json).expect("workgroup id");
+
+        let baseline: ApiClient = Baseline::factory(&org_access_token);
+
+        let create_workflow_params = json!({
+            "workgroup_id": &app_id,
+            "name": format!("{} workstep", Name().fake::<String>()),
+            "version": "1",
+        });
+
+        let create_workflow_body = _create_workflow(&baseline, create_workflow_params, 201).await;
+
+        let create_workstep_params = json!({
+            "name": format!("{} workstep", Name().fake::<String>()),
+            "require_finality": true,
+            "metadata": {
+                "prover": {
+                    "identifier": "cubic",
+                    "name": "cubic groth16",
+                    "provider": "gnark",
+                    "proving_scheme": "groth16",
+                    "curve": "BN254",
+                },
+            },
+        });
+
+        let create_workstep_body = _create_workstep(
+            &baseline,
+            &create_workflow_body.id,
+            create_workstep_params,
+            201,
+        )
+        .await;
+
+        let _ = _deploy_workflow(&baseline, &create_workflow_body.id, 202).await;
+
+        let nchain: ApiClient = NChain::factory(&org_access_token);
+
+        let create_account_params = json!({
+            "network_id": ROPSTEN_NETWORK_ID,
+        });
+
+        let create_account_res = nchain.create_account(Some(create_account_params)).await.expect("create account response");
+        assert_eq!(create_account_res.status(), 201);
+
+        let create_account_body = create_account_res.json::<Account>().await.expect("create account body");
+
+        // TODO: add other params: proof, witness, witnessed_at
+        let create_workstep_participant_params = json!({
+            "address": &create_account_body.address,
+        });
+
+        let create_workstep_participant_res = baseline.create_workstep_participant(&create_workflow_body.id, &create_workstep_body.id, Some(create_workstep_participant_params)).await.expect("create workstep participant response");
+        assert_eq!(create_workstep_participant_res.status(), 400, "create workstep participant response body: {}", create_workstep_participant_res.json::<Value>().await.unwrap());
+    }
+
+    #[tokio::test]
+    async fn delete_workstep_participant() {
+        let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
+        let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
+
+        let org_access_token_json = config_vals["org_access_token"].to_string();
+        let org_access_token = serde_json::from_str::<String>(&org_access_token_json)
+            .expect("organzation access token");
+
+        let app_id_json = config_vals["app_id"].to_string();
+        let app_id = serde_json::from_str::<String>(&app_id_json).expect("workgroup id");
+
+        let baseline: ApiClient = Baseline::factory(&org_access_token);
+
+        let create_workflow_params = json!({
+            "workgroup_id": &app_id,
+            "name": format!("{} workstep", Name().fake::<String>()),
+            "version": "1",
+        });
+
+        let create_workflow_body = _create_workflow(&baseline, create_workflow_params, 201).await;
+
+        let create_workstep_params = json!({
+            "name": format!("{} workstep", Name().fake::<String>()),
+            "require_finality": true,
+            "metadata": {
+                "prover": {
+                    "identifier": "cubic",
+                    "name": "cubic groth16",
+                    "provider": "gnark",
+                    "proving_scheme": "groth16",
+                    "curve": "BN254",
+                },
+            },
+        });
+
+        let create_workstep_body = _create_workstep(
+            &baseline,
+            &create_workflow_body.id,
+            create_workstep_params,
+            201,
+        )
+        .await;
+
+        let nchain: ApiClient = NChain::factory(&org_access_token);
+
+        let create_account_params = json!({
+            "network_id": ROPSTEN_NETWORK_ID,
+        });
+
+        let create_account_res = nchain.create_account(Some(create_account_params)).await.expect("create account response");
+        assert_eq!(create_account_res.status(), 201);
+
+        let create_account_body = create_account_res.json::<Account>().await.expect("create account body");
+
+        // TODO: add other params: proof, witness, witnessed_at
+        let create_workstep_participant_params = json!({
+            "address": &create_account_body.address,
+        });
+
+        let create_workstep_participant_res = baseline.create_workstep_participant(&create_workflow_body.id, &create_workstep_body.id, Some(create_workstep_participant_params)).await.expect("create workstep participant response");
+        assert_eq!(create_workstep_participant_res.status(), 204, "create workstep participant response body: {}", create_workstep_participant_res.json::<Value>().await.unwrap());
+
+        let delete_workstep_participant_res = baseline.delete_workstep_participant(&create_workflow_body.id, &create_workstep_body.id, &create_account_body.address).await.expect("delete workstep participant response");
+        assert_eq!(delete_workstep_participant_res.status(), 204, "delete workstep participant response body: {}", delete_workstep_participant_res.json::<Value>().await.unwrap());
+    }
+
+    #[tokio::test]
+    async fn delete_workstep_participant_fail_on_deployed() {
+        let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
+        let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
+
+        let org_access_token_json = config_vals["org_access_token"].to_string();
+        let org_access_token = serde_json::from_str::<String>(&org_access_token_json)
+            .expect("organzation access token");
+
+        let app_id_json = config_vals["app_id"].to_string();
+        let app_id = serde_json::from_str::<String>(&app_id_json).expect("workgroup id");
+
+        let baseline: ApiClient = Baseline::factory(&org_access_token);
+
+        let create_workflow_params = json!({
+            "workgroup_id": &app_id,
+            "name": format!("{} workstep", Name().fake::<String>()),
+            "version": "1",
+        });
+
+        let create_workflow_body = _create_workflow(&baseline, create_workflow_params, 201).await;
+
+        let create_workstep_params = json!({
+            "name": format!("{} workstep", Name().fake::<String>()),
+            "require_finality": true,
+            "metadata": {
+                "prover": {
+                    "identifier": "cubic",
+                    "name": "cubic groth16",
+                    "provider": "gnark",
+                    "proving_scheme": "groth16",
+                    "curve": "BN254",
+                },
+            },
+        });
+
+        let create_workstep_body = _create_workstep(
+            &baseline,
+            &create_workflow_body.id,
+            create_workstep_params,
+            201,
+        )
+        .await;
+
+        let nchain: ApiClient = NChain::factory(&org_access_token);
+
+        let create_account_params = json!({
+            "network_id": ROPSTEN_NETWORK_ID,
+        });
+
+        let create_account_res = nchain.create_account(Some(create_account_params)).await.expect("create account response");
+        assert_eq!(create_account_res.status(), 201);
+
+        let create_account_body = create_account_res.json::<Account>().await.expect("create account body");
+
+        // TODO: add other params: proof, witness, witnessed_at
+        let create_workstep_participant_params = json!({
+            "address": &create_account_body.address,
+        });
+
+        let create_workstep_participant_res = baseline.create_workstep_participant(&create_workflow_body.id, &create_workstep_body.id, Some(create_workstep_participant_params)).await.expect("create workstep participant response");
+        assert_eq!(create_workstep_participant_res.status(), 204, "create workstep participant response body: {}", create_workstep_participant_res.json::<Value>().await.unwrap());
+
+        let _ = _deploy_workflow(&baseline, &create_workflow_body.id, 202).await;
+
+        let delete_workstep_participant_res = baseline.delete_workstep_participant(&create_workflow_body.id, &create_workstep_body.id, &create_account_body.address).await.expect("delete workstep participant response");
+        assert_eq!(delete_workstep_participant_res.status(), 400, "delete workstep participant response body: {}", delete_workstep_participant_res.json::<Value>().await.unwrap());
+    }
+
+    // test passing participant with invalid witness / proof?
 }

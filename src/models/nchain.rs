@@ -10,7 +10,7 @@ pub struct Account {
     vault_id: String,
     key_id: String,
     public_key: String,
-    address: String,
+    pub address: String,
 }
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
