@@ -2110,17 +2110,7 @@ mod tests {
             .update_workflow(&create_workflow_body.id, Some(update_workflow_params))
             .await
             .expect("update workflow response");
-        assert_eq!(update_workflow_res.status(), 204);
-
-        // let get_updated_workflow_res = baseline
-        //     .get_workflow(&create_workflow_body.id)
-        //     .await
-        //     .expect("get updated workflow response");
-        // println!(
-        //     "updated workflow response body: {}",
-        //     serde_json::to_string_pretty(&get_updated_workflow_res.json::<Value>().await.unwrap())
-        //         .unwrap()
-        // );
+        assert_eq!(update_workflow_res.status(), 204, "update workflow response body {:?}", update_workflow_res.json::<Value>().await.unwrap());
     }
 
     #[tokio::test]
