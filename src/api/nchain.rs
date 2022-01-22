@@ -291,7 +291,12 @@ mod tests {
             .list_accounts()
             .await
             .expect("list accounts response");
-        assert_eq!(get_accounts_res.status(), 200, "get accounts response body {:?}", get_accounts_res.json::<Value>().await.unwrap());
+        assert_eq!(
+            get_accounts_res.status(),
+            200,
+            "get accounts response body {:?}",
+            get_accounts_res.json::<Value>().await.unwrap()
+        );
     }
 
     #[tokio::test]
@@ -312,7 +317,12 @@ mod tests {
             .create_account(create_account_params)
             .await
             .expect("create account response");
-        assert_eq!(create_account_res.status(), 201, "create account response body {:?}", create_account_res.json::<Value>().await.unwrap());
+        assert_eq!(
+            create_account_res.status(),
+            201,
+            "create account response body {:?}",
+            create_account_res.json::<Value>().await.unwrap()
+        );
     }
 
     #[tokio::test]

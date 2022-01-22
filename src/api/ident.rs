@@ -62,7 +62,7 @@ pub trait Ident {
     ) -> Response;
 
     async fn fetch_privacy_policy(&self) -> Response;
-    
+
     async fn fetch_terms_of_service(&self) -> Response;
 
     async fn request_password_reset(&self, email: &str) -> Response;
@@ -71,9 +71,18 @@ pub trait Ident {
 
     async fn fetch_application_organizations(&self, application_id: &str) -> Response;
 
-    async fn update_application_organization(&self, application_id: &str, organization_id: &str, params: Params) -> Response;
+    async fn update_application_organization(
+        &self,
+        application_id: &str,
+        organization_id: &str,
+        params: Params,
+    ) -> Response;
 
-    async fn delete_application_organization(&self, application_id: &str, organization_id: &str) -> Response;
+    async fn delete_application_organization(
+        &self,
+        application_id: &str,
+        organization_id: &str,
+    ) -> Response;
 
     async fn fetch_application_invitations(&self, application_id: &str) -> Response;
 
@@ -81,7 +90,12 @@ pub trait Ident {
 
     async fn authenticate_application_user(&self, email: &str) -> Response;
 
-    async fn update_application_user(&self, application_id: &str, user_id: &str, params: Params) -> Response;
+    async fn update_application_user(
+        &self,
+        application_id: &str,
+        user_id: &str,
+        params: Params,
+    ) -> Response;
 
     async fn delete_application_user(&self, application_id: &str, user_id: &str) -> Response;
 
@@ -91,28 +105,74 @@ pub trait Ident {
 
     async fn create_organization_user(&self, organization_id: &str, params: Params) -> Response;
 
-    async fn update_organization_user(&self, organization_id: &str, user_id: &str, params: Params) -> Response;
+    async fn update_organization_user(
+        &self,
+        organization_id: &str,
+        user_id: &str,
+        params: Params,
+    ) -> Response;
 
     async fn delete_organization_user(&self, organization_id: &str, user_id: &str) -> Response;
 
     async fn fetch_organization_vaults(&self, organization_id: &str) -> Response;
 
-    async fn fetch_organization_vault_keys(&self, organization_id: &str, vault_id: &str) -> Response;
+    async fn fetch_organization_vault_keys(
+        &self,
+        organization_id: &str,
+        vault_id: &str,
+    ) -> Response;
 
-    async fn create_organization_vault_key(&self, organization_id: &str, vault_id: &str, params: Params) -> Response;
-    
-    async fn delete_organization_vault_key(&self, organization_id: &str, vault_id: &str, key_id: &str) -> Response;
+    async fn create_organization_vault_key(
+        &self,
+        organization_id: &str,
+        vault_id: &str,
+        params: Params,
+    ) -> Response;
 
-    async fn organization_vault_key_sign_message(&self, organization_id: &str, vault_id: &str, key_id: &str, message: &str) -> Response;
+    async fn delete_organization_vault_key(
+        &self,
+        organization_id: &str,
+        vault_id: &str,
+        key_id: &str,
+    ) -> Response;
 
-    async fn organization_vault_key_verify_signature(&self, organization_id: &str, vault_id: &str, key_id: &str, message: &str, signature: &str) -> Response;
+    async fn organization_vault_key_sign_message(
+        &self,
+        organization_id: &str,
+        vault_id: &str,
+        key_id: &str,
+        message: &str,
+    ) -> Response;
 
-    async fn fetch_organization_vault_secrets(&self, organization_id: &str, vault_id: &str) -> Response;
+    async fn organization_vault_key_verify_signature(
+        &self,
+        organization_id: &str,
+        vault_id: &str,
+        key_id: &str,
+        message: &str,
+        signature: &str,
+    ) -> Response;
 
-    async fn create_organization_vault_secret(&self, organization_id: &str, vault_id: &str, params: Params) -> Response;
+    async fn fetch_organization_vault_secrets(
+        &self,
+        organization_id: &str,
+        vault_id: &str,
+    ) -> Response;
 
-    async fn delete_organization_vault_secret(&self, organization_id: &str, vault_id: &str, secret_id: &str) -> Response;
-    
+    async fn create_organization_vault_secret(
+        &self,
+        organization_id: &str,
+        vault_id: &str,
+        params: Params,
+    ) -> Response;
+
+    async fn delete_organization_vault_secret(
+        &self,
+        organization_id: &str,
+        vault_id: &str,
+        secret_id: &str,
+    ) -> Response;
+
     async fn get_token(&self, token_id: &str) -> Response;
 
     async fn delete_token(&self, token_id: &str) -> Response;
@@ -245,7 +305,7 @@ impl Ident for ApiClient {
     async fn fetch_privacy_policy(&self) -> Response {
         return self.get("legal/privacy_policy", None, None).await;
     }
-    
+
     async fn fetch_terms_of_service(&self) -> Response {
         return self.get("legal/terms_of_service", None, None).await;
     }
@@ -265,13 +325,28 @@ impl Ident for ApiClient {
         return self.get(&uri, None, None).await;
     }
 
-    async fn update_application_organization(&self, application_id: &str, organization_id: &str, params: Params) -> Response {
-        let uri = format!("applications/{}/organizations/{}", application_id, organization_id);
+    async fn update_application_organization(
+        &self,
+        application_id: &str,
+        organization_id: &str,
+        params: Params,
+    ) -> Response {
+        let uri = format!(
+            "applications/{}/organizations/{}",
+            application_id, organization_id
+        );
         return self.put(&uri, params, None).await;
     }
 
-    async fn delete_application_organization(&self, application_id: &str, organization_id: &str) -> Response {
-        let uri = format!("applications/{}/organizations/{}", application_id, organization_id);
+    async fn delete_application_organization(
+        &self,
+        application_id: &str,
+        organization_id: &str,
+    ) -> Response {
+        let uri = format!(
+            "applications/{}/organizations/{}",
+            application_id, organization_id
+        );
         return self.delete(&uri, None, None).await;
     }
 
@@ -290,7 +365,12 @@ impl Ident for ApiClient {
         return self.post("authenticate", Some(params), None).await;
     }
 
-    async fn update_application_user(&self, application_id: &str, user_id: &str, params: Params) -> Response {
+    async fn update_application_user(
+        &self,
+        application_id: &str,
+        user_id: &str,
+        params: Params,
+    ) -> Response {
         let uri = format!("applications/{}/users/{}", application_id, user_id);
         return self.put(&uri, params, None).await;
     }
@@ -315,7 +395,12 @@ impl Ident for ApiClient {
         return self.post(&uri, params, None).await;
     }
 
-    async fn update_organization_user(&self, organization_id: &str, user_id: &str, params: Params) -> Response {
+    async fn update_organization_user(
+        &self,
+        organization_id: &str,
+        user_id: &str,
+        params: Params,
+    ) -> Response {
         let uri = format!("organizations/{}/users/{}", organization_id, user_id);
         return self.put(&uri, params, None).await;
     }
@@ -330,48 +415,107 @@ impl Ident for ApiClient {
         return self.get(&uri, None, None).await;
     }
 
-    async fn fetch_organization_vault_keys(&self, organization_id: &str, vault_id: &str) -> Response {
+    async fn fetch_organization_vault_keys(
+        &self,
+        organization_id: &str,
+        vault_id: &str,
+    ) -> Response {
         let uri = format!("organizations/{}/vaults/{}/keys", organization_id, vault_id);
         return self.get(&uri, None, None).await;
     }
 
-    async fn create_organization_vault_key(&self, organization_id: &str, vault_id: &str, params: Params) -> Response {
+    async fn create_organization_vault_key(
+        &self,
+        organization_id: &str,
+        vault_id: &str,
+        params: Params,
+    ) -> Response {
         let uri = format!("organizations/{}/vaults/{}/keys", organization_id, vault_id);
         return self.post(&uri, params, None).await;
     }
-    
-    async fn delete_organization_vault_key(&self, organization_id: &str, vault_id: &str, key_id: &str) -> Response {
-        let uri = format!("organizations/{}/vaults/{}/keys/{}", organization_id, vault_id, key_id);
+
+    async fn delete_organization_vault_key(
+        &self,
+        organization_id: &str,
+        vault_id: &str,
+        key_id: &str,
+    ) -> Response {
+        let uri = format!(
+            "organizations/{}/vaults/{}/keys/{}",
+            organization_id, vault_id, key_id
+        );
         return self.delete(&uri, None, None).await;
     }
 
-    async fn organization_vault_key_sign_message(&self, organization_id: &str, vault_id: &str, key_id: &str, message: &str) -> Response {
-        let uri = format!("organizations/{}/vaults/{}/keys/{}/sign", organization_id, vault_id, key_id);
+    async fn organization_vault_key_sign_message(
+        &self,
+        organization_id: &str,
+        vault_id: &str,
+        key_id: &str,
+        message: &str,
+    ) -> Response {
+        let uri = format!(
+            "organizations/{}/vaults/{}/keys/{}/sign",
+            organization_id, vault_id, key_id
+        );
         let params = json!({ "message": message });
         return self.post(&uri, Some(params), None).await;
     }
 
-    async fn organization_vault_key_verify_signature(&self, organization_id: &str, vault_id: &str, key_id: &str, message: &str, signature: &str) -> Response {
-        let uri = format!("organizations/{}/vaults/{}/keys/{}/verify", organization_id, vault_id, key_id);
+    async fn organization_vault_key_verify_signature(
+        &self,
+        organization_id: &str,
+        vault_id: &str,
+        key_id: &str,
+        message: &str,
+        signature: &str,
+    ) -> Response {
+        let uri = format!(
+            "organizations/{}/vaults/{}/keys/{}/verify",
+            organization_id, vault_id, key_id
+        );
         let params = json!({ "message": message, "signature": signature });
         return self.post(&uri, Some(params), None).await;
     }
 
-    async fn fetch_organization_vault_secrets(&self, organization_id: &str, vault_id: &str) -> Response {
-        let uri = format!("organizations/{}/vaults/{}/secrets", organization_id, vault_id);
+    async fn fetch_organization_vault_secrets(
+        &self,
+        organization_id: &str,
+        vault_id: &str,
+    ) -> Response {
+        let uri = format!(
+            "organizations/{}/vaults/{}/secrets",
+            organization_id, vault_id
+        );
         return self.get(&uri, None, None).await;
     }
 
-    async fn create_organization_vault_secret(&self, organization_id: &str, vault_id: &str, params: Params) -> Response {
-        let uri = format!("organizations/{}/vaults/{}/secrets", organization_id, vault_id);
+    async fn create_organization_vault_secret(
+        &self,
+        organization_id: &str,
+        vault_id: &str,
+        params: Params,
+    ) -> Response {
+        let uri = format!(
+            "organizations/{}/vaults/{}/secrets",
+            organization_id, vault_id
+        );
         return self.post(&uri, params, None).await;
     }
 
-    async fn delete_organization_vault_secret(&self, organization_id: &str, vault_id: &str, secret_id: &str) -> Response {
-        let uri = format!("organizations/{}/vaults/{}/secrets/{}", organization_id, vault_id, secret_id);
+    async fn delete_organization_vault_secret(
+        &self,
+        organization_id: &str,
+        vault_id: &str,
+        secret_id: &str,
+    ) -> Response {
+        let uri = format!(
+            "organizations/{}/vaults/{}/secrets/{}",
+            organization_id, vault_id, secret_id
+        );
         return self.delete(&uri, None, None).await;
     }
-    
+
     async fn get_token(&self, token_id: &str) -> Response {
         let uri = format!("tokens/{}", token_id);
         return self.get(&uri, None, None).await;
@@ -390,12 +534,12 @@ impl Ident for ApiClient {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::api::vault::Vault;
+    use crate::models::vault::{VaultContainer, VaultKey, VaultSecret};
     use fake::faker::internet::en::{FreeEmail, Password};
     use fake::faker::name::en::{FirstName, LastName, Name};
     use fake::Fake;
     use serde_json::json;
-    use crate::models::vault::{VaultContainer, VaultKey, VaultSecret};
-    use crate::api::vault::Vault;
 
     const ROPSTEN_NETWORK_ID: &str = "66d44f30-9092-4182-a3c4-bc02736d6ae5";
 
@@ -1032,7 +1176,10 @@ mod tests {
 
         let ident: ApiClient = Ident::factory("");
 
-        let request_password_reset_res = ident.request_password_reset(&authentication_res_body.user.email).await.expect("request password reset response");
+        let request_password_reset_res = ident
+            .request_password_reset(&authentication_res_body.user.email)
+            .await
+            .expect("request password reset response");
         assert_eq!(request_password_reset_res.status(), 201);
     }
 
@@ -1112,7 +1259,14 @@ mod tests {
             "description": "some updated description",
         });
 
-        let update_application_organization_res = ident.update_application_organization(&create_application_body.id, &create_organization_body.id, Some(update_application_organization_params)).await.expect("update application organization response");
+        let update_application_organization_res = ident
+            .update_application_organization(
+                &create_application_body.id,
+                &create_organization_body.id,
+                Some(update_application_organization_params),
+            )
+            .await
+            .expect("update application organization response");
         assert_eq!(update_application_organization_res.status(), 204);
     }
 
@@ -1165,7 +1319,13 @@ mod tests {
             .expect("associate application user response");
         assert_eq!(associate_application_org_res.status(), 204);
 
-        let update_application_organization_res = ident.delete_application_organization(&create_application_body.id, &create_organization_body.id).await.expect("delete application organization response");
+        let update_application_organization_res = ident
+            .delete_application_organization(
+                &create_application_body.id,
+                &create_organization_body.id,
+            )
+            .await
+            .expect("delete application organization response");
         assert_eq!(update_application_organization_res.status(), 204);
     }
 
@@ -1271,7 +1431,10 @@ mod tests {
             .expect("associate application user response");
         assert_eq!(create_application_user_res.status(), 204);
 
-        let authenticate_application_user = ident.authenticate_application_user(&another_user_body.email).await.expect("authenticate application user response");
+        let authenticate_application_user = ident
+            .authenticate_application_user(&another_user_body.email)
+            .await
+            .expect("authenticate application user response");
         assert_eq!(authenticate_application_user.status(), 201);
     }
 
@@ -1341,7 +1504,14 @@ mod tests {
             "name": Name().fake::<String>(),
         });
 
-        let update_application_user_response = ident.update_application_user(&create_application_body.id, &another_user_body.id, Some(update_application_user_params)).await.expect("update application user response");
+        let update_application_user_response = ident
+            .update_application_user(
+                &create_application_body.id,
+                &another_user_body.id,
+                Some(update_application_user_params),
+            )
+            .await
+            .expect("update application user response");
         assert_eq!(update_application_user_response.status(), 204);
     }
 
@@ -1407,7 +1577,10 @@ mod tests {
             .expect("associate application user response");
         assert_eq!(create_application_user_res.status(), 204);
 
-        let update_application_user_response = ident.delete_application_user(&create_application_body.id, &another_user_body.id).await.expect("delete application user response");
+        let update_application_user_response = ident
+            .delete_application_user(&create_application_body.id, &another_user_body.id)
+            .await
+            .expect("delete application user response");
         assert_eq!(update_application_user_response.status(), 204);
     }
 
@@ -1580,7 +1753,14 @@ mod tests {
             "name": Name().fake::<String>(),
         });
 
-        let update_organization_user_response = ident.update_organization_user(&create_organization_body.id, &another_user_body.id, Some(update_organization_user_params)).await.expect("update organization user response");
+        let update_organization_user_response = ident
+            .update_organization_user(
+                &create_organization_body.id,
+                &another_user_body.id,
+                Some(update_organization_user_params),
+            )
+            .await
+            .expect("update organization user response");
         assert_eq!(update_organization_user_response.status(), 204);
     }
 
@@ -1646,7 +1826,10 @@ mod tests {
             .expect("associate organization user response");
         assert_eq!(create_organization_user_res.status(), 204);
 
-        let update_organization_user_response = ident.delete_organization_user(&create_organization_body.id, &another_user_body.id).await.expect("delete organization user response");
+        let update_organization_user_response = ident
+            .delete_organization_user(&create_organization_body.id, &another_user_body.id)
+            .await
+            .expect("delete organization user response");
         assert_eq!(update_organization_user_response.status(), 204);
     }
 
@@ -1680,12 +1863,20 @@ mod tests {
 
         let ident: ApiClient = Ident::factory(&access_token);
         let vault: ApiClient = Vault::factory(&access_token);
-        
-        let create_organization_body = generate_organization(&ident, &authentication_res_body.user.id).await;
-        
-        let create_organization_vault_body = generate_vault(&vault, &create_organization_body.id).await;
 
-        let fetch_organization_vault_keys_res = ident.fetch_organization_vault_keys(&create_organization_body.id, &create_organization_vault_body.id).await.expect("fetch organization vault keys response");
+        let create_organization_body =
+            generate_organization(&ident, &authentication_res_body.user.id).await;
+
+        let create_organization_vault_body =
+            generate_vault(&vault, &create_organization_body.id).await;
+
+        let fetch_organization_vault_keys_res = ident
+            .fetch_organization_vault_keys(
+                &create_organization_body.id,
+                &create_organization_vault_body.id,
+            )
+            .await
+            .expect("fetch organization vault keys response");
         assert_eq!(fetch_organization_vault_keys_res.status(), 200);
     }
 
@@ -1699,10 +1890,12 @@ mod tests {
 
         let ident: ApiClient = Ident::factory(&access_token);
         let vault: ApiClient = Vault::factory(&access_token);
-        
-        let create_organization_body = generate_organization(&ident, &authentication_res_body.user.id).await;
-        
-        let create_organization_vault_body = generate_vault(&vault, &create_organization_body.id).await;
+
+        let create_organization_body =
+            generate_organization(&ident, &authentication_res_body.user.id).await;
+
+        let create_organization_vault_body =
+            generate_vault(&vault, &create_organization_body.id).await;
 
         let create_organization_vault_key_params = json!({
             "type": "symmetric",
@@ -1713,7 +1906,14 @@ mod tests {
             "organization_id": &create_organization_body.id,
         });
 
-        let create_organization_vault_key_res = ident.create_organization_vault_key(&create_organization_body.id, &create_organization_vault_body.id, Some(create_organization_vault_key_params)).await.expect("create organization vault key response");
+        let create_organization_vault_key_res = ident
+            .create_organization_vault_key(
+                &create_organization_body.id,
+                &create_organization_vault_body.id,
+                Some(create_organization_vault_key_params),
+            )
+            .await
+            .expect("create organization vault key response");
         assert_eq!(create_organization_vault_key_res.status(), 201);
     }
 
@@ -1727,10 +1927,12 @@ mod tests {
 
         let ident: ApiClient = Ident::factory(&access_token);
         let vault: ApiClient = Vault::factory(&access_token);
-        
-        let create_organization_body = generate_organization(&ident, &authentication_res_body.user.id).await;
-        
-        let create_organization_vault_body = generate_vault(&vault, &create_organization_body.id).await;
+
+        let create_organization_body =
+            generate_organization(&ident, &authentication_res_body.user.id).await;
+
+        let create_organization_vault_body =
+            generate_vault(&vault, &create_organization_body.id).await;
 
         let create_organization_vault_key_params = json!({
             "type": "symmetric",
@@ -1741,12 +1943,29 @@ mod tests {
             "organization_id": &create_organization_body.id,
         });
 
-        let create_organization_vault_key_res = ident.create_organization_vault_key(&create_organization_body.id, &create_organization_vault_body.id, Some(create_organization_vault_key_params)).await.expect("create organization vault key response");
+        let create_organization_vault_key_res = ident
+            .create_organization_vault_key(
+                &create_organization_body.id,
+                &create_organization_vault_body.id,
+                Some(create_organization_vault_key_params),
+            )
+            .await
+            .expect("create organization vault key response");
         assert_eq!(create_organization_vault_key_res.status(), 201);
 
-        let create_organization_vault_key_body = create_organization_vault_key_res.json::<VaultKey>().await.expect("create organization vault key body");
+        let create_organization_vault_key_body = create_organization_vault_key_res
+            .json::<VaultKey>()
+            .await
+            .expect("create organization vault key body");
 
-        let delete_organization_vault_key_res = ident.delete_organization_vault_key(&create_organization_body.id, &create_organization_vault_body.id, &create_organization_vault_key_body.id).await.expect("delete organization vault key response");
+        let delete_organization_vault_key_res = ident
+            .delete_organization_vault_key(
+                &create_organization_body.id,
+                &create_organization_vault_body.id,
+                &create_organization_vault_key_body.id,
+            )
+            .await
+            .expect("delete organization vault key response");
         assert_eq!(delete_organization_vault_key_res.status(), 204);
     }
 
@@ -1766,12 +1985,20 @@ mod tests {
 
         let ident: ApiClient = Ident::factory(&access_token);
         let vault: ApiClient = Vault::factory(&access_token);
-        
-        let create_organization_body = generate_organization(&ident, &authentication_res_body.user.id).await;
-        
-        let create_organization_vault_body = generate_vault(&vault, &create_organization_body.id).await;
 
-        let fetch_organization_vault_secrets_res = ident.fetch_organization_vault_secrets(&create_organization_body.id, &create_organization_vault_body.id).await.expect("fetch organization vault secrets response");
+        let create_organization_body =
+            generate_organization(&ident, &authentication_res_body.user.id).await;
+
+        let create_organization_vault_body =
+            generate_vault(&vault, &create_organization_body.id).await;
+
+        let fetch_organization_vault_secrets_res = ident
+            .fetch_organization_vault_secrets(
+                &create_organization_body.id,
+                &create_organization_vault_body.id,
+            )
+            .await
+            .expect("fetch organization vault secrets response");
         assert_eq!(fetch_organization_vault_secrets_res.status(), 200);
     }
 
@@ -1785,10 +2012,12 @@ mod tests {
 
         let ident: ApiClient = Ident::factory(&access_token);
         let vault: ApiClient = Vault::factory(&access_token);
-        
-        let create_organization_body = generate_organization(&ident, &authentication_res_body.user.id).await;
-        
-        let create_organization_vault_body = generate_vault(&vault, &create_organization_body.id).await;
+
+        let create_organization_body =
+            generate_organization(&ident, &authentication_res_body.user.id).await;
+
+        let create_organization_vault_body =
+            generate_vault(&vault, &create_organization_body.id).await;
 
         let create_organization_vault_secret_params = json!({
             "type": "sample secret",
@@ -1798,7 +2027,14 @@ mod tests {
             "organization_id": &create_organization_body.id,
         });
 
-        let create_organization_vault_secret_res = ident.create_organization_vault_secret(&create_organization_body.id, &create_organization_vault_body.id, Some(create_organization_vault_secret_params)).await.expect("create organization vault secret response");
+        let create_organization_vault_secret_res = ident
+            .create_organization_vault_secret(
+                &create_organization_body.id,
+                &create_organization_vault_body.id,
+                Some(create_organization_vault_secret_params),
+            )
+            .await
+            .expect("create organization vault secret response");
         assert_eq!(create_organization_vault_secret_res.status(), 201);
     }
 
@@ -1812,10 +2048,12 @@ mod tests {
 
         let ident: ApiClient = Ident::factory(&access_token);
         let vault: ApiClient = Vault::factory(&access_token);
-        
-        let create_organization_body = generate_organization(&ident, &authentication_res_body.user.id).await;
-        
-        let create_organization_vault_body = generate_vault(&vault, &create_organization_body.id).await;
+
+        let create_organization_body =
+            generate_organization(&ident, &authentication_res_body.user.id).await;
+
+        let create_organization_vault_body =
+            generate_vault(&vault, &create_organization_body.id).await;
 
         let create_organization_vault_secret_params = json!({
             "type": "sample secret",
@@ -1825,12 +2063,29 @@ mod tests {
             "organization_id": &create_organization_body.id,
         });
 
-        let create_organization_vault_secret_res = ident.create_organization_vault_secret(&create_organization_body.id, &create_organization_vault_body.id, Some(create_organization_vault_secret_params)).await.expect("create organization vault secret response");
+        let create_organization_vault_secret_res = ident
+            .create_organization_vault_secret(
+                &create_organization_body.id,
+                &create_organization_vault_body.id,
+                Some(create_organization_vault_secret_params),
+            )
+            .await
+            .expect("create organization vault secret response");
         assert_eq!(create_organization_vault_secret_res.status(), 201);
 
-        let create_organization_vault_secret_body = create_organization_vault_secret_res.json::<VaultSecret>().await.expect("create organization vault secret body");
+        let create_organization_vault_secret_body = create_organization_vault_secret_res
+            .json::<VaultSecret>()
+            .await
+            .expect("create organization vault secret body");
 
-        let delete_organization_vault_secret_res = ident.delete_organization_vault_secret(&create_organization_body.id, &create_organization_vault_body.id, &create_organization_vault_secret_body.id).await.expect("delete organization vault secret response");
+        let delete_organization_vault_secret_res = ident
+            .delete_organization_vault_secret(
+                &create_organization_body.id,
+                &create_organization_vault_body.id,
+                &create_organization_vault_secret_body.id,
+            )
+            .await
+            .expect("delete organization vault secret response");
         assert_eq!(delete_organization_vault_secret_res.status(), 204);
     }
 
@@ -1889,50 +2144,49 @@ mod tests {
 // GET    /.well-known/openid-configuration                                 ?
 // GET    /.well-known/resolve/:did                                         ?
 // GET    /status                                                           X
-// GET    /legal/privacy_policy                                             
-// GET    /legal/terms_of_service                                           
+// GET    /legal/privacy_policy
+// GET    /legal/terms_of_service
 // POST   /api/v1/authenticate                                              X
 // POST   /api/v1/users                                                     X
-// POST   /api/v1/users/reset_password                                      
-// POST   /api/v1/users/reset_password/:token                               
+// POST   /api/v1/users/reset_password
+// POST   /api/v1/users/reset_password/:token
 // POST   /api/v1/oauth/callback                                            ?
 // GET    /api/v1/applications                                              X
 // POST   /api/v1/applications                                              X
 // GET    /api/v1/applications/:id                                          X
 // PUT    /api/v1/applications/:id                                          X
 // DELETE /api/v1/applications/:id                                          X
-// GET    /api/v1/applications/:id/tokens                                   
-// GET    /api/v1/applications/:id/organizations                            
+// GET    /api/v1/applications/:id/tokens
+// GET    /api/v1/applications/:id/organizations
 // POST   /api/v1/applications/:id/organizations                            X
-// PUT    /api/v1/applications/:id/organizations/:orgId                     
-// DELETE /api/v1/applications/:id/organizations/:orgId                     
+// PUT    /api/v1/applications/:id/organizations/:orgId
+// DELETE /api/v1/applications/:id/organizations/:orgId
 // GET    /api/v1/applications/:id/users                                    X
 // POST   /api/v1/applications/:id/users                                    X
-// PUT    /api/v1/applications/:id/users/:userId                            
-// DELETE /api/v1/applications/:id/users/:userId                            
-// GET    /api/v1/applications/:id/invitations                              
+// PUT    /api/v1/applications/:id/users/:userId
+// DELETE /api/v1/applications/:id/users/:userId
+// GET    /api/v1/applications/:id/invitations
 // GET    /api/v1/organizations                                             X
 // GET    /api/v1/organizations/:id                                         X
 // POST   /api/v1/organizations                                             X
 // PUT    /api/v1/organizations/:id                                         X
-// DELETE /api/v1/organizations/:id                                         
-// GET    /api/v1/organizations/:id/users                                   
-// POST   /api/v1/organizations/:id/users 
-// PUT    /api/v1/organizations/:id/users/:userId 
-// DELETE /api/v1/organizations/:id/users/:userId 
-// GET    /api/v1/organizations/:id/invitations 
-// GET    /api/v1/organizations/:id/vaults 
-// GET    /api/v1/organizations/:id/vaults/:vaultId/keys 
-// POST   /api/v1/organizations/:id/vaults/:vaultId/keys 
-// POST   /api/v1/organizations/:id/vaults/:vaultId/keys/:keyId/sign 
-// POST   /api/v1/organizations/:id/vaults/:vaultId/keys/:keyId/verify 
-// GET    /api/v1/organizations/:id/vaults/:vaultId/secrets 
+// DELETE /api/v1/organizations/:id
+// GET    /api/v1/organizations/:id/users
+// POST   /api/v1/organizations/:id/users
+// PUT    /api/v1/organizations/:id/users/:userId
+// DELETE /api/v1/organizations/:id/users/:userId
+// GET    /api/v1/organizations/:id/invitations
+// GET    /api/v1/organizations/:id/vaults
+// GET    /api/v1/organizations/:id/vaults/:vaultId/keys
+// POST   /api/v1/organizations/:id/vaults/:vaultId/keys
+// POST   /api/v1/organizations/:id/vaults/:vaultId/keys/:keyId/sign
+// POST   /api/v1/organizations/:id/vaults/:vaultId/keys/:keyId/verify
+// GET    /api/v1/organizations/:id/vaults/:vaultId/secrets
 // GET    /api/v1/tokens                                                    X
 // POST   /api/v1/tokens                                                    X
-// DELETE /api/v1/tokens/:id        
+// DELETE /api/v1/tokens/:id
 // GET    /api/v1/users                                                     X
 // GET    /api/v1/users/:id                                                 X
 // PUT    /api/v1/users/:id                                                 X
 // DELETE /api/v1/users/:id                                                 X
-// POST   /api/v1/invitations       
-
+// POST   /api/v1/invitations

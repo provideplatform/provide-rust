@@ -15,7 +15,7 @@ pub struct Circuit {
 
     pub note_store_id: Option<String>,
     nullifier_store_id: Option<String>,
-    
+
     vault_id: String,
     encryption_key_id: Option<String>,
     proving_key_id: Option<String>,

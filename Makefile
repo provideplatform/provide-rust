@@ -1,4 +1,4 @@
-.PHONY: build clean integration baseline-integration
+.PHONY: build clean integration baseline-integration baseline-integration-dev
 
 clean:
 	rm -rf ./target 2>/dev/null || true
@@ -13,3 +13,6 @@ integration:
 
 baseline-integration:
 	SUITE="baseline" CONTAINER_REGEX="organization-api" ./ops/run_integration_tests.sh --log-docker-info
+
+baseline-integration-dev:
+	SUITE="baseline" ./ops/run_integration_tests.sh --log-docker-info --without-prvd-invocation --with-registry-contract-address

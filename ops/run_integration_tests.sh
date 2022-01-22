@@ -71,7 +71,7 @@ handle_shutdown() {
     docker-compose -f ./ops/docker-compose.yml down
     docker volume rm ops_provide-db
 
-    if [[ "$SUITE" == "" || "$SUITE" == "baseline" ]]; then
+    if [[ "$INVOKE_PRVD_CLI" == "true" && ("$SUITE" == "" || "$SUITE" == "baseline") ]]; then
         if [[ -f ".test-config.tmp.json" ]]; then
             prvd baseline stack stop --name $(jq '.org_name' .test-config.tmp.json | xargs)
             rm .local-baseline-test-config.tmp.yaml
@@ -143,16 +143,37 @@ if [[ $* == *--log-docker-info* ]]; then
     docker network ls
 fi
 
-bounce_docker
+INVOKE_PRVD_CLI=true
+if [[ $* == *--without-prvd-invocation* ]]; then
+    INVOKE_PRVD_CLI=false
+fi
 
-# docker-compose -f ./ops/docker-compose.yml build --no-cache
-docker-compose -f ./ops/docker-compose.yml up --build -d
+if [[ "$INVOKE_PRVD_CLI" == "true" ]]; then
+    bounce_docker
+fi
 
-wait_for_ident_container
-wait_for_vault_container
-wait_for_privacy_container
-wait_for_nchain_container
+BASELINE_REGISTRY_CONTRACT_ADDRESS=0x
+if [[ $* == *--with-registry-contract-address* ]]; then
+    BASELINE_REGISTRY_CONTRACT_ADDRESS=0xCecCb4eA6B06F8990A305cafd1a9B43a9eF9c689
+fi
 
+SKIP_SETUP=
+if [[ $* == *--skip-setup* ]]; then
+    SKIP_SETUP=true
+fi
+
+if [[ $* != *--skip-startup* ]]; then
+    # docker-compose -f ./ops/docker-compose.yml build --no-cache
+    docker-compose -f ./ops/docker-compose.yml up --build -d
+
+    wait_for_ident_container
+    wait_for_vault_container
+    wait_for_privacy_container
+    wait_for_nchain_container
+fi
+
+SKIP_SETUP=$SKIP_SETUP \
+BASELINE_REGISTRY_CONTRACT_ADDRESS=$BASELINE_REGISTRY_CONTRACT_ADDRESS \
 IDENT_API_HOST=localhost:8081 \
 IDENT_API_SCHEME=http \
 VAULT_API_HOST=localhost:8082 \
@@ -163,6 +184,11 @@ NCHAIN_API_HOST=localhost:8084 \
 NCHAIN_API_SCHEME=http \
 BASELINE_API_HOST=localhost:8085 \
 BASELINE_API_SCHEME=http \
+INVOKE_PRVD_CLI=$INVOKE_PRVD_CLI \
 cargo test $SUITE -- --test-threads=1 --show-output
 
-handle_shutdown
+if [[ $* != *--skip-shutdown* ]]; then
+    handle_shutdown
+fi
+
+# TODO-- make parallel test harness work, add --parallel flag
