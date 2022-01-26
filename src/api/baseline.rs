@@ -1616,6 +1616,7 @@ mod tests {
             "workgroup_id": &app_id,
             "name": &workflow_instance_name,
             "workflow_id": &create_workflow_body.id,
+            "version": "v0.0.1",
         });
 
         let create_workflow_instance_body = _create_workflow(&baseline, create_workflow_instance_params, 201).await;
@@ -1627,7 +1628,68 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn create_workflow_instance_fail_with_instance_version() {
+    async fn create_workflow_instance_without_version_has_version() {
+        let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
+        let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
+
+        let org_access_token_json = config_vals["org_access_token"].to_string();
+        let org_access_token = serde_json::from_str::<String>(&org_access_token_json)
+            .expect("organzation access token");
+
+        let app_id_json = config_vals["app_id"].to_string();
+        let app_id = serde_json::from_str::<String>(&app_id_json).expect("workgroup id");
+
+        let baseline: ApiClient = Baseline::factory(&org_access_token);
+
+        let create_workflow_params = json!({
+            "workgroup_id": &app_id,
+            "name": format!("{} workflow", Name().fake::<String>()),
+            "version": "v0.0.1",
+        });
+
+        let create_workflow_body = _create_workflow(&baseline, create_workflow_params, 201).await;
+
+        let create_workstep_params = json!({
+            "name": format!("{} workstep", Name().fake::<String>()),
+            "require_finality": true,
+            "metadata": {
+                "prover": {
+                    "identifier": "cubic",
+                    "name": "General Consistency",
+                    "provider": "gnark",
+                    "proving_scheme": "groth16",
+                    "curve": "BN254",
+                },
+            },
+        });
+
+        let _ = _create_workstep(
+            &baseline,
+            &create_workflow_body.id,
+            create_workstep_params,
+            201,
+        )
+        .await;
+
+        let _ = _deploy_workflow(&baseline, &create_workflow_body.id, 202).await;
+
+        let workflow_instance_name = format!("{} workflow instance", Name().fake::<String>());
+        let create_workflow_instance_params = json!({
+            "workgroup_id": &app_id,
+            "name": &workflow_instance_name,
+            "workflow_id": &create_workflow_body.id,
+        });
+
+        let create_workflow_instance_body = _create_workflow(&baseline, create_workflow_instance_params, 201).await;
+
+        assert_eq!(&create_workflow_instance_body.name, &workflow_instance_name);
+        assert_eq!(&create_workflow_instance_body.version.unwrap_or(String::from("")), "v0.0.1");
+        assert_eq!(&create_workflow_instance_body.workgroup_id, &app_id);
+        // TODO: assert workflow_id equality
+    }
+
+    #[tokio::test]
+    async fn create_workflow_instance_fail_with_new_instance_version() {
         let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
         let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
 
@@ -1676,7 +1738,7 @@ mod tests {
             "workgroup_id": &app_id,
             "name": format!("{} workflow", Name().fake::<String>()),
             "workflow_id": &create_workflow_body.id,
-            "version": "v0.0.1"
+            "version": "v0.0.2"
         });
 
         let _ = _create_workflow(&baseline, create_workflow_instance_params, 422).await;
