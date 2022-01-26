@@ -55,7 +55,7 @@ impl Vault for ApiClient {
     }
 
     async fn list_vaults(&self) -> Response {
-        return self.get("vaults", None, None).await;
+        return self.get("vaults", None, None, None).await;
     }
 
     async fn create_seal_unseal_key(&self) -> Response {
@@ -93,12 +93,12 @@ impl Vault for ApiClient {
 
     async fn list_keys(&self, vault_id: &str) -> Response {
         let uri = format!("vaults/{}/keys", vault_id);
-        return self.get(&uri, None, None).await;
+        return self.get(&uri, None, None, None).await;
     }
 
     async fn list_secrets(&self, vault_id: &str) -> Response {
         let uri = format!("vaults/{}/secrets", vault_id);
-        return self.get(&uri, None, None).await;
+        return self.get(&uri, None, None, None).await;
     }
 
     async fn store_secret(&self, vault_id: &str, params: Params) -> Response {
@@ -108,7 +108,7 @@ impl Vault for ApiClient {
 
     async fn retrieve_secret(&self, vault_id: &str, secret_id: &str) -> Response {
         let uri = format!("vaults/{}/secrets/{}", vault_id, secret_id);
-        return self.get(&uri, None, None).await;
+        return self.get(&uri, None, None, None).await;
     }
 
     async fn delete_secret(&self, vault_id: &str, secret_id: &str) -> Response {

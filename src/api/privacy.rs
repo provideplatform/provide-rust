@@ -35,7 +35,7 @@ impl Privacy for ApiClient {
     }
 
     async fn list_circuits(&self) -> Response {
-        return self.get("circuits", None, None).await;
+        return self.get("circuits", None, None, None).await;
     }
 
     async fn create_circuit(&self, params: Params) -> Response {
@@ -44,7 +44,7 @@ impl Privacy for ApiClient {
 
     async fn get_circuit(&self, circuit_id: &str) -> Response {
         let uri = format!("circuits/{}", circuit_id);
-        return self.get(&uri, None, None).await;
+        return self.get(&uri, None, None, None).await;
     }
 
     async fn generate_proof(&self, circuit_id: &str, params: Params) -> Response {
@@ -59,7 +59,7 @@ impl Privacy for ApiClient {
 
     async fn retrieve_store_value(&self, circuit_id: &str, leaf_index: &str) -> Response {
         let uri = format!("circuits/{}/notes/{}", circuit_id, leaf_index);
-        return self.get(&uri, None, None).await;
+        return self.get(&uri, None, None, None).await;
     }
 }
 

@@ -21,11 +21,13 @@ impl ApiClient {
         uri: &str,
         params: Params,
         additional_headers: Option<Vec<AdditionalHeader>>,
+        query_params: Option<Vec<(String, String)>>,
     ) -> impl std::future::Future<Output = Response> {
         let url = format!("{}/{}", self.base_url, uri);
         self.client
             .get(url)
             .headers(self.construct_headers(additional_headers, "GET"))
+            .query(&query_params.unwrap_or(vec![]))
             .json(&params)
             .send()
     }
@@ -96,7 +98,7 @@ impl ApiClient {
         self.base_url = base_url.to_string();
     }
 
-    pub fn construct_headers(
+    fn construct_headers(
         &self,
         additional_headers: Option<Vec<AdditionalHeader>>,
         method: &str,

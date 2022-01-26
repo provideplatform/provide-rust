@@ -75,7 +75,7 @@ impl NChain for ApiClient {
     }
 
     async fn list_accounts(&self) -> Response {
-        return self.get("accounts", None, None).await;
+        return self.get("accounts", None, None, None).await;
     }
 
     async fn create_account(&self, params: Params) -> Response {
@@ -84,11 +84,11 @@ impl NChain for ApiClient {
 
     async fn get_account(&self, account_id: &str) -> Response {
         let uri = format!("accounts/{}", account_id);
-        return self.get(&uri, None, None).await;
+        return self.get(&uri, None, None, None).await;
     }
 
     async fn get_connectors(&self) -> Response {
-        return self.get("connectors", None, None).await;
+        return self.get("connectors", None, None, None).await;
     }
 
     async fn create_connector(&self, params: Params) -> Response {
@@ -97,7 +97,7 @@ impl NChain for ApiClient {
 
     async fn get_connector(&self, connector_id: &str) -> Response {
         let uri = format!("connectors/{}", connector_id);
-        return self.get(&uri, None, None).await;
+        return self.get(&uri, None, None, None).await;
     }
 
     async fn delete_connector(&self, connector_id: &str) -> Response {
@@ -106,7 +106,7 @@ impl NChain for ApiClient {
     }
 
     async fn get_contracts(&self) -> Response {
-        return self.get("contracts", None, None).await;
+        return self.get("contracts", None, None, None).await;
     }
 
     async fn create_contract(&self, params: Params) -> Response {
@@ -115,7 +115,7 @@ impl NChain for ApiClient {
 
     async fn get_contract(&self, contract_id: &str) -> Response {
         let uri = format!("contracts/{}", contract_id);
-        return self.get(&uri, None, None).await;
+        return self.get(&uri, None, None, None).await;
     }
 
     async fn execute_contract(&self, contract_id: &str, params: Params) -> Response {
@@ -124,7 +124,7 @@ impl NChain for ApiClient {
     }
 
     async fn get_wallets(&self) -> Response {
-        return self.get("wallets", None, None).await;
+        return self.get("wallets", None, None, None).await;
     }
 
     async fn create_wallet(&self, params: Params) -> Response {
@@ -133,11 +133,11 @@ impl NChain for ApiClient {
 
     async fn get_wallet_accounts(&self, wallet_id: &str) -> Response {
         let uri = format!("wallets/{}/accounts", wallet_id);
-        return self.get(&uri, None, None).await;
+        return self.get(&uri, None, None, None).await;
     }
 
     async fn get_networks(&self) -> Response {
-        return self.get("networks", None, None).await;
+        return self.get("networks", None, None, None).await;
     }
 
     async fn create_network(&self, params: Params) -> Response {
@@ -151,11 +151,11 @@ impl NChain for ApiClient {
 
     async fn get_network(&self, network_id: &str) -> Response {
         let uri = format!("networks/{}", network_id);
-        return self.get(&uri, None, None).await;
+        return self.get(&uri, None, None, None).await;
     }
 
     async fn get_oracles(&self) -> Response {
-        return self.get("oracles", None, None).await;
+        return self.get("oracles", None, None, None).await;
     }
 
     async fn create_oracle(&self, params: Params) -> Response {
@@ -164,7 +164,7 @@ impl NChain for ApiClient {
 
     async fn get_oracle(&self, oracle_id: &str) -> Response {
         let uri = format!("oracles/{}", oracle_id);
-        return self.get(&uri, None, None).await;
+        return self.get(&uri, None, None, None).await;
     }
 
     async fn update_oracle(&self, oracle_id: &str, params: Params) -> Response {
@@ -178,7 +178,7 @@ impl NChain for ApiClient {
     }
 
     async fn get_transactions(&self) -> Response {
-        return self.get("transactions", None, None).await;
+        return self.get("transactions", None, None, None).await;
     }
 
     async fn create_transaction(&self, params: Params) -> Response {
@@ -187,7 +187,7 @@ impl NChain for ApiClient {
 
     async fn get_transaction(&self, tx_id: &str) -> Response {
         let uri = format!("transactions/{}", tx_id);
-        return self.get(&uri, None, None).await;
+        return self.get(&uri, None, None, None).await;
     }
 }
 

@@ -204,11 +204,11 @@ impl Ident for ApiClient {
             key: "name",
             value: HeaderValue::from_str(name).expect("get user name"),
         };
-        return self.get(&uri, params, Some(vec![name_header])).await;
+        return self.get(&uri, params, Some(vec![name_header]), None).await;
     }
 
     async fn get_users(&self) -> Response {
-        return self.get("users", None, None).await;
+        return self.get("users", None, None, None).await;
     }
 
     async fn update_user(&self, user_id: &str, name: &str, params: Params) -> Response {
@@ -230,12 +230,12 @@ impl Ident for ApiClient {
     }
 
     async fn list_organizations(&self) -> Response {
-        return self.get("organizations", None, None).await;
+        return self.get("organizations", None, None, None).await;
     }
 
     async fn get_organization(&self, organization_id: &str) -> Response {
         let uri = format!("organizations/{}", organization_id);
-        return self.get(&uri, None, None).await;
+        return self.get(&uri, None, None, None).await;
     }
 
     async fn update_organization(&self, organization_id: &str, params: Params) -> Response {
@@ -252,11 +252,11 @@ impl Ident for ApiClient {
     }
 
     async fn list_tokens(&self, params: Params) -> Response {
-        return self.get("tokens", params, None).await;
+        return self.get("tokens", params, None, None).await;
     }
 
     async fn list_applications(&self) -> Response {
-        return self.get("applications", None, None).await;
+        return self.get("applications", None, None, None).await;
     }
 
     async fn create_application(&self, params: Params) -> Response {
@@ -265,7 +265,7 @@ impl Ident for ApiClient {
 
     async fn get_application(&self, application_id: &str) -> Response {
         let uri = format!("applications/{}", application_id);
-        return self.get(&uri, None, None).await;
+        return self.get(&uri, None, None, None).await;
     }
 
     async fn update_application(&self, application_id: &str, params: Params) -> Response {
@@ -275,7 +275,7 @@ impl Ident for ApiClient {
 
     async fn list_application_users(&self, application_id: &str) -> Response {
         let uri = format!("applications/{}/users", application_id);
-        return self.get(&uri, None, None).await;
+        return self.get(&uri, None, None, None).await;
     }
 
     async fn delete_application(&self, application_id: &str) -> Response {
@@ -303,11 +303,11 @@ impl Ident for ApiClient {
     }
 
     async fn fetch_privacy_policy(&self) -> Response {
-        return self.get("legal/privacy_policy", None, None).await;
+        return self.get("legal/privacy_policy", None, None, None).await;
     }
 
     async fn fetch_terms_of_service(&self) -> Response {
-        return self.get("legal/terms_of_service", None, None).await;
+        return self.get("legal/terms_of_service", None, None, None).await;
     }
 
     async fn request_password_reset(&self, email: &str) -> Response {
@@ -322,7 +322,7 @@ impl Ident for ApiClient {
 
     async fn fetch_application_organizations(&self, application_id: &str) -> Response {
         let uri = format!("applications/{}/organizations", application_id);
-        return self.get(&uri, None, None).await;
+        return self.get(&uri, None, None, None).await;
     }
 
     async fn update_application_organization(
@@ -352,12 +352,12 @@ impl Ident for ApiClient {
 
     async fn fetch_application_invitations(&self, application_id: &str) -> Response {
         let uri = format!("applications/{}/invitations", application_id);
-        return self.get(&uri, None, None).await;
+        return self.get(&uri, None, None, None).await;
     }
 
     async fn fetch_application_tokens(&self, application_id: &str) -> Response {
         let uri = format!("applications/{}/tokens", application_id);
-        return self.get(&uri, None, None).await;
+        return self.get(&uri, None, None, None).await;
     }
 
     async fn authenticate_application_user(&self, email: &str) -> Response {
@@ -382,12 +382,12 @@ impl Ident for ApiClient {
 
     async fn fetch_organization_invitations(&self, organization_id: &str) -> Response {
         let uri = format!("organizations/{}/invitations", organization_id);
-        return self.get(&uri, None, None).await;
+        return self.get(&uri, None, None, None).await;
     }
 
     async fn fetch_organization_users(&self, organization_id: &str) -> Response {
         let uri = format!("organizations/{}/users", organization_id);
-        return self.get(&uri, None, None).await;
+        return self.get(&uri, None, None, None).await;
     }
 
     async fn create_organization_user(&self, organization_id: &str, params: Params) -> Response {
@@ -412,7 +412,7 @@ impl Ident for ApiClient {
 
     async fn fetch_organization_vaults(&self, organization_id: &str) -> Response {
         let uri = format!("organizations/{}/vaults", organization_id);
-        return self.get(&uri, None, None).await;
+        return self.get(&uri, None, None, None).await;
     }
 
     async fn fetch_organization_vault_keys(
@@ -421,7 +421,7 @@ impl Ident for ApiClient {
         vault_id: &str,
     ) -> Response {
         let uri = format!("organizations/{}/vaults/{}/keys", organization_id, vault_id);
-        return self.get(&uri, None, None).await;
+        return self.get(&uri, None, None, None).await;
     }
 
     async fn create_organization_vault_key(
@@ -487,7 +487,7 @@ impl Ident for ApiClient {
             "organizations/{}/vaults/{}/secrets",
             organization_id, vault_id
         );
-        return self.get(&uri, None, None).await;
+        return self.get(&uri, None, None, None).await;
     }
 
     async fn create_organization_vault_secret(
@@ -518,7 +518,7 @@ impl Ident for ApiClient {
 
     async fn get_token(&self, token_id: &str) -> Response {
         let uri = format!("tokens/{}", token_id);
-        return self.get(&uri, None, None).await;
+        return self.get(&uri, None, None, None).await;
     }
 
     async fn delete_token(&self, token_id: &str) -> Response {
