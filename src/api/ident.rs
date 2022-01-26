@@ -1,8 +1,7 @@
 use async_trait::async_trait;
-use http::HeaderValue;
 use serde_json::json;
 
-use crate::api::client::{AdditionalHeader, ApiClient, Params, Response};
+use crate::api::client::{ApiClient, Params, Response};
 pub use crate::models::ident::*;
 
 const DEFAULT_SCHEME: &str = "https";
@@ -200,11 +199,8 @@ impl Ident for ApiClient {
 
     async fn get_user(&self, user_id: &str, name: &str, params: Params) -> Response {
         let uri = format!("users/{}", user_id);
-        let name_header = AdditionalHeader {
-            key: "name",
-            value: HeaderValue::from_str(name).expect("get user name"),
-        };
-        return self.get(&uri, params, Some(vec![name_header]), None).await;
+        let name_header = vec![("name".to_string(), name.to_string())];
+        return self.get(&uri, params, Some(name_header), None).await;
     }
 
     async fn get_users(&self) -> Response {
@@ -213,11 +209,8 @@ impl Ident for ApiClient {
 
     async fn update_user(&self, user_id: &str, name: &str, params: Params) -> Response {
         let uri = format!("users/{}", user_id);
-        let name_header = AdditionalHeader {
-            key: "name",
-            value: HeaderValue::from_str(name).expect("get user name"),
-        };
-        return self.put(&uri, params, Some(vec![name_header])).await;
+        let name_header = vec![("name".to_string(), name.to_string())];
+        return self.put(&uri, params, Some(name_header)).await;
     }
 
     async fn delete_user(&self, user_id: &str) -> Response {

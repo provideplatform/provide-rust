@@ -1,12 +1,11 @@
-pub use crate::models::client::{AdditionalHeader, ApiClient, Params, Response};
-use http;
-use reqwest;
+pub use crate::models::client::{ApiClient, Params, Response};
+use reqwest::{Client, header::{HeaderMap, HeaderValue, HeaderName, AUTHORIZATION, CONTENT_TYPE, USER_AGENT}};
 
 const DEFAULT_API_USER_AGENT: &str = "provide-rust client library";
 
 impl ApiClient {
     pub fn new(scheme: &str, host: &str, path: &str, token: &str) -> Self {
-        let client = reqwest::Client::new();
+        let client = Client::new();
         let base_url = format!("{}://{}/{}", scheme, host, path);
 
         Self {
@@ -20,13 +19,13 @@ impl ApiClient {
         &self,
         uri: &str,
         params: Params,
-        additional_headers: Option<Vec<AdditionalHeader>>,
+        additional_headers: Option<Vec<(String, String)>>,
         query_params: Option<Vec<(String, String)>>,
     ) -> impl std::future::Future<Output = Response> {
         let url = format!("{}/{}", self.base_url, uri);
         self.client
             .get(url)
-            .headers(self.construct_headers(additional_headers, "GET"))
+            .headers(self.construct_headers(additional_headers.unwrap_or(vec![]), "GET"))
             .query(&query_params.unwrap_or(vec![]))
             .json(&params)
             .send()
@@ -36,12 +35,12 @@ impl ApiClient {
         &self,
         uri: &str,
         params: Params,
-        additional_headers: Option<Vec<AdditionalHeader>>,
+        additional_headers: Option<Vec<(String, String)>>,
     ) -> impl std::future::Future<Output = Response> {
         let url = format!("{}/{}", self.base_url, uri);
         self.client
             .patch(url)
-            .headers(self.construct_headers(additional_headers, "PATCH"))
+            .headers(self.construct_headers(additional_headers.unwrap_or(vec![]), "PATCH"))
             .json(&params)
             .send()
     }
@@ -50,12 +49,12 @@ impl ApiClient {
         &self,
         uri: &str,
         params: Params,
-        additional_headers: Option<Vec<AdditionalHeader>>,
+        additional_headers: Option<Vec<(String, String)>>,
     ) -> impl std::future::Future<Output = Response> {
         let url = format!("{}/{}", self.base_url, uri);
         self.client
             .put(url)
-            .headers(self.construct_headers(additional_headers, "PUT"))
+            .headers(self.construct_headers(additional_headers.unwrap_or(vec![]), "PUT"))
             .json(&params)
             .send()
     }
@@ -64,12 +63,12 @@ impl ApiClient {
         &self,
         uri: &str,
         params: Params,
-        additional_headers: Option<Vec<AdditionalHeader>>,
+        additional_headers: Option<Vec<(String, String)>>,
     ) -> impl std::future::Future<Output = Response> {
         let url = format!("{}/{}", self.base_url, uri);
         self.client
             .post(url)
-            .headers(self.construct_headers(additional_headers, "POST"))
+            .headers(self.construct_headers(additional_headers.unwrap_or(vec![]), "POST"))
             .json(&params)
             .send()
     }
@@ -78,12 +77,12 @@ impl ApiClient {
         &self,
         uri: &str,
         params: Params,
-        additional_headers: Option<Vec<AdditionalHeader>>,
+        additional_headers: Option<Vec<(String, String)>>,
     ) -> impl std::future::Future<Output = Response> {
         let url = format!("{}/{}", self.base_url, uri);
         self.client
             .delete(url)
-            .headers(self.construct_headers(additional_headers, "DELETE"))
+            .headers(self.construct_headers(additional_headers.unwrap_or(vec![]), "DELETE"))
             .json(&params)
             .send()
     }
@@ -100,42 +99,38 @@ impl ApiClient {
 
     fn construct_headers(
         &self,
-        additional_headers: Option<Vec<AdditionalHeader>>,
+        additional_headers: Vec<(String, String)>,
         method: &str,
-    ) -> http::HeaderMap {
-        // make additiona headers reference?
-        let mut headers = http::HeaderMap::new();
+    ) -> HeaderMap {
+        let mut headers = HeaderMap::new();
 
         if method == "POST" || method == "PUT" || method == "PATCH" {
             headers.insert(
-                "content-type",
-                http::HeaderValue::from_static("application/json"),
+                CONTENT_TYPE,
+                HeaderValue::from_static("application/json"),
             );
         }
 
         headers.insert(
-            "user-agent",
-            http::HeaderValue::from_str(
+            USER_AGENT,
+            HeaderValue::from_str(
                 &std::env::var("USER_AGENT").unwrap_or(String::from(DEFAULT_API_USER_AGENT)),
             )
             .expect("user agent"),
         );
 
-        if self.token != String::from("") {
+        if self.token != "" {
             let auth = format!("bearer {}", self.token);
             headers.insert(
-                "authorization",
-                http::HeaderValue::from_str(&auth).expect("token"),
+                AUTHORIZATION,
+                HeaderValue::from_str(&auth).expect("token"),
             );
         }
 
-        match additional_headers {
-            Some(more_headers) => {
-                for header in more_headers {
-                    headers.insert(header.key, header.value);
-                }
-            }
-            None => {}
+        for (key, value) in additional_headers {
+            let header_name = HeaderName::from_bytes(key.as_bytes()).expect("header name");
+            let header_value = HeaderValue::from_str(&value).expect("header value");
+            headers.insert(header_name, header_value);
         }
 
         headers

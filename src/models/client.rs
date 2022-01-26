@@ -1,4 +1,3 @@
-use http;
 use reqwest;
 use serde_json::Value;
 
@@ -12,9 +11,3 @@ pub struct ApiClient {
 
 pub type Response = Result<reqwest::Response, reqwest::Error>;
 pub type Params = Option<Value>;
-
-#[derive(Debug)]
-pub struct AdditionalHeader {
-    pub key: &'static str,
-    pub value: http::HeaderValue,
-}
