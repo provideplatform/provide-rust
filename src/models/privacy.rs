@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
-pub struct prover {
+pub struct Circuit {
     pub id: String,
     created_at: String,
 
