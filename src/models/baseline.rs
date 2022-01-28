@@ -1,4 +1,4 @@
-use crate::models::privacy::Circuit;
+use crate::models::privacy::Prover;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
@@ -172,7 +172,7 @@ pub struct Workstep {
     pub cardinality: usize,
     deployed_at: Option<String>,
     pub metadata: Option<Value>,
-    prover: Option<Circuit>,
+    prover: Option<Prover>,
     prover_id: Option<String>,
     participants: Option<Vec<Participant>>,
     pub require_finality: bool,
@@ -193,7 +193,7 @@ pub struct WorkstepInstance {
     pub cardinality: usize,
     deployed_at: Option<String>,
     metadata: Option<Value>,
-    prover: Option<Circuit>,
+    prover: Option<Prover>,
     prover_id: Option<String>,
     participants: Option<Vec<Participant>>,
     require_finality: bool,

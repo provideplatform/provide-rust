@@ -11,17 +11,17 @@ const DEFAULT_PATH: &str = "api/v1";
 pub trait Privacy {
     fn factory(token: &str) -> Self;
 
-    async fn list_circuits(&self) -> Response;
+    async fn list_provers(&self) -> Response;
 
-    async fn create_circuit(&self, params: Params) -> Response;
+    async fn create_prover(&self, params: Params) -> Response;
 
-    async fn get_circuit(&self, circuit_id: &str) -> Response;
+    async fn get_prover(&self, prover_id: &str) -> Response;
 
-    async fn generate_proof(&self, circuit_id: &str, params: Params) -> Response;
+    async fn generate_proof(&self, prover_id: &str, params: Params) -> Response;
 
-    async fn verify_proof(&self, circuit_id: &str, params: Params) -> Response;
+    async fn verify_proof(&self, prover_id: &str, params: Params) -> Response;
 
-    async fn retrieve_store_value(&self, circuit_id: &str, leaf_index: &str) -> Response;
+    async fn retrieve_store_value(&self, prover_id: &str, leaf_index: &str) -> Response;
 }
 
 #[async_trait]
@@ -34,31 +34,31 @@ impl Privacy for ApiClient {
         return ApiClient::new(&scheme, &host, &path, token);
     }
 
-    async fn list_circuits(&self) -> Response {
-        return self.get("circuits", None, None, None).await;
+    async fn list_provers(&self) -> Response {
+        return self.get("provers", None, None, None).await;
     }
 
-    async fn create_circuit(&self, params: Params) -> Response {
-        return self.post("circuits", params, None).await;
+    async fn create_prover(&self, params: Params) -> Response {
+        return self.post("provers", params, None).await;
     }
 
-    async fn get_circuit(&self, circuit_id: &str) -> Response {
-        let uri = format!("circuits/{}", circuit_id);
+    async fn get_prover(&self, prover_id: &str) -> Response {
+        let uri = format!("provers/{}", prover_id);
         return self.get(&uri, None, None, None).await;
     }
 
-    async fn generate_proof(&self, circuit_id: &str, params: Params) -> Response {
-        let uri = format!("circuits/{}/prove", circuit_id);
+    async fn generate_proof(&self, prover_id: &str, params: Params) -> Response {
+        let uri = format!("provers/{}/prove", prover_id);
         return self.post(&uri, params, None).await;
     }
 
-    async fn verify_proof(&self, circuit_id: &str, params: Params) -> Response {
-        let uri = format!("circuits/{}/verify", circuit_id);
+    async fn verify_proof(&self, prover_id: &str, params: Params) -> Response {
+        let uri = format!("provers/{}/verify", prover_id);
         return self.post(&uri, params, None).await;
     }
 
-    async fn retrieve_store_value(&self, circuit_id: &str, leaf_index: &str) -> Response {
-        let uri = format!("circuits/{}/notes/{}", circuit_id, leaf_index);
+    async fn retrieve_store_value(&self, prover_id: &str, leaf_index: &str) -> Response {
+        let uri = format!("provers/{}/notes/{}", prover_id, leaf_index);
         return self.get(&uri, None, None, None).await;
     }
 }
@@ -111,8 +111,8 @@ mod tests {
             .expect("authentication response body");
     }
 
-    async fn deploy_circuit(privacy: &ApiClient) -> Circuit {
-        let create_circuit_params = Some(json!({
+    async fn deploy_prover(privacy: &ApiClient) -> Prover {
+        let create_prover_params = Some(json!({
             "name": Name().fake::<String>(),
             "identifier": "cubic",
             "provider": "gnark",
@@ -120,20 +120,20 @@ mod tests {
             "curve": "BN254",
         }));
 
-        let create_circuit_res = privacy
-            .create_circuit(create_circuit_params)
+        let create_prover_res = privacy
+            .create_prover(create_prover_params)
             .await
-            .expect("create circuit response");
-        assert_eq!(create_circuit_res.status(), 201);
+            .expect("create prover response");
+        assert_eq!(create_prover_res.status(), 201);
 
-        return create_circuit_res
-            .json::<Circuit>()
+        return create_prover_res
+            .json::<Prover>()
             .await
-            .expect("create circuit body");
+            .expect("create prover body");
     }
 
     #[tokio::test]
-    async fn list_circuits() {
+    async fn list_provers() {
         let authentication_res_body = generate_new_user_and_token().await;
         let access_token = match authentication_res_body.token.access_token {
             Some(string) => string,
@@ -142,15 +142,15 @@ mod tests {
 
         let privacy: ApiClient = Privacy::factory(&access_token);
 
-        let list_circuits_res = privacy
-            .list_circuits()
+        let list_provers_res = privacy
+            .list_provers()
             .await
-            .expect("list circuits response");
-        assert_eq!(list_circuits_res.status(), 200);
+            .expect("list provers response");
+        assert_eq!(list_provers_res.status(), 200);
     }
 
     #[tokio::test]
-    async fn create_circuit() {
+    async fn create_prover() {
         let authentication_res_body = generate_new_user_and_token().await;
         let access_token = match authentication_res_body.token.access_token {
             Some(string) => string,
@@ -158,11 +158,11 @@ mod tests {
         };
 
         let privacy: ApiClient = Privacy::factory(&access_token);
-        let _ = deploy_circuit(&privacy).await;
+        let _ = deploy_prover(&privacy).await;
     }
 
     #[tokio::test]
-    async fn get_circuit() {
+    async fn get_prover() {
         let authentication_res_body = generate_new_user_and_token().await;
         let access_token = match authentication_res_body.token.access_token {
             Some(string) => string,
@@ -170,13 +170,13 @@ mod tests {
         };
 
         let privacy: ApiClient = Privacy::factory(&access_token);
-        let deploy_circuit_body = deploy_circuit(&privacy).await;
+        let deploy_prover_body = deploy_prover(&privacy).await;
 
-        let get_circuit_res = privacy
-            .get_circuit(&deploy_circuit_body.id)
+        let get_prover_res = privacy
+            .get_prover(&deploy_prover_body.id)
             .await
-            .expect("get circuit response");
-        assert_eq!(get_circuit_res.status(), 200);
+            .expect("get prover response");
+        assert_eq!(get_prover_res.status(), 200);
     }
 
     #[tokio::test]
@@ -229,40 +229,40 @@ mod tests {
 
         let privacy: ApiClient = Privacy::factory(&application_access_token);
 
-        let deploy_circuit_body = deploy_circuit(&privacy).await;
+        let deploy_prover_body = deploy_prover(&privacy).await;
 
         let mut interval = time::interval(Duration::from_millis(500));
-        let mut circuit_status = match deploy_circuit_body.status {
+        let mut prover_status = match deploy_prover_body.status {
             Some(string) => string,
-            None => panic!("deploy circuit status not found"),
+            None => panic!("deploy prover status not found"),
         };
 
-        while circuit_status != "provisioned" {
+        while prover_status != "provisioned" {
             interval.tick().await;
 
-            let get_circuit_res = privacy
-                .get_circuit(&deploy_circuit_body.id)
+            let get_prover_res = privacy
+                .get_prover(&deploy_prover_body.id)
                 .await
-                .expect("get circuit response");
-            assert_eq!(get_circuit_res.status(), 200);
+                .expect("get prover response");
+            assert_eq!(get_prover_res.status(), 200);
 
-            let get_circuit_body = get_circuit_res
-                .json::<Circuit>()
+            let get_prover_body = get_prover_res
+                .json::<Prover>()
                 .await
-                .expect("get circuit body");
-            circuit_status = match get_circuit_body.status {
+                .expect("get prover body");
+            prover_status = match get_prover_body.status {
                 Some(string) => string,
-                None => panic!("get circuit body status not found"),
+                None => panic!("get prover body status not found"),
             };
         }
 
         let generate_proof_param = Some(json!({
-            "identifier": deploy_circuit_body.identifier,
+            "identifier": deploy_prover_body.identifier,
             "proving_scheme": "groth16",
             "curve": "BN254",
             "provider": "gnark",
-            "name": deploy_circuit_body.name,
-            "store_id": deploy_circuit_body.note_store_id,
+            "name": deploy_prover_body.name,
+            "store_id": deploy_prover_body.note_store_id,
             "witness": {
                 "X": "3",
                 "Y": "35",
@@ -270,7 +270,7 @@ mod tests {
         }));
 
         let generate_proof_res = privacy
-            .generate_proof(&deploy_circuit_body.id, generate_proof_param)
+            .generate_proof(&deploy_prover_body.id, generate_proof_param)
             .await
             .expect("generate proof response");
         assert_eq!(generate_proof_res.status(), 200);
@@ -326,40 +326,40 @@ mod tests {
 
         let privacy: ApiClient = Privacy::factory(&application_access_token);
 
-        let deploy_circuit_body = deploy_circuit(&privacy).await;
+        let deploy_prover_body = deploy_prover(&privacy).await;
 
         let mut interval = time::interval(Duration::from_millis(500));
-        let mut circuit_status = match deploy_circuit_body.status {
+        let mut prover_status = match deploy_prover_body.status {
             Some(string) => string,
-            None => panic!("deploy circuit status not found"),
+            None => panic!("deploy prover status not found"),
         };
 
-        while circuit_status != "provisioned" {
+        while prover_status != "provisioned" {
             interval.tick().await;
 
-            let get_circuit_res = privacy
-                .get_circuit(&deploy_circuit_body.id)
+            let get_prover_res = privacy
+                .get_prover(&deploy_prover_body.id)
                 .await
-                .expect("get circuit response");
-            assert_eq!(get_circuit_res.status(), 200);
+                .expect("get prover response");
+            assert_eq!(get_prover_res.status(), 200);
 
-            let get_circuit_body = get_circuit_res
-                .json::<Circuit>()
+            let get_prover_body = get_prover_res
+                .json::<Prover>()
                 .await
-                .expect("get circuit body");
-            circuit_status = match get_circuit_body.status {
+                .expect("get prover body");
+            prover_status = match get_prover_body.status {
                 Some(string) => string,
-                None => panic!("get circuit body status not found"),
+                None => panic!("get prover body status not found"),
             };
         }
 
         let generate_proof_param = Some(json!({
-            "identifier": deploy_circuit_body.identifier,
+            "identifier": deploy_prover_body.identifier,
             "proving_scheme": "groth16",
             "curve": "BN254",
             "provider": "gnark",
-            "name": deploy_circuit_body.name,
-            "store_id": deploy_circuit_body.note_store_id,
+            "name": deploy_prover_body.name,
+            "store_id": deploy_prover_body.note_store_id,
             "witness": {
                 "X": "3",
                 "Y": "35",
@@ -367,7 +367,7 @@ mod tests {
         }));
 
         let generate_proof_res = privacy
-            .generate_proof(&deploy_circuit_body.id, generate_proof_param)
+            .generate_proof(&deploy_prover_body.id, generate_proof_param)
             .await
             .expect("generate proof response");
         assert_eq!(generate_proof_res.status(), 200);
@@ -386,7 +386,7 @@ mod tests {
         }));
 
         let verify_proof_res = privacy
-            .verify_proof(&deploy_circuit_body.id, verify_proof_params)
+            .verify_proof(&deploy_prover_body.id, verify_proof_params)
             .await
             .expect("verify proof response");
         assert_eq!(verify_proof_res.status(), 200);
@@ -442,40 +442,40 @@ mod tests {
 
         let privacy: ApiClient = Privacy::factory(&application_access_token);
 
-        let deploy_circuit_body = deploy_circuit(&privacy).await;
+        let deploy_prover_body = deploy_prover(&privacy).await;
 
         let mut interval = time::interval(Duration::from_millis(500));
-        let mut circuit_status = match deploy_circuit_body.status {
+        let mut prover_status = match deploy_prover_body.status {
             Some(string) => string,
-            None => panic!("deploy circuit status not found"),
+            None => panic!("deploy prover status not found"),
         };
 
-        while circuit_status != "provisioned" {
+        while prover_status != "provisioned" {
             interval.tick().await;
 
-            let get_circuit_res = privacy
-                .get_circuit(&deploy_circuit_body.id)
+            let get_prover_res = privacy
+                .get_prover(&deploy_prover_body.id)
                 .await
-                .expect("get circuit response");
-            assert_eq!(get_circuit_res.status(), 200);
+                .expect("get prover response");
+            assert_eq!(get_prover_res.status(), 200);
 
-            let get_circuit_body = get_circuit_res
-                .json::<Circuit>()
+            let get_prover_body = get_prover_res
+                .json::<Prover>()
                 .await
-                .expect("get circuit body");
-            circuit_status = match get_circuit_body.status {
+                .expect("get prover body");
+            prover_status = match get_prover_body.status {
                 Some(string) => string,
-                None => panic!("get circuit body status not found"),
+                None => panic!("get prover body status not found"),
             };
         }
 
         let generate_proof_param = Some(json!({
-            "identifier": deploy_circuit_body.identifier,
+            "identifier": deploy_prover_body.identifier,
             "proving_scheme": "groth16",
             "curve": "BN254",
             "provider": "gnark",
-            "name": deploy_circuit_body.name,
-            "store_id": deploy_circuit_body.note_store_id,
+            "name": deploy_prover_body.name,
+            "store_id": deploy_prover_body.note_store_id,
             "witness": {
                 "X": "3",
                 "Y": "35",
@@ -483,13 +483,13 @@ mod tests {
         }));
 
         let generate_proof_res = privacy
-            .generate_proof(&deploy_circuit_body.id, generate_proof_param)
+            .generate_proof(&deploy_prover_body.id, generate_proof_param)
             .await
             .expect("generate proof response");
         assert_eq!(generate_proof_res.status(), 200);
 
         let retrieve_store_value_res = privacy
-            .retrieve_store_value(&deploy_circuit_body.id, "0")
+            .retrieve_store_value(&deploy_prover_body.id, "0")
             .await
             .expect("retrieve store value response");
         assert_eq!(retrieve_store_value_res.status(), 200);
