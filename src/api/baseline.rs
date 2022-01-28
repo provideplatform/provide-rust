@@ -2209,6 +2209,14 @@ mod tests {
             .await
             .expect("fetch workflow instance worksteps body");
 
+        let get_prototype_workflow_res = baseline.get_workflow(&create_workflow_body.id).await.expect("get prototype workflow response");
+        assert_eq!(get_prototype_workflow_res.status(), 200);
+
+        let get_prototype_workflow_body = get_prototype_workflow_res.json::<Workflow>().await.expect("get prototype workflow body");
+
+        let worksteps_count = get_prototype_workflow_body.worksteps_count.unwrap();
+        assert_eq!(fetch_workflow_instance_worksteps_body.len(), worksteps_count as usize);
+
         for workstep_instance in fetch_workflow_instance_worksteps_body {
             assert_eq!(workstep_instance.status.unwrap(), "init");
         }
