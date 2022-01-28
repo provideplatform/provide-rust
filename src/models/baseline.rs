@@ -1,4 +1,4 @@
-use crate::models::privacy::Circuit;
+use crate::models::privacy::prover;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
@@ -18,16 +18,16 @@ use serde_json::Value;
 // 	r#type: Option<String>,
 // }
 
-// pub struct Config {
-// 	counterparties: Option<Vec<Participant>>,
-// 	env: Value,
-// 	errors: Value,
-// 	network_id: Option<String>,
-// 	organization_address: Option<String>,
-// 	organization_id: Option<String>,
-// 	organization_refresh_token: Option<String>,
-// 	registry_contract_address: Option<String>,
-// }
+#[derive(Serialize, Deserialize, Debug, Default, Clone)]
+pub struct Config {
+	env: Option<Value>,
+	pub network_id: Option<String>,
+	organization_address: Option<String>,
+	pub organization_id: Option<String>,
+	pub workgroup_id: Option<String>,
+	organization_refresh_token: Option<String>,
+	registry_contract_address: Option<String>,
+}
 
 // pub struct VerifiableCredential {
 //     credential: Option<String>,
@@ -172,7 +172,7 @@ pub struct Workstep {
     pub cardinality: usize,
     deployed_at: Option<String>,
     pub metadata: Option<Value>,
-    prover: Option<Circuit>,
+    prover: Option<prover>,
     prover_id: Option<String>,
     participants: Option<Vec<Participant>>,
     pub require_finality: bool,
@@ -193,7 +193,7 @@ pub struct WorkstepInstance {
     pub cardinality: usize,
     deployed_at: Option<String>,
     metadata: Option<Value>,
-    prover: Option<Circuit>,
+    prover: Option<prover>,
     prover_id: Option<String>,
     participants: Option<Vec<Participant>>,
     require_finality: bool,
