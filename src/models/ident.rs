@@ -1,5 +1,6 @@
 // change to enums, ex application should be enum with application::applicationresponse and applicationparams
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
 pub struct ApplicationConfig {
@@ -59,4 +60,19 @@ pub struct Organization {
     user_id: String,
     description: String,
     pub metadata: serde_json::Value,
+}
+
+#[derive(Serialize, Deserialize, Debug, Default, Clone)]
+pub struct Invite {
+    application_id: Option<String>,
+    user_id: Option<String>,
+    first_name: Option<String>,
+    last_name: Option<String>,
+    email: Option<String>,
+    invitor_id: Option<String>,
+    invitor_name: Option<String>,
+    organization_id: Option<String>,
+    organization_name: Option<String>,
+    permissions: Option<i32>,
+    params: Option<Value>,
 }
