@@ -142,10 +142,7 @@ mod tests {
 
         let privacy: ApiClient = Privacy::factory(&access_token);
 
-        let list_provers_res = privacy
-            .list_provers()
-            .await
-            .expect("list provers response");
+        let list_provers_res = privacy.list_provers().await.expect("list provers response");
         assert_eq!(list_provers_res.status(), 200);
     }
 

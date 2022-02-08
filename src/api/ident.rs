@@ -1644,11 +1644,11 @@ mod tests {
             .json::<Token>()
             .await
             .expect("organization authorization body");
-        let app_access_token = match organization_authorization_body.access_token {
+        let org_access_token = match organization_authorization_body.access_token {
             Some(string) => string,
             None => panic!("organization authentication response access token not found"),
         };
-        ident.set_bearer_token(&app_access_token);
+        ident.set_bearer_token(&org_access_token);
 
         let another_user_params = json!({
             "first_name": FirstName().fake::<String>(),
@@ -2088,8 +2088,102 @@ mod tests {
     // #[tokio::test]
     // async fn delete_token() {}
 
-    // #[tokio::test]
-    // async fn create_invitation() {}
+    #[tokio::test]
+    async fn create_invitation() {
+        let authentication_res_body = generate_new_user_and_token().await;
+        let access_token = match authentication_res_body.token.access_token {
+            Some(string) => string,
+            None => panic!("authentication response access token not found"),
+        };
+
+        let mut ident: ApiClient = Ident::factory(&access_token);
+
+        let create_application_body =
+            generate_new_application(&ident, &authentication_res_body.user.id).await;
+
+        let application_authorization_params = json!({
+            "application_id": create_application_body.id,
+            "scope": "offline_access"
+        });
+        let application_authorization_res = ident
+            .application_authorization(Some(application_authorization_params))
+            .await
+            .expect("application authorization response");
+        assert_eq!(application_authorization_res.status(), 201);
+
+        let application_authorization_body = application_authorization_res
+            .json::<Token>()
+            .await
+            .expect("organization authorization body");
+        let app_access_token = match application_authorization_body.access_token {
+            Some(string) => string,
+            None => panic!("application authentication response access token not found"),
+        };
+        ident.set_bearer_token(&app_access_token);
+
+        let create_organization_body =
+            generate_organization(&ident, &authentication_res_body.user.id).await;
+
+        let associate_application_org_params = json!({
+            "organization_id": &create_organization_body.id,
+        });
+
+        let associate_application_org_res = ident
+            .create_application_organization(
+                &create_application_body.id,
+                Some(associate_application_org_params),
+            )
+            .await
+            .expect("associate application user response");
+        assert_eq!(associate_application_org_res.status(), 204);
+
+        let organization_authorization_params = json!({
+            "organization_id": &create_organization_body.id,
+            "scope": "offline_access",
+        });
+
+        let organization_authorization_res = ident
+            .organization_authorization(Some(organization_authorization_params))
+            .await
+            .expect("organization authorization response");
+        assert_eq!(organization_authorization_res.status(), 201);
+
+        let organization_authorization_body = organization_authorization_res
+            .json::<Token>()
+            .await
+            .expect("organization authoziation body");
+        ident.set_bearer_token(&organization_authorization_body.access_token.unwrap());
+
+        let name = Name().fake::<String>();
+        let invite_first_name = FirstName().fake::<String>();
+        let invite_last_name = LastName().fake::<String>();
+        let invite_email = FreeEmail().fake::<String>();
+
+        let create_invitation_params = json!({
+            "application_id": &create_application_body.id,
+            "user_id": &authentication_res_body.user.id,
+            "first_name": &invite_first_name,
+            "last_name": &invite_last_name,
+            "email": &invite_email,
+            "organization_id": &create_organization_body.id,
+            "organization_name": &create_organization_body.name,
+            "permissions": 415,
+            "name": &name,
+            "invitor_name": &name,
+        });
+
+        let create_invitation_res = ident
+            .create_invitation(Some(create_invitation_params))
+            .await
+            .expect("create invitation response");
+        assert_eq!(create_invitation_res.status(), 204);
+
+        let fetch_organization_invitations_res = ident
+            .fetch_organization_invitations(&create_organization_body.id)
+            .await
+            .expect("fetch organization invitations response");
+        assert_eq!(fetch_organization_invitations_res.status(), 200);
+    }
 }
 
 // TODO

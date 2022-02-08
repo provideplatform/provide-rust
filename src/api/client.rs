@@ -1,5 +1,8 @@
 pub use crate::models::client::{ApiClient, Params, Response};
-use reqwest::{Client, header::{HeaderMap, HeaderValue, HeaderName, AUTHORIZATION, CONTENT_TYPE, USER_AGENT}};
+use reqwest::{
+    header::{HeaderMap, HeaderName, HeaderValue, AUTHORIZATION, CONTENT_TYPE, USER_AGENT},
+    Client,
+};
 
 const DEFAULT_API_USER_AGENT: &str = "provide-rust client library";
 
@@ -105,10 +108,7 @@ impl ApiClient {
         let mut headers = HeaderMap::new();
 
         if method == "POST" || method == "PUT" || method == "PATCH" {
-            headers.insert(
-                CONTENT_TYPE,
-                HeaderValue::from_static("application/json"),
-            );
+            headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
         }
 
         headers.insert(
@@ -121,10 +121,7 @@ impl ApiClient {
 
         if self.token != "" {
             let auth = format!("bearer {}", self.token);
-            headers.insert(
-                AUTHORIZATION,
-                HeaderValue::from_str(&auth).expect("token"),
-            );
+            headers.insert(AUTHORIZATION, HeaderValue::from_str(&auth).expect("token"));
         }
 
         for (key, value) in additional_headers {
