@@ -18,16 +18,16 @@ use serde_json::Value;
 // 	r#type: Option<String>,
 // }
 
-// pub struct Config {
-// 	counterparties: Option<Vec<Participant>>,
-// 	env: Value,
-// 	errors: Value,
-// 	network_id: Option<String>,
-// 	organization_address: Option<String>,
-// 	organization_id: Option<String>,
-// 	organization_refresh_token: Option<String>,
-// 	registry_contract_address: Option<String>,
-// }
+#[derive(Serialize, Deserialize, Debug, Default, Clone)]
+pub struct Config {
+    env: Option<Value>,
+    pub network_id: Option<String>,
+    organization_address: Option<String>,
+    pub organization_id: Option<String>,
+    pub workgroup_id: Option<String>,
+    organization_refresh_token: Option<String>,
+    registry_contract_address: Option<String>,
+}
 
 // pub struct VerifiableCredential {
 //     credential: Option<String>,
