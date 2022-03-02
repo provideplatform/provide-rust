@@ -750,6 +750,8 @@ mod tests {
         // json config file
         // TODO: refactor to use memory
         let json_config_params = json!({
+            "user_email": &user_email,
+            "user_password": &user_password,
             "user_id": &authentication_res_body.user.id,
             "user_access_token": &user_access_token,
             "user_refresh_token": &user_refresh_token,
@@ -2474,18 +2476,7 @@ mod tests {
             .await
             .expect("fetch workflow instance worksteps body");
 
-        let get_prototype_workflow_res = baseline
-            .get_workflow(&create_workflow_body.id)
-            .await
-            .expect("get prototype workflow response");
-        assert_eq!(get_prototype_workflow_res.status(), 200);
-
-        let get_prototype_workflow_body = get_prototype_workflow_res
-            .json::<Workflow>()
-            .await
-            .expect("get prototype workflow body");
-
-        let worksteps_count = get_prototype_workflow_body.worksteps_count.unwrap();
+        let worksteps_count = create_workflow_instance_body.worksteps_count.unwrap();
         assert_eq!(
             fetch_workflow_instance_worksteps_body.len(),
             worksteps_count as usize
