@@ -868,6 +868,7 @@ mod tests {
                 "native_currency": "TEST",
                 "network_id": 1618585621,
                 "platform": "evm",
+                "layer2": false,
                 "protocol_id": "pow"
             }
         }));
@@ -876,7 +877,7 @@ mod tests {
             .create_network(create_network_params)
             .await
             .expect("create network response");
-        assert_eq!(create_network_res.status(), 201);
+        assert_eq!(create_network_res.status(), 201, "create network res: {}", serde_json::to_string_pretty(&create_network_res.json::<serde_json::Value>().await.unwrap()).unwrap());
     }
 
     #[tokio::test]
@@ -925,6 +926,7 @@ mod tests {
                 "native_currency": "TEST",
                 "network_id": 1618585621,
                 "platform": "evm",
+                "layer2": false,
                 "protocol_id": "pow"
             }
         }));
@@ -997,6 +999,7 @@ mod tests {
                 "native_currency": "TEST",
                 "network_id": 1618585621,
                 "platform": "evm",
+                "layer2": false,
                 "protocol_id": "pow"
             }
         }));
