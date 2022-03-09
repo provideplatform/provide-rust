@@ -1,7 +1,5 @@
 #!/bin/bash
 
-trap handle_shutdown INT
-
 # WARNING-- the bounce_docker command below will do some potentially unwanted
 # things in your local environment!!!
 #
@@ -43,6 +41,9 @@ trap handle_shutdown INT
 # out to be quite robust! :D
 #
 # Ahhhh... software! ....... 0_o
+
+trap handle_shutdown INT
+
 bounce_docker() {
     # FIXME-- make sure $(which docker) is a thing...
 
@@ -71,7 +72,7 @@ handle_shutdown() {
     docker-compose -f ./ops/docker-compose.yml down
     docker volume rm ops_provide-db
 
-    if [[ "$INVOKE_PRVD_CLI" == "true" && ("$SUITE" == "" || "$SUITE" == "baseline") ]]; then
+    if [[ "$INVOKE_PRVD_CLI" == "true" && ("$SUITE" == "*" || "$SUITE" == "baseline") ]]; then
         if [[ -f ".test-config.tmp.json" ]]; then
             prvd baseline stack stop --name $(jq '.org_name' .test-config.tmp.json | xargs)
             rm .local-baseline-test-config.tmp.yaml
@@ -116,7 +117,6 @@ wait_for_privacy_container() {
         sleep 1
     done
     echo "privacy api container is ready"
-
 }
 
 wait_for_nchain_container() {
@@ -135,6 +135,7 @@ wait_for_nchain_container() {
 if [[ "$SUITE" != "" ]]; then
     echo "Running tests for $SUITE..."
 else
+    SUITE="*"
     echo "No SUITE set. Running all tests..."
 fi
 
@@ -148,18 +149,13 @@ if [[ $* == *--without-prvd-invocation* ]]; then
     INVOKE_PRVD_CLI=false
 fi
 
-if [[ "$INVOKE_PRVD_CLI" == "true" ]]; then
+if [[ $* == *--bounce-docker* ]]; then
     bounce_docker
 fi
 
 BASELINE_REGISTRY_CONTRACT_ADDRESS=0x
 if [[ $* == *--with-registry-contract-address* ]]; then
     BASELINE_REGISTRY_CONTRACT_ADDRESS=0xCecCb4eA6B06F8990A305cafd1a9B43a9eF9c689
-fi
-
-SKIP_SETUP=
-if [[ $* == *--skip-setup* ]]; then
-    SKIP_SETUP=true
 fi
 
 if [[ $* != *--skip-startup* ]]; then
@@ -172,8 +168,25 @@ if [[ $* != *--skip-startup* ]]; then
     wait_for_nchain_container
 fi
 
-SKIP_SETUP=$SKIP_SETUP \
-BASELINE_REGISTRY_CONTRACT_ADDRESS=$BASELINE_REGISTRY_CONTRACT_ADDRESS \
+
+if [[ $* != *--skip-setup* ]]; then
+    BASELINE_REGISTRY_CONTRACT_ADDRESS=$BASELINE_REGISTRY_CONTRACT_ADDRESS \
+    INVOKE_PRVD_CLI=$INVOKE_PRVD_CLI \
+    IDENT_API_HOST=localhost:8081 \
+    IDENT_API_SCHEME=http \
+    VAULT_API_HOST=localhost:8082 \
+    VAULT_API_SCHEME=http \
+    PRIVACY_API_HOST=localhost:8083 \
+    PRIVACY_API_SCHEME=http \
+    NCHAIN_API_HOST=localhost:8084 \
+    NCHAIN_API_SCHEME=http \
+    BASELINE_API_HOST=localhost:8085 \
+    BASELINE_API_SCHEME=http \
+    cargo nextest run --retries 3 --run-ignored ignored-only
+
+    printf "Successfully configured local baseline suite; running tests...\n"
+fi
+
 IDENT_API_HOST=localhost:8081 \
 IDENT_API_SCHEME=http \
 VAULT_API_HOST=localhost:8082 \
@@ -184,17 +197,13 @@ NCHAIN_API_HOST=localhost:8084 \
 NCHAIN_API_SCHEME=http \
 BASELINE_API_HOST=localhost:8085 \
 BASELINE_API_SCHEME=http \
-INVOKE_PRVD_CLI=$INVOKE_PRVD_CLI \
-cargo test $SUITE -- --test-threads=1 --show-output
+cargo nextest run --no-fail-fast --test "$SUITE" --failure-output immediate-final
 
 if [[ $* != *--skip-shutdown* ]]; then
     handle_shutdown
 fi
 
-# TODO-- make parallel test harness work, add --parallel flag
-
-# add nextest
-# dont' call bounce_docker by default
 # failing ident, nchain, update config in baseline tests
-# create run_baseline_setup script to replace _setup test in baseline suite
 # doctest ??
+# cli prompt for tests with --ci flag to disable
+# hide redundant stdout

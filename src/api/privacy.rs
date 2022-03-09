@@ -62,5 +62,3 @@ impl Privacy for ApiClient {
         return self.get(&uri, None, None, None).await;
     }
 }
-
-
