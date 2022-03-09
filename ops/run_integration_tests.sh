@@ -192,3 +192,9 @@ if [[ $* != *--skip-shutdown* ]]; then
 fi
 
 # TODO-- make parallel test harness work, add --parallel flag
+
+# add nextest
+# dont' call bounce_docker by default
+# failing ident, nchain, update config in baseline tests
+# create run_baseline_setup script to replace _setup test in baseline suite
+# doctest ??
