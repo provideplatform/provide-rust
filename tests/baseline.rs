@@ -1216,7 +1216,28 @@ async fn get_mappings() {
     let baseline: ApiClient = Baseline::factory(&org_access_token);
 
     let get_mappings_res = baseline
-        .get_mappings()
+        .get_mappings(None)
+        .await
+        .expect("get mappings response");
+    assert_eq!(get_mappings_res.status(), 200);
+}
+
+#[tokio::test]
+async fn get_mappings_by_workgroup() {
+    let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
+    let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
+
+    let org_access_token_json = config_vals["org_access_token"].to_string();
+    let org_access_token =
+        serde_json::from_str::<String>(&org_access_token_json).expect("organzation access token");
+
+    let app_id_json = config_vals["app_id"].to_string();
+    let app_id = serde_json::from_str::<String>(&app_id_json).expect("application id");
+
+    let baseline: ApiClient = Baseline::factory(&org_access_token);
+
+    let get_mappings_res = baseline
+        .get_mappings(Some(vec![("workgroup_id".to_string(), app_id)]))
         .await
         .expect("get mappings response");
     assert_eq!(get_mappings_res.status(), 200);

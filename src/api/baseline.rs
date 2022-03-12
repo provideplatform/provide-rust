@@ -43,7 +43,7 @@ pub trait Baseline {
         params: Params,
     ) -> Response;
 
-    async fn get_mappings(&self) -> Response;
+    async fn get_mappings(&self, query_params: Option<Vec<(String, String)>>) -> Response;
 
     async fn create_mapping(&self, params: Params) -> Response;
 
@@ -194,8 +194,8 @@ impl Baseline for ApiClient {
         return self.put(&uri, params, None).await;
     }
 
-    async fn get_mappings(&self) -> Response {
-        return self.get("mappings", None, None, None).await;
+    async fn get_mappings(&self, query_params: Option<Vec<(String, String)>>) -> Response {
+        return self.get("mappings", None, None, query_params).await;
     }
 
     async fn create_mapping(&self, params: Params) -> Response {
