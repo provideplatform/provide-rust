@@ -567,11 +567,6 @@ async fn setup() {
 }
 
 #[tokio::test]
-async fn create_subject_account() {
-    setup();
-}
-
-#[tokio::test]
 async fn create_subject_account_fail_with_existing_account() {
     let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
     let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
