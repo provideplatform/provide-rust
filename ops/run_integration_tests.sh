@@ -134,9 +134,17 @@ wait_for_nchain_container() {
 # SUITE = ident, baseline, vault, etc
 if [[ "$SUITE" != "" ]]; then
     echo "Running tests for $SUITE..."
+    TEST=
+
+# TEST = deploy_workflow, create_application, etc
+elif [[ "$TEST" != "" ]]; then
+    echo "Testing $TEST..."
+    SUITE=
+
 else
     SUITE="*"
-    echo "No SUITE set. Running all tests..."
+    TEST=
+    echo "No SUITE or TEST set. Running all tests..."
 fi
 
 if [[ $* == *--log-docker-info* ]]; then
@@ -168,7 +176,7 @@ if [[ $* != *--skip-startup* ]]; then
     wait_for_nchain_container
 fi
 
-
+# should selectively run this if SUITE or TEST is baseline-related, not only if --skip-setup is provided
 if [[ $* != *--skip-setup* ]]; then
     BASELINE_REGISTRY_CONTRACT_ADDRESS=$BASELINE_REGISTRY_CONTRACT_ADDRESS \
     INVOKE_PRVD_CLI=$INVOKE_PRVD_CLI \
@@ -197,7 +205,7 @@ NCHAIN_API_HOST=localhost:8084 \
 NCHAIN_API_SCHEME=http \
 BASELINE_API_HOST=localhost:8085 \
 BASELINE_API_SCHEME=http \
-cargo nextest run --no-fail-fast --test "$SUITE" --failure-output immediate-final
+cargo nextest run $([[ -n "$TEST" ]] && echo "$TEST" || echo --test "$SUITE") --no-fail-fast --failure-output immediate-final
 
 if [[ $* != *--skip-shutdown* ]]; then
     handle_shutdown
@@ -207,3 +215,6 @@ fi
 # doctest ??
 # cli prompt for tests with --ci flag to disable
 # hide redundant stdout
+
+# timeouts where relevant?
+# adding option to handle_shutdown that only shuts down tests if --skip-shutdown wasn't provided
