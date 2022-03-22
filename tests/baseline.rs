@@ -567,6 +567,11 @@ async fn setup() {
 }
 
 #[tokio::test]
+async fn create_subject_account() {
+    setup();
+}
+
+#[tokio::test]
 async fn create_subject_account_fail_with_existing_account() {
     let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
     let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
@@ -606,6 +611,313 @@ async fn create_subject_account_fail_with_existing_account() {
         .await
         .expect("create subject account response");
     assert_eq!(create_subject_account_res.status(), 409, "create subject account fail res: {}", serde_json::to_string_pretty(&create_subject_account_res.json::<Value>().await.unwrap()).unwrap());
+}
+
+#[tokio::test]
+async fn create_subject_account_fail_without_workgroup_id() {
+    let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
+    let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
+
+    let org_access_token_json = config_vals["org_access_token"].to_string();
+    let org_access_token =
+        serde_json::from_str::<String>(&org_access_token_json).expect("organzation access token");
+
+    let baseline: ApiClient = Baseline::factory(&org_access_token);
+
+    let org_refresh_token_json = config_vals["org_refresh_token"].to_string();
+    let org_refresh_token =
+        serde_json::from_str::<String>(&org_refresh_token_json).expect("organzation refresh token");
+
+    let org_id_json = config_vals["org_id"].to_string();
+    let org_id = serde_json::from_str::<String>(&org_id_json).expect("organization id");
+
+    let registry_contract_address_json = config_vals["registry_contract_address"].to_string();
+    let registry_contract_address = serde_json::from_str::<String>(&registry_contract_address_json).expect("registry contract address");
+
+    let create_subject_account_params = json!({
+        "metadata": {
+            "network_id": ROPSTEN_NETWORK_ID,
+            "organization_address": &registry_contract_address,
+            "organization_id": &org_id,
+            "organization_refresh_token": &org_refresh_token,
+            "registry_contract_address": &registry_contract_address,
+        }
+    });
+
+    let create_subject_account_res = baseline
+        .create_subject_account(&org_id, Some(create_subject_account_params))
+        .await
+        .expect("create subject account response");
+    assert_eq!(create_subject_account_res.status(), 422);
+}
+
+#[tokio::test]
+async fn create_subject_account_fail_without_network_id() {
+    let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
+    let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
+
+    let org_access_token_json = config_vals["org_access_token"].to_string();
+    let org_access_token =
+        serde_json::from_str::<String>(&org_access_token_json).expect("organzation access token");
+
+    let baseline: ApiClient = Baseline::factory(&org_access_token);
+
+    let org_refresh_token_json = config_vals["org_refresh_token"].to_string();
+    let org_refresh_token =
+        serde_json::from_str::<String>(&org_refresh_token_json).expect("organzation refresh token");
+
+    let org_id_json = config_vals["org_id"].to_string();
+    let org_id = serde_json::from_str::<String>(&org_id_json).expect("organization id");
+
+    let app_id_json = config_vals["app_id"].to_string();
+    let app_id = serde_json::from_str::<String>(&app_id_json).expect("application id");
+
+    let registry_contract_address_json = config_vals["registry_contract_address"].to_string();
+    let registry_contract_address = serde_json::from_str::<String>(&registry_contract_address_json).expect("registry contract address");
+
+    let create_subject_account_params = json!({
+        "metadata": {
+            "organization_address": &registry_contract_address,
+            "organization_id": &org_id,
+            "organization_refresh_token": &org_refresh_token,
+            "registry_contract_address": &registry_contract_address,
+            "workgroup_id": &app_id,
+        }
+    });
+
+    let create_subject_account_res = baseline
+        .create_subject_account(&org_id, Some(create_subject_account_params))
+        .await
+        .expect("create subject account response");
+    assert_eq!(create_subject_account_res.status(), 422);
+}
+
+#[tokio::test]
+async fn create_subject_account_fail_without_organization_refresh_token() {
+    let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
+    let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
+
+    let org_access_token_json = config_vals["org_access_token"].to_string();
+    let org_access_token =
+        serde_json::from_str::<String>(&org_access_token_json).expect("organzation access token");
+
+    let baseline: ApiClient = Baseline::factory(&org_access_token);
+
+    let org_id_json = config_vals["org_id"].to_string();
+    let org_id = serde_json::from_str::<String>(&org_id_json).expect("organization id");
+
+    let app_id_json = config_vals["app_id"].to_string();
+    let app_id = serde_json::from_str::<String>(&app_id_json).expect("application id");
+
+    let registry_contract_address_json = config_vals["registry_contract_address"].to_string();
+    let registry_contract_address = serde_json::from_str::<String>(&registry_contract_address_json).expect("registry contract address");
+
+    let create_subject_account_params = json!({
+        "metadata": {
+            "network_id": ROPSTEN_NETWORK_ID,
+            "organization_address": &registry_contract_address,
+            "organization_id": &org_id,
+            "registry_contract_address": &registry_contract_address,
+            "workgroup_id": &app_id,
+        }
+    });
+
+    let create_subject_account_res = baseline
+        .create_subject_account(&org_id, Some(create_subject_account_params))
+        .await
+        .expect("create subject account response");
+    assert_eq!(create_subject_account_res.status(), 422);
+}
+
+#[tokio::test]
+async fn create_subject_account_fail_without_registry_contract_address() {
+    let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
+    let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
+
+    let org_access_token_json = config_vals["org_access_token"].to_string();
+    let org_access_token =
+        serde_json::from_str::<String>(&org_access_token_json).expect("organzation access token");
+
+    let baseline: ApiClient = Baseline::factory(&org_access_token);
+
+    let org_refresh_token_json = config_vals["org_refresh_token"].to_string();
+    let org_refresh_token =
+        serde_json::from_str::<String>(&org_refresh_token_json).expect("organzation refresh token");
+
+    let org_id_json = config_vals["org_id"].to_string();
+    let org_id = serde_json::from_str::<String>(&org_id_json).expect("organization id");
+
+    let app_id_json = config_vals["app_id"].to_string();
+    let app_id = serde_json::from_str::<String>(&app_id_json).expect("application id");
+
+    let registry_contract_address_json = config_vals["registry_contract_address"].to_string();
+    let registry_contract_address = serde_json::from_str::<String>(&registry_contract_address_json).expect("registry contract address");
+
+    let create_subject_account_params = json!({
+        "metadata": {
+            "network_id": ROPSTEN_NETWORK_ID,
+            "organization_address": &registry_contract_address,
+            "organization_id": &org_id,
+            "organization_refresh_token": &org_refresh_token,
+            "workgroup_id": &app_id,
+        }
+    });
+
+    let create_subject_account_res = baseline
+        .create_subject_account(&org_id, Some(create_subject_account_params))
+        .await
+        .expect("create subject account response");
+    assert_eq!(create_subject_account_res.status(), 422);
+}
+
+#[tokio::test]
+async fn create_subject_account_fail_without_organization_address() {
+    let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
+    let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
+
+    let org_access_token_json = config_vals["org_access_token"].to_string();
+    let org_access_token =
+        serde_json::from_str::<String>(&org_access_token_json).expect("organzation access token");
+
+    let baseline: ApiClient = Baseline::factory(&org_access_token);
+
+    let org_refresh_token_json = config_vals["org_refresh_token"].to_string();
+    let org_refresh_token =
+        serde_json::from_str::<String>(&org_refresh_token_json).expect("organzation refresh token");
+
+    let org_id_json = config_vals["org_id"].to_string();
+    let org_id = serde_json::from_str::<String>(&org_id_json).expect("organization id");
+
+    let app_id_json = config_vals["app_id"].to_string();
+    let app_id = serde_json::from_str::<String>(&app_id_json).expect("application id");
+
+    let registry_contract_address_json = config_vals["registry_contract_address"].to_string();
+    let registry_contract_address = serde_json::from_str::<String>(&registry_contract_address_json).expect("registry contract address");
+
+    let create_subject_account_params = json!({
+        "metadata": {
+            "network_id": ROPSTEN_NETWORK_ID,
+            "organization_id": &org_id,
+            "organization_refresh_token": &org_refresh_token,
+            "registry_contract_address": &registry_contract_address,
+            "workgroup_id": &app_id,
+        }
+    });
+
+    let create_subject_account_res = baseline
+        .create_subject_account(&org_id, Some(create_subject_account_params))
+        .await
+        .expect("create subject account response");
+    assert_eq!(create_subject_account_res.status(), 422);
+}
+
+#[tokio::test]
+async fn create_subject_account_fail_without_metadata() {
+    let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
+    let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
+
+    let org_access_token_json = config_vals["org_access_token"].to_string();
+    let org_access_token =
+        serde_json::from_str::<String>(&org_access_token_json).expect("organzation access token");
+
+    let baseline: ApiClient = Baseline::factory(&org_access_token);
+
+    let org_id_json = config_vals["org_id"].to_string();
+    let org_id = serde_json::from_str::<String>(&org_id_json).expect("organization id");
+
+    let create_subject_account_params = json!({});
+
+    let create_subject_account_res = baseline
+        .create_subject_account(&org_id, Some(create_subject_account_params))
+        .await
+        .expect("create subject account response");
+    assert_eq!(create_subject_account_res.status(), 422);
+}
+
+#[tokio::test]
+async fn create_subject_account_fail_with_id() {
+    let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
+    let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
+
+    let org_access_token_json = config_vals["org_access_token"].to_string();
+    let org_access_token =
+        serde_json::from_str::<String>(&org_access_token_json).expect("organzation access token");
+
+    let baseline: ApiClient = Baseline::factory(&org_access_token);
+
+    let org_refresh_token_json = config_vals["org_refresh_token"].to_string();
+    let org_refresh_token =
+        serde_json::from_str::<String>(&org_refresh_token_json).expect("organzation refresh token");
+
+    let org_id_json = config_vals["org_id"].to_string();
+    let org_id = serde_json::from_str::<String>(&org_id_json).expect("organization id");
+
+    let app_id_json = config_vals["app_id"].to_string();
+    let app_id = serde_json::from_str::<String>(&app_id_json).expect("application id");
+
+    let registry_contract_address_json = config_vals["registry_contract_address"].to_string();
+    let registry_contract_address = serde_json::from_str::<String>(&registry_contract_address_json).expect("registry contract address");
+
+    let create_subject_account_params = json!({
+        "id": &org_id,
+        "metadata": {
+            "network_id": ROPSTEN_NETWORK_ID,
+            "organization_address": &registry_contract_address,
+            "organization_id": &org_id,
+            "organization_refresh_token": &org_refresh_token,
+            "registry_contract_address": &registry_contract_address,
+            "workgroup_id": &app_id,
+        }
+    });
+
+    let create_subject_account_res = baseline
+        .create_subject_account(&org_id, Some(create_subject_account_params))
+        .await
+        .expect("create subject account response");
+    assert_eq!(create_subject_account_res.status(), 422);
+}
+
+#[tokio::test]
+async fn create_subject_account_fail_with_incorrect_subject_id() {
+    let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
+    let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
+
+    let org_access_token_json = config_vals["org_access_token"].to_string();
+    let org_access_token =
+        serde_json::from_str::<String>(&org_access_token_json).expect("organzation access token");
+
+    let baseline: ApiClient = Baseline::factory(&org_access_token);
+
+    let org_refresh_token_json = config_vals["org_refresh_token"].to_string();
+    let org_refresh_token =
+        serde_json::from_str::<String>(&org_refresh_token_json).expect("organzation refresh token");
+
+    let org_id_json = config_vals["org_id"].to_string();
+    let org_id = serde_json::from_str::<String>(&org_id_json).expect("organization id");
+
+    let app_id_json = config_vals["app_id"].to_string();
+    let app_id = serde_json::from_str::<String>(&app_id_json).expect("application id");
+
+    let registry_contract_address_json = config_vals["registry_contract_address"].to_string();
+    let registry_contract_address = serde_json::from_str::<String>(&registry_contract_address_json).expect("registry contract address");
+
+    let create_subject_account_params = json!({
+        "id": &org_id,
+        "metadata": {
+            "network_id": ROPSTEN_NETWORK_ID,
+            "organization_address": &registry_contract_address,
+            "organization_id": &org_id,
+            "organization_refresh_token": &org_refresh_token,
+            "registry_contract_address": &registry_contract_address,
+            "workgroup_id": &app_id,
+        }
+    });
+
+    let create_subject_account_res = baseline
+        .create_subject_account(&app_id, Some(create_subject_account_params))
+        .await
+        .expect("create subject account response");
+    assert_eq!(create_subject_account_res.status(), 403);
 }
 
 // #[tokio::test]

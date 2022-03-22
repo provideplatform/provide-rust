@@ -176,7 +176,7 @@ if [[ $* != *--skip-startup* ]]; then
     wait_for_nchain_container
 fi
 
-# should selectively run this if SUITE or TEST is baseline-related, not only if --skip-setup is provided
+# should selectively run this if SUITE or TEST is baseline-related, not only if --skip-setup is provided; should prolly be --with-baseline-setup flag instead anyways
 if [[ $* != *--skip-setup* ]]; then
     BASELINE_REGISTRY_CONTRACT_ADDRESS=$BASELINE_REGISTRY_CONTRACT_ADDRESS \
     INVOKE_PRVD_CLI=$INVOKE_PRVD_CLI \
