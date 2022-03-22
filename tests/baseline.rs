@@ -396,6 +396,7 @@ async fn setup() {
         "user_refresh_token": &user_refresh_token,
         "org_access_token": &org_access_token,
         "org_refresh_token": &org_refresh_token,
+        "registry_contract_address": &registry_contract_address,
         "org_id": &create_organization_body.id,
         "org_name": &create_organization_body.name,
         "app_access_token": &app_access_token,
@@ -546,31 +547,39 @@ async fn setup() {
         let seconds = time::Duration::from_secs(10);
         std::thread::sleep(seconds);
 
-        let update_config_params = json!({
-            "network_id": ROPSTEN_NETWORK_ID,
-            "organization_address": &registry_contract_address,
-            "organization_id": &create_organization_body.id,
-            "organization_refresh_token": &org_refresh_token,
-            "registry_contract_address": &registry_contract_address,
-            "workgroup_id": &create_application_body.id,
+        let create_subject_account_params = json!({
+            "metadata": {
+                "network_id": ROPSTEN_NETWORK_ID,
+                "organization_address": &registry_contract_address,
+                "organization_id": &create_organization_body.id,
+                "organization_refresh_token": &org_refresh_token,
+                "registry_contract_address": &registry_contract_address,
+                "workgroup_id": &create_application_body.id,
+            }
         });
 
-        let update_config_res = baseline
-            .update_config(Some(update_config_params))
+        let create_subject_account_res = baseline
+            .create_subject_account(&create_organization_body.id, Some(create_subject_account_params))
             .await
-            .expect("update config response");
-        assert_eq!(update_config_res.status(), 204);
+            .expect("create subject account response");
+        assert_eq!(create_subject_account_res.status(), 201, "create subject account res: {}", serde_json::to_string_pretty(&create_subject_account_res.json::<Value>().await.unwrap()).unwrap());
     }
 }
 
 #[tokio::test]
-async fn get_config() {
+async fn create_subject_account_fail_with_existing_account() {
     let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
     let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
 
     let org_access_token_json = config_vals["org_access_token"].to_string();
     let org_access_token =
         serde_json::from_str::<String>(&org_access_token_json).expect("organzation access token");
+
+    let baseline: ApiClient = Baseline::factory(&org_access_token);
+
+    let org_refresh_token_json = config_vals["org_refresh_token"].to_string();
+    let org_refresh_token =
+        serde_json::from_str::<String>(&org_refresh_token_json).expect("organzation refresh token");
 
     let org_id_json = config_vals["org_id"].to_string();
     let org_id = serde_json::from_str::<String>(&org_id_json).expect("organization id");
@@ -578,247 +587,25 @@ async fn get_config() {
     let app_id_json = config_vals["app_id"].to_string();
     let app_id = serde_json::from_str::<String>(&app_id_json).expect("application id");
 
-    let baseline: ApiClient = Baseline::factory(&org_access_token);
+    let registry_contract_address_json = config_vals["registry_contract_address"].to_string();
+    let registry_contract_address = serde_json::from_str::<String>(&registry_contract_address_json).expect("registry contract address");
 
-    let get_config_res = baseline.get_config().await.expect("get config response");
-    assert_eq!(get_config_res.status(), 200);
-
-    let get_config_body = get_config_res
-        .json::<Config>()
-        .await
-        .expect("get config body");
-
-    assert_eq!(
-        &get_config_body.network_id.unwrap_or(String::from("")),
-        ROPSTEN_NETWORK_ID
-    );
-    assert_eq!(
-        &get_config_body.organization_id.unwrap_or(String::from("")),
-        &org_id
-    );
-    assert_eq!(
-        &get_config_body.workgroup_id.unwrap_or(String::from("")),
-        &app_id
-    );
-}
-
-#[tokio::test]
-async fn update_config() {
-    let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
-    let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
-
-    let org_access_token_json = config_vals["org_access_token"].to_string();
-    let org_access_token =
-        serde_json::from_str::<String>(&org_access_token_json).expect("organzation access token");
-
-    let mut ident: ApiClient = Ident::factory(&org_access_token);
-
-    let user_id_json = config_vals["user_id"].to_string();
-    let user_id = serde_json::from_str::<String>(&user_id_json).expect("user id");
-
-    let create_new_organization_params = Some(json!({
-        "name": format!("{} organization", Name().fake::<String>()),
-        "description": "Organization for testing",
-        "user_id": &user_id,
-    }));
-
-    let create_new_organization_res = ident
-        .create_organization(create_new_organization_params)
-        .await
-        .expect("create organization response");
-    assert_eq!(create_new_organization_res.status(), 201);
-
-    let create_new_organization_body = create_new_organization_res
-        .json::<Organization>()
-        .await
-        .expect("create new organization body");
-
-    let create_organization_token_params = json!({
-        "organization_id": &create_new_organization_body.id,
-        "scope": "offline_access",
+    let create_subject_account_params = json!({
+        "metadata": {
+            "network_id": ROPSTEN_NETWORK_ID,
+            "organization_address": &registry_contract_address,
+            "organization_id": &org_id,
+            "organization_refresh_token": &org_refresh_token,
+            "registry_contract_address": &registry_contract_address,
+            "workgroup_id": &app_id,
+        }
     });
 
-    let create_organization_token_res = ident
-        .organization_authorization(Some(create_organization_token_params))
+    let create_subject_account_res = baseline
+        .create_subject_account(&org_id, Some(create_subject_account_params))
         .await
-        .expect("create organization token response");
-    assert_eq!(create_organization_token_res.status(), 201);
-
-    let create_organization_token_body = create_organization_token_res
-        .json::<Token>()
-        .await
-        .expect("create organization token body");
-
-    let new_org_access_token = create_organization_token_body.access_token.unwrap();
-    ident.set_bearer_token(&new_org_access_token);
-
-    let create_new_workgroup_params = json!({
-        "network_id": ROPSTEN_NETWORK_ID,
-        "user_id": &user_id,
-        "name": format!("{} application", Name().fake::<String>()),
-        "description": "Some application description",
-        "type": "baseline",
-        "hidden": false,
-    });
-
-    let create_new_workgroup_res = ident
-        .create_application(Some(create_new_workgroup_params))
-        .await
-        .expect("create application response");
-    assert_eq!(create_new_workgroup_res.status(), 201);
-
-    let create_new_workgroup_body = create_new_workgroup_res
-        .json::<Application>()
-        .await
-        .expect("create application body");
-
-    let mut baseline: ApiClient = Baseline::factory(&org_access_token);
-
-    let update_config_params = json!({
-        "organization_id": &create_new_organization_body.id,
-        "workgroup_id": &create_new_workgroup_body.id,
-        "organization_refresh_token": &create_organization_token_body.refresh_token.unwrap(),
-    });
-
-    let update_config_res = baseline
-        .update_config(Some(update_config_params))
-        .await
-        .expect("update config response");
-    assert_eq!(update_config_res.status(), 204);
-
-    baseline.set_bearer_token(&new_org_access_token);
-
-    let get_updated_config_res = baseline
-        .get_config()
-        .await
-        .expect("get updated config response");
-    assert_eq!(get_updated_config_res.status(), 200);
-
-    let get_updated_config_body = get_updated_config_res
-        .json::<Config>()
-        .await
-        .expect("get updated config body");
-
-    assert_eq!(
-        &get_updated_config_body
-            .organization_id
-            .unwrap_or(String::from("")),
-        &create_new_organization_body.id
-    );
-    assert_eq!(
-        &get_updated_config_body
-            .workgroup_id
-            .unwrap_or(String::from("")),
-        &create_new_workgroup_body.id
-    );
-
-    // revert to original config
-    let org_id_json = config_vals["org_id"].to_string();
-    let org_id = serde_json::from_str::<String>(&org_id_json).expect("organzation id");
-
-    let org_refresh_token_json = config_vals["org_refresh_token"].to_string();
-    let org_refresh_token =
-        serde_json::from_str::<String>(&org_refresh_token_json).expect("organzation refresh token");
-
-    let app_id_json = config_vals["app_id"].to_string();
-    let app_id = serde_json::from_str::<String>(&app_id_json).expect("application id");
-
-    let original_config_params = json!({
-        "organization_id": &org_id,
-        "workgroup_id": &app_id,
-        "organization_refresh_token": &org_refresh_token,
-    });
-
-    let orginal_config_res = baseline
-        .update_config(Some(original_config_params))
-        .await
-        .expect("update config response");
-    assert_eq!(orginal_config_res.status(), 204);
-}
-
-#[tokio::test]
-async fn update_config_fail_with_new_access() {
-    let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
-    let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
-
-    let org_access_token_json = config_vals["org_access_token"].to_string();
-    let org_access_token =
-        serde_json::from_str::<String>(&org_access_token_json).expect("organzation access token");
-
-    let mut ident: ApiClient = Ident::factory(&org_access_token);
-
-    let user_id_json = config_vals["user_id"].to_string();
-    let user_id = serde_json::from_str::<String>(&user_id_json).expect("user id");
-
-    let create_new_organization_params = Some(json!({
-        "name": format!("{} organization", Name().fake::<String>()),
-        "description": "Organization for testing",
-        "user_id": &user_id,
-    }));
-
-    let create_new_organization_res = ident
-        .create_organization(create_new_organization_params)
-        .await
-        .expect("create organization response");
-    assert_eq!(create_new_organization_res.status(), 201);
-
-    let create_new_organization_body = create_new_organization_res
-        .json::<Organization>()
-        .await
-        .expect("create new organization body");
-
-    let create_organization_token_params = json!({
-        "organization_id": &create_new_organization_body.id,
-        "scope": "offline_access",
-    });
-
-    let create_organization_token_res = ident
-        .organization_authorization(Some(create_organization_token_params))
-        .await
-        .expect("create organization token response");
-    assert_eq!(create_organization_token_res.status(), 201);
-
-    let create_organization_token_body = create_organization_token_res
-        .json::<Token>()
-        .await
-        .expect("create organization token body");
-
-    let new_org_access_token = create_organization_token_body.access_token.unwrap();
-    ident.set_bearer_token(&new_org_access_token);
-
-    let create_new_workgroup_params = json!({
-        "network_id": ROPSTEN_NETWORK_ID,
-        "user_id": &user_id,
-        "name": format!("{} application", Name().fake::<String>()),
-        "description": "Some application description",
-        "type": "baseline",
-        "hidden": false,
-    });
-
-    let create_new_workgroup_res = ident
-        .create_application(Some(create_new_workgroup_params))
-        .await
-        .expect("create application response");
-    assert_eq!(create_new_workgroup_res.status(), 201);
-
-    let create_new_workgroup_body = create_new_workgroup_res
-        .json::<Application>()
-        .await
-        .expect("create application body");
-
-    let baseline: ApiClient = Baseline::factory(&new_org_access_token);
-
-    let update_config_params = json!({
-        "organization_id": &create_new_organization_body.id,
-        "workgroup_id": &create_new_workgroup_body.id,
-        "organization_refresh_token": &create_organization_token_body.refresh_token.unwrap(),
-    });
-
-    let update_config_res = baseline
-        .update_config(Some(update_config_params))
-        .await
-        .expect("update config response");
-    assert_eq!(update_config_res.status(), 403);
+        .expect("create subject account response");
+    assert_eq!(create_subject_account_res.status(), 409, "create subject account fail res: {}", serde_json::to_string_pretty(&create_subject_account_res.json::<Value>().await.unwrap()).unwrap());
 }
 
 // #[tokio::test]
