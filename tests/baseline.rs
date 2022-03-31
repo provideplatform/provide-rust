@@ -425,6 +425,8 @@ async fn setup() {
             // link to cli?
         }
 
+        std::thread::sleep(std::time::Duration::from_secs(10));
+
         // yaml config file
         let config_file_contents = format!(
             "access-token: {}\nrefresh-token: {}\n{}:\n  api-token: {}\n",
@@ -4507,7 +4509,7 @@ async fn execute_workstep_fail_without_valid_witness() {
         .expect("execute workstep response");
     assert_eq!(
         execute_workstep_res.status(),
-        400,
+        422,
         "execute workstep response {:?}",
         execute_workstep_res.json::<Value>().await.unwrap()
     );
