@@ -147,6 +147,18 @@ wait_for_nchain_container() {
     echo "nchain api container is ready"
 }
 
+wait_for_baseline_container() {
+    baseline_status=false
+
+    while [[ "$baseline_status" == "false" ]]; do
+        baseline_status_code=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8085/status)
+        [[ "$baseline_status_code" == "204" ]] && baseline_status=true
+
+        sleep 1
+    done
+    echo "baseline api container is ready"
+}
+
 # SUITE = ident, baseline, vault, etc
 if [[ "$SUITE" != "" ]]; then
     echo "Running tests for $SUITE..."
@@ -186,10 +198,14 @@ if [[ $* != *--skip-startup* ]]; then
     # docker-compose -f ./ops/docker-compose.yml build --no-cache
     docker-compose -f ./ops/docker-compose.yml up --build -d
 
-    wait_for_ident_container
-    wait_for_vault_container
-    wait_for_privacy_container
-    wait_for_nchain_container
+    wait_for_ident_container &
+    wait_for_vault_container &
+    wait_for_privacy_container &
+    wait_for_nchain_container &
+    wait_for_baseline_container &
+    wait
+    
+    sleep 30
 fi
 
 # should selectively run this if SUITE or TEST is baseline-related, not only if --skip-setup is provided; should prolly be --with-baseline-setup flag instead anyways
@@ -234,3 +250,5 @@ fi
 
 # timeouts where relevant?
 # adding option to handle_shutdown that only shuts down tests if --skip-shutdown wasn't provided
+# --no-restart flag to take place of --skip-shutdown and --skip-restart flags
+# change CONTAINER_REGEX to --log-match-pattern or something similar
