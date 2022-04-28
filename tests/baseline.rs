@@ -561,10 +561,21 @@ async fn setup() {
         });
 
         let create_subject_account_res = baseline
-            .create_subject_account(&create_organization_body.id, Some(create_subject_account_params))
+            .create_subject_account(
+                &create_organization_body.id,
+                Some(create_subject_account_params),
+            )
             .await
             .expect("create subject account response");
-        assert_eq!(create_subject_account_res.status(), 201, "create subject account res: {}", serde_json::to_string_pretty(&create_subject_account_res.json::<Value>().await.unwrap()).unwrap());
+        assert_eq!(
+            create_subject_account_res.status(),
+            201,
+            "create subject account res: {}",
+            serde_json::to_string_pretty(
+                &create_subject_account_res.json::<Value>().await.unwrap()
+            )
+            .unwrap()
+        );
     }
 }
 
@@ -590,7 +601,8 @@ async fn create_subject_account_fail_with_existing_account() {
     let app_id = serde_json::from_str::<String>(&app_id_json).expect("application id");
 
     let registry_contract_address_json = config_vals["registry_contract_address"].to_string();
-    let registry_contract_address = serde_json::from_str::<String>(&registry_contract_address_json).expect("registry contract address");
+    let registry_contract_address = serde_json::from_str::<String>(&registry_contract_address_json)
+        .expect("registry contract address");
 
     let create_subject_account_params = json!({
         "metadata": {
@@ -607,7 +619,13 @@ async fn create_subject_account_fail_with_existing_account() {
         .create_subject_account(&org_id, Some(create_subject_account_params))
         .await
         .expect("create subject account response");
-    assert_eq!(create_subject_account_res.status(), 409, "create subject account fail res: {}", serde_json::to_string_pretty(&create_subject_account_res.json::<Value>().await.unwrap()).unwrap());
+    assert_eq!(
+        create_subject_account_res.status(),
+        409,
+        "create subject account fail res: {}",
+        serde_json::to_string_pretty(&create_subject_account_res.json::<Value>().await.unwrap())
+            .unwrap()
+    );
 }
 
 #[tokio::test]
@@ -629,7 +647,8 @@ async fn create_subject_account_fail_without_workgroup_id() {
     let org_id = serde_json::from_str::<String>(&org_id_json).expect("organization id");
 
     let registry_contract_address_json = config_vals["registry_contract_address"].to_string();
-    let registry_contract_address = serde_json::from_str::<String>(&registry_contract_address_json).expect("registry contract address");
+    let registry_contract_address = serde_json::from_str::<String>(&registry_contract_address_json)
+        .expect("registry contract address");
 
     let create_subject_account_params = json!({
         "metadata": {
@@ -670,7 +689,8 @@ async fn create_subject_account_fail_without_network_id() {
     let app_id = serde_json::from_str::<String>(&app_id_json).expect("application id");
 
     let registry_contract_address_json = config_vals["registry_contract_address"].to_string();
-    let registry_contract_address = serde_json::from_str::<String>(&registry_contract_address_json).expect("registry contract address");
+    let registry_contract_address = serde_json::from_str::<String>(&registry_contract_address_json)
+        .expect("registry contract address");
 
     let create_subject_account_params = json!({
         "metadata": {
@@ -707,7 +727,8 @@ async fn create_subject_account_fail_without_organization_refresh_token() {
     let app_id = serde_json::from_str::<String>(&app_id_json).expect("application id");
 
     let registry_contract_address_json = config_vals["registry_contract_address"].to_string();
-    let registry_contract_address = serde_json::from_str::<String>(&registry_contract_address_json).expect("registry contract address");
+    let registry_contract_address = serde_json::from_str::<String>(&registry_contract_address_json)
+        .expect("registry contract address");
 
     let create_subject_account_params = json!({
         "metadata": {
@@ -748,7 +769,8 @@ async fn create_subject_account_fail_without_registry_contract_address() {
     let app_id = serde_json::from_str::<String>(&app_id_json).expect("application id");
 
     let registry_contract_address_json = config_vals["registry_contract_address"].to_string();
-    let registry_contract_address = serde_json::from_str::<String>(&registry_contract_address_json).expect("registry contract address");
+    let registry_contract_address = serde_json::from_str::<String>(&registry_contract_address_json)
+        .expect("registry contract address");
 
     let create_subject_account_params = json!({
         "metadata": {
@@ -789,7 +811,8 @@ async fn create_subject_account_fail_without_organization_address() {
     let app_id = serde_json::from_str::<String>(&app_id_json).expect("application id");
 
     let registry_contract_address_json = config_vals["registry_contract_address"].to_string();
-    let registry_contract_address = serde_json::from_str::<String>(&registry_contract_address_json).expect("registry contract address");
+    let registry_contract_address = serde_json::from_str::<String>(&registry_contract_address_json)
+        .expect("registry contract address");
 
     let create_subject_account_params = json!({
         "metadata": {
@@ -853,7 +876,8 @@ async fn create_subject_account_fail_with_id() {
     let app_id = serde_json::from_str::<String>(&app_id_json).expect("application id");
 
     let registry_contract_address_json = config_vals["registry_contract_address"].to_string();
-    let registry_contract_address = serde_json::from_str::<String>(&registry_contract_address_json).expect("registry contract address");
+    let registry_contract_address = serde_json::from_str::<String>(&registry_contract_address_json)
+        .expect("registry contract address");
 
     let create_subject_account_params = json!({
         "id": &org_id,
@@ -896,7 +920,8 @@ async fn create_subject_account_fail_with_incorrect_subject_id() {
     let app_id = serde_json::from_str::<String>(&app_id_json).expect("application id");
 
     let registry_contract_address_json = config_vals["registry_contract_address"].to_string();
-    let registry_contract_address = serde_json::from_str::<String>(&registry_contract_address_json).expect("registry contract address");
+    let registry_contract_address = serde_json::from_str::<String>(&registry_contract_address_json)
+        .expect("registry contract address");
 
     let create_subject_account_params = json!({
         "id": &org_id,
@@ -1697,7 +1722,12 @@ async fn get_workflows_instances() {
         .expect("get workflow instances body");
 
     for workflow in get_workflow_instances_body {
-        assert_eq!(workflow.status, "init")
+        if workflow.status != "init"
+            && workflow.status != "running"
+            && workflow.status != "completed"
+        {
+            assert!(false, "incorrect workflow instance status");
+        }
     }
 }
 
@@ -1914,8 +1944,14 @@ async fn get_workflow_instances_by_workgroup_id() {
         .expect("get filtered workflows body");
 
     for workflow in get_filtered_workflows_body {
-        assert_eq!(&workflow.status, "init");
         assert_eq!(&workflow.workgroup_id, &app_id);
+
+        if workflow.status != "init"
+            && workflow.status != "running"
+            && workflow.status != "completed"
+        {
+            assert!(false, "incorrect workflow instance status");
+        }
     }
 }
 
@@ -4424,6 +4460,286 @@ async fn execute_workstep() {
         "execute workstep response {:?}",
         execute_workstep_res.json::<Value>().await.unwrap()
     );
+}
+
+#[tokio::test]
+async fn workflow_instance_init_status() {
+    let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
+    let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
+
+    let org_access_token_json = config_vals["org_access_token"].to_string();
+    let org_access_token =
+        serde_json::from_str::<String>(&org_access_token_json).expect("organzation access token");
+
+    let app_id_json = config_vals["app_id"].to_string();
+    let app_id = serde_json::from_str::<String>(&app_id_json).expect("workgroup id");
+
+    let baseline: ApiClient = Baseline::factory(&org_access_token);
+
+    let create_workflow_params = json!({
+        "workgroup_id": &app_id,
+        "name": format!("{} workstep", Name().fake::<String>()),
+        "version": "v0.0.1",
+    });
+
+    let create_workflow_body = _create_workflow(&baseline, create_workflow_params, 201).await;
+
+    let create_workstep_params_1 = json!({
+        "name": format!("{} workstep", Name().fake::<String>()),
+        "require_finality": true,
+        "metadata": {
+            "prover": {
+                "identifier": "cubic",
+                "name": "General Consistency",
+                "provider": "gnark",
+                "proving_scheme": "groth16",
+                "curve": "BN254",
+            },
+        },
+    });
+
+    let _ = _create_workstep(
+        &baseline,
+        &create_workflow_body.id,
+        create_workstep_params_1,
+        201,
+    )
+    .await;
+
+    let _ = _deploy_workflow(&baseline, &create_workflow_body.id, 202).await;
+
+    let create_workflow_instance_params = json!({
+        "workgroup_id": &app_id,
+        "name": format!("{} workflow", Name().fake::<String>()),
+        "workflow_id": &create_workflow_body.id,
+    });
+
+    let create_workflow_instance_body =
+        _create_workflow(&baseline, create_workflow_instance_params, 201).await;
+
+    assert_eq!(create_workflow_instance_body.status, "init");
+}
+
+#[tokio::test]
+async fn workflow_instance_running_status() {
+    let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
+    let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
+
+    let org_access_token_json = config_vals["org_access_token"].to_string();
+    let org_access_token =
+        serde_json::from_str::<String>(&org_access_token_json).expect("organzation access token");
+
+    let app_id_json = config_vals["app_id"].to_string();
+    let app_id = serde_json::from_str::<String>(&app_id_json).expect("workgroup id");
+
+    let baseline: ApiClient = Baseline::factory(&org_access_token);
+
+    let create_workflow_params = json!({
+        "workgroup_id": &app_id,
+        "name": format!("{} workstep", Name().fake::<String>()),
+        "version": "v0.0.1",
+    });
+
+    let create_workflow_body = _create_workflow(&baseline, create_workflow_params, 201).await;
+
+    let create_workstep_params_1 = json!({
+        "name": format!("{} workstep", Name().fake::<String>()),
+        "require_finality": true,
+        "metadata": {
+            "prover": {
+                "identifier": "cubic",
+                "name": "General Consistency",
+                "provider": "gnark",
+                "proving_scheme": "groth16",
+                "curve": "BN254",
+            },
+        },
+    });
+
+    let _ = _create_workstep(
+        &baseline,
+        &create_workflow_body.id,
+        create_workstep_params_1,
+        201,
+    )
+    .await;
+
+    let create_workstep_params_2 = json!({
+        "name": format!("{} workstep", Name().fake::<String>()),
+        "require_finality": true,
+        "metadata": {
+            "prover": {
+                "identifier": "cubic",
+                "name": "General Consistency",
+                "provider": "gnark",
+                "proving_scheme": "groth16",
+                "curve": "BN254",
+            },
+        },
+    });
+
+    let _ = _create_workstep(
+        &baseline,
+        &create_workflow_body.id,
+        create_workstep_params_2,
+        201,
+    )
+    .await;
+
+    let _ = _deploy_workflow(&baseline, &create_workflow_body.id, 202).await;
+
+    let create_workflow_instance_params = json!({
+        "workgroup_id": &app_id,
+        "name": format!("{} workflow", Name().fake::<String>()),
+        "workflow_id": &create_workflow_body.id,
+    });
+
+    let create_workflow_instance_body =
+        _create_workflow(&baseline, create_workflow_instance_params, 201).await;
+
+    let fetch_workflow_instance_worksteps_res = baseline
+        .fetch_worksteps(&create_workflow_instance_body.id)
+        .await
+        .expect("fetch workflow instance worksteps response");
+    assert_eq!(fetch_workflow_instance_worksteps_res.status(), 200);
+
+    let fetch_workflow_instance_worksteps_body = fetch_workflow_instance_worksteps_res
+        .json::<Vec<WorkstepInstance>>()
+        .await
+        .expect("fetch workflow instance worksteps body");
+
+    let execute_workstep_params = json!({
+        "witness": {
+            "X": "3",
+            "Y": "35"
+        },
+    });
+
+    let execute_workstep_res = baseline
+        .execute_workstep(
+            &create_workflow_instance_body.id,
+            &fetch_workflow_instance_worksteps_body[0].id,
+            Some(execute_workstep_params),
+        )
+        .await
+        .expect("execute workstep response");
+    assert_eq!(
+        execute_workstep_res.status(),
+        201,
+        "execute workstep response {:?}",
+        execute_workstep_res.json::<Value>().await.unwrap()
+    );
+
+    let get_workflow_instance_details_res = baseline
+        .get_workflow(&create_workflow_instance_body.id)
+        .await
+        .unwrap();
+    let get_workflow_instance_details_body = get_workflow_instance_details_res
+        .json::<Workflow>()
+        .await
+        .unwrap();
+
+    assert_eq!(get_workflow_instance_details_body.status, "running");
+}
+
+#[tokio::test]
+async fn workflow_instance_completed_status() {
+    let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
+    let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
+
+    let org_access_token_json = config_vals["org_access_token"].to_string();
+    let org_access_token =
+        serde_json::from_str::<String>(&org_access_token_json).expect("organzation access token");
+
+    let app_id_json = config_vals["app_id"].to_string();
+    let app_id = serde_json::from_str::<String>(&app_id_json).expect("workgroup id");
+
+    let baseline: ApiClient = Baseline::factory(&org_access_token);
+
+    let create_workflow_params = json!({
+        "workgroup_id": &app_id,
+        "name": format!("{} workstep", Name().fake::<String>()),
+        "version": "v0.0.1",
+    });
+
+    let create_workflow_body = _create_workflow(&baseline, create_workflow_params, 201).await;
+
+    let create_workstep_params = json!({
+        "name": format!("{} workstep", Name().fake::<String>()),
+        "require_finality": true,
+        "metadata": {
+            "prover": {
+                "identifier": "cubic",
+                "name": "General Consistency",
+                "provider": "gnark",
+                "proving_scheme": "groth16",
+                "curve": "BN254",
+            },
+        },
+    });
+
+    let _ = _create_workstep(
+        &baseline,
+        &create_workflow_body.id,
+        create_workstep_params,
+        201,
+    )
+    .await;
+
+    let _ = _deploy_workflow(&baseline, &create_workflow_body.id, 202).await;
+
+    let create_workflow_instance_params = json!({
+        "workgroup_id": &app_id,
+        "name": format!("{} workflow", Name().fake::<String>()),
+        "workflow_id": &create_workflow_body.id,
+    });
+
+    let create_workflow_instance_body =
+        _create_workflow(&baseline, create_workflow_instance_params, 201).await;
+
+    let fetch_workflow_instance_worksteps_res = baseline
+        .fetch_worksteps(&create_workflow_instance_body.id)
+        .await
+        .expect("fetch workflow instance worksteps response");
+    assert_eq!(fetch_workflow_instance_worksteps_res.status(), 200);
+
+    let fetch_workflow_instance_worksteps_body = fetch_workflow_instance_worksteps_res
+        .json::<Vec<WorkstepInstance>>()
+        .await
+        .expect("fetch workflow instance worksteps body");
+
+    let execute_workstep_params = json!({
+        "witness": {
+            "X": "3",
+            "Y": "35"
+        },
+    });
+
+    let execute_workstep_res = baseline
+        .execute_workstep(
+            &create_workflow_instance_body.id,
+            &fetch_workflow_instance_worksteps_body[0].id,
+            Some(execute_workstep_params),
+        )
+        .await
+        .expect("execute workstep response");
+    assert_eq!(
+        execute_workstep_res.status(),
+        201,
+        "execute workstep response {:?}",
+        execute_workstep_res.json::<Value>().await.unwrap()
+    );
+
+    let get_workflow_instance_details_res = baseline
+        .get_workflow(&create_workflow_instance_body.id)
+        .await
+        .unwrap();
+    let get_workflow_instance_details_body = get_workflow_instance_details_res
+        .json::<Workflow>()
+        .await
+        .unwrap();
+
+    assert_eq!(get_workflow_instance_details_body.status, "completed");
 }
 
 #[tokio::test]
