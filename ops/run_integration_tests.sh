@@ -60,6 +60,15 @@
 
 trap handle_shutdown INT
 
+RUN_MANY=false
+if [[ $OUTPUT_DIR != "" ]]; then
+    RUN_MANY=true
+
+    DOCKER_OUTPUT=$OUTPUT_DIR/docker-output.txt
+    SETUP_OUTPUT=$OUTPUT_DIR/setup-output.txt
+    TEST_OUTPUT=$OUTPUT_DIR/test-output.txt
+fi
+
 bounce_docker() {
     # FIXME-- make sure $(which docker) is a thing...
 
@@ -209,7 +218,22 @@ if [[ $* != *--skip-startup* ]]; then
 fi
 
 # should selectively run this if SUITE or TEST is baseline-related, not only if --skip-setup is provided; should prolly be --with-baseline-setup flag instead anyways
-if [[ $* != *--skip-setup* ]]; then
+if [[ $* != *--skip-setup* && "$RUN_MANY" == "true" ]]; then
+    BASELINE_REGISTRY_CONTRACT_ADDRESS=$BASELINE_REGISTRY_CONTRACT_ADDRESS \
+    INVOKE_PRVD_CLI=$INVOKE_PRVD_CLI \
+    IDENT_API_HOST=localhost:8081 \
+    IDENT_API_SCHEME=http \
+    VAULT_API_HOST=localhost:8082 \
+    VAULT_API_SCHEME=http \
+    PRIVACY_API_HOST=localhost:8083 \
+    PRIVACY_API_SCHEME=http \
+    NCHAIN_API_HOST=localhost:8084 \
+    NCHAIN_API_SCHEME=http \
+    BASELINE_API_HOST=localhost:8085 \
+    BASELINE_API_SCHEME=http \
+    cargo nextest run --retries 3 --run-ignored ignored-only --status-level all --success-output final --failure-output final 2&> $SETUP_OUTPUT
+
+elif [[ $* != *--skip-setup* ]]; then
     BASELINE_REGISTRY_CONTRACT_ADDRESS=$BASELINE_REGISTRY_CONTRACT_ADDRESS \
     INVOKE_PRVD_CLI=$INVOKE_PRVD_CLI \
     IDENT_API_HOST=localhost:8081 \
@@ -224,20 +248,35 @@ if [[ $* != *--skip-setup* ]]; then
     BASELINE_API_SCHEME=http \
     cargo nextest run --retries 3 --run-ignored ignored-only
 
-    printf "Successfully configured local baseline suite; running tests...\n"
 fi
 
-IDENT_API_HOST=localhost:8081 \
-IDENT_API_SCHEME=http \
-VAULT_API_HOST=localhost:8082 \
-VAULT_API_SCHEME=http \
-PRIVACY_API_HOST=localhost:8083 \
-PRIVACY_API_SCHEME=http \
-NCHAIN_API_HOST=localhost:8084 \
-NCHAIN_API_SCHEME=http \
-BASELINE_API_HOST=localhost:8085 \
-BASELINE_API_SCHEME=http \
-cargo nextest run $([[ -n "$TEST" ]] && echo "$TEST" || echo --test "$SUITE") --no-fail-fast --failure-output immediate-final
+if [[ "$RUN_MANY" == "true" ]]; then
+    IDENT_API_HOST=localhost:8081 \
+    IDENT_API_SCHEME=http \
+    VAULT_API_HOST=localhost:8082 \
+    VAULT_API_SCHEME=http \
+    PRIVACY_API_HOST=localhost:8083 \
+    PRIVACY_API_SCHEME=http \
+    NCHAIN_API_HOST=localhost:8084 \
+    NCHAIN_API_SCHEME=http \
+    BASELINE_API_HOST=localhost:8085 \
+    BASELINE_API_SCHEME=http \
+    cargo nextest run $([[ -n "$TEST" ]] && echo "$TEST" || echo --test "$SUITE") --status-level all --no-fail-fast --success-output final --failure-output final 2&> $TEST_OUTPUT
+
+else
+    IDENT_API_HOST=localhost:8081 \
+    IDENT_API_SCHEME=http \
+    VAULT_API_HOST=localhost:8082 \
+    VAULT_API_SCHEME=http \
+    PRIVACY_API_HOST=localhost:8083 \
+    PRIVACY_API_SCHEME=http \
+    NCHAIN_API_HOST=localhost:8084 \
+    NCHAIN_API_SCHEME=http \
+    BASELINE_API_HOST=localhost:8085 \
+    BASELINE_API_SCHEME=http \
+    cargo nextest run $([[ -n "$TEST" ]] && echo "$TEST" || echo --test "$SUITE") --no-fail-fast --failure-output immediate-final
+
+fi
 
 if [[ $* != *--skip-shutdown* ]]; then
     handle_shutdown
