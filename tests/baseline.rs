@@ -1697,7 +1697,12 @@ async fn get_workflows_instances() {
         .expect("get workflow instances body");
 
     for workflow in get_workflow_instances_body {
-        assert_eq!(workflow.status, "init")
+        if workflow.status != "draft"
+            && workflow.status != "deployed"
+            && workflow.status != "pending_deployment"
+        {
+            assert!(false, "incorrect workflow instance status");
+        }
     }
 }
 
@@ -1840,8 +1845,14 @@ async fn get_workflow_prototypes_by_workgroup_id() {
         .expect("get filtered workflows body");
 
     for workflow in get_filtered_workflows_body {
-        assert_ne!(&workflow.status, "init");
         assert_eq!(&workflow.workgroup_id, &app_id);
+
+        if workflow.status != "draft"
+            && workflow.status != "deployed"
+            && workflow.status != "pending_deployment"
+        {
+            assert!(false, "incorrect workflow instance status");
+        }
     }
 }
 
@@ -1914,8 +1925,13 @@ async fn get_workflow_instances_by_workgroup_id() {
         .expect("get filtered workflows body");
 
     for workflow in get_filtered_workflows_body {
-        assert_eq!(&workflow.status, "init");
         assert_eq!(&workflow.workgroup_id, &app_id);
+        if workflow.status != "draft"
+            && workflow.status != "deployed"
+            && workflow.status != "pending_deployment"
+        {
+            assert!(false, "incorrect workflow instance status");
+        }
     }
 }
 
