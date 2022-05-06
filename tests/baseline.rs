@@ -1886,8 +1886,14 @@ async fn get_workflow_prototypes_by_workgroup_id() {
         .expect("get filtered workflows body");
 
     for workflow in get_filtered_workflows_body {
-        assert_ne!(&workflow.status, "init");
         assert_eq!(&workflow.workgroup_id, &app_id);
+
+        if workflow.status != "draft"
+            && workflow.status != "deployed"
+            && workflow.status != "pending_deployment"
+        {
+            assert!(false, "incorrect workflow instance status");
+        }
     }
 }
 
