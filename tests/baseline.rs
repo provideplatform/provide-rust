@@ -561,10 +561,21 @@ async fn setup() {
         });
 
         let create_subject_account_res = baseline
-            .create_subject_account(&create_organization_body.id, Some(create_subject_account_params))
+            .create_subject_account(
+                &create_organization_body.id,
+                Some(create_subject_account_params),
+            )
             .await
             .expect("create subject account response");
-        assert_eq!(create_subject_account_res.status(), 201, "create subject account res: {}", serde_json::to_string_pretty(&create_subject_account_res.json::<Value>().await.unwrap()).unwrap());
+        assert_eq!(
+            create_subject_account_res.status(),
+            201,
+            "create subject account res: {}",
+            serde_json::to_string_pretty(
+                &create_subject_account_res.json::<Value>().await.unwrap()
+            )
+            .unwrap()
+        );
     }
 }
 
@@ -590,7 +601,8 @@ async fn create_subject_account_fail_with_existing_account() {
     let app_id = serde_json::from_str::<String>(&app_id_json).expect("application id");
 
     let registry_contract_address_json = config_vals["registry_contract_address"].to_string();
-    let registry_contract_address = serde_json::from_str::<String>(&registry_contract_address_json).expect("registry contract address");
+    let registry_contract_address = serde_json::from_str::<String>(&registry_contract_address_json)
+        .expect("registry contract address");
 
     let create_subject_account_params = json!({
         "metadata": {
@@ -607,7 +619,13 @@ async fn create_subject_account_fail_with_existing_account() {
         .create_subject_account(&org_id, Some(create_subject_account_params))
         .await
         .expect("create subject account response");
-    assert_eq!(create_subject_account_res.status(), 409, "create subject account fail res: {}", serde_json::to_string_pretty(&create_subject_account_res.json::<Value>().await.unwrap()).unwrap());
+    assert_eq!(
+        create_subject_account_res.status(),
+        409,
+        "create subject account fail res: {}",
+        serde_json::to_string_pretty(&create_subject_account_res.json::<Value>().await.unwrap())
+            .unwrap()
+    );
 }
 
 #[tokio::test]
@@ -629,7 +647,8 @@ async fn create_subject_account_fail_without_workgroup_id() {
     let org_id = serde_json::from_str::<String>(&org_id_json).expect("organization id");
 
     let registry_contract_address_json = config_vals["registry_contract_address"].to_string();
-    let registry_contract_address = serde_json::from_str::<String>(&registry_contract_address_json).expect("registry contract address");
+    let registry_contract_address = serde_json::from_str::<String>(&registry_contract_address_json)
+        .expect("registry contract address");
 
     let create_subject_account_params = json!({
         "metadata": {
@@ -670,7 +689,8 @@ async fn create_subject_account_fail_without_network_id() {
     let app_id = serde_json::from_str::<String>(&app_id_json).expect("application id");
 
     let registry_contract_address_json = config_vals["registry_contract_address"].to_string();
-    let registry_contract_address = serde_json::from_str::<String>(&registry_contract_address_json).expect("registry contract address");
+    let registry_contract_address = serde_json::from_str::<String>(&registry_contract_address_json)
+        .expect("registry contract address");
 
     let create_subject_account_params = json!({
         "metadata": {
@@ -707,7 +727,8 @@ async fn create_subject_account_fail_without_organization_refresh_token() {
     let app_id = serde_json::from_str::<String>(&app_id_json).expect("application id");
 
     let registry_contract_address_json = config_vals["registry_contract_address"].to_string();
-    let registry_contract_address = serde_json::from_str::<String>(&registry_contract_address_json).expect("registry contract address");
+    let registry_contract_address = serde_json::from_str::<String>(&registry_contract_address_json)
+        .expect("registry contract address");
 
     let create_subject_account_params = json!({
         "metadata": {
@@ -748,7 +769,8 @@ async fn create_subject_account_fail_without_registry_contract_address() {
     let app_id = serde_json::from_str::<String>(&app_id_json).expect("application id");
 
     let registry_contract_address_json = config_vals["registry_contract_address"].to_string();
-    let registry_contract_address = serde_json::from_str::<String>(&registry_contract_address_json).expect("registry contract address");
+    let registry_contract_address = serde_json::from_str::<String>(&registry_contract_address_json)
+        .expect("registry contract address");
 
     let create_subject_account_params = json!({
         "metadata": {
@@ -789,7 +811,8 @@ async fn create_subject_account_fail_without_organization_address() {
     let app_id = serde_json::from_str::<String>(&app_id_json).expect("application id");
 
     let registry_contract_address_json = config_vals["registry_contract_address"].to_string();
-    let registry_contract_address = serde_json::from_str::<String>(&registry_contract_address_json).expect("registry contract address");
+    let registry_contract_address = serde_json::from_str::<String>(&registry_contract_address_json)
+        .expect("registry contract address");
 
     let create_subject_account_params = json!({
         "metadata": {
@@ -853,7 +876,8 @@ async fn create_subject_account_fail_with_id() {
     let app_id = serde_json::from_str::<String>(&app_id_json).expect("application id");
 
     let registry_contract_address_json = config_vals["registry_contract_address"].to_string();
-    let registry_contract_address = serde_json::from_str::<String>(&registry_contract_address_json).expect("registry contract address");
+    let registry_contract_address = serde_json::from_str::<String>(&registry_contract_address_json)
+        .expect("registry contract address");
 
     let create_subject_account_params = json!({
         "id": &org_id,
@@ -896,7 +920,8 @@ async fn create_subject_account_fail_with_incorrect_subject_id() {
     let app_id = serde_json::from_str::<String>(&app_id_json).expect("application id");
 
     let registry_contract_address_json = config_vals["registry_contract_address"].to_string();
-    let registry_contract_address = serde_json::from_str::<String>(&registry_contract_address_json).expect("registry contract address");
+    let registry_contract_address = serde_json::from_str::<String>(&registry_contract_address_json)
+        .expect("registry contract address");
 
     let create_subject_account_params = json!({
         "id": &org_id,
@@ -1624,12 +1649,21 @@ async fn get_workflow_prototypes() {
         .expect("get workflow prototypes body");
 
     for workflow in get_workflow_prototypes_body {
-        assert_ne!(workflow.status, "init")
+        if workflow.status != "draft"
+            && workflow.status != "pending_deployment"
+            && workflow.status != "deployed"
+        {
+            assert!(
+                false,
+                "incorrect workflow prototype status: {}",
+                &workflow.status
+            );
+        }
     }
 }
 
 #[tokio::test]
-async fn get_workflows_instances() {
+async fn get_workflow_instances() {
     let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
     let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
 
@@ -1697,11 +1731,15 @@ async fn get_workflows_instances() {
         .expect("get workflow instances body");
 
     for workflow in get_workflow_instances_body {
-        if workflow.status != "draft"
-            && workflow.status != "deployed"
-            && workflow.status != "pending_deployment"
+        if workflow.status != "init"
+            && workflow.status != "running"
+            && workflow.status != "completed"
         {
-            assert!(false, "incorrect workflow instance status");
+            assert!(
+                false,
+                "incorrect workflow instance status: {}",
+                &workflow.status
+            );
         }
     }
 }
@@ -1851,7 +1889,11 @@ async fn get_workflow_prototypes_by_workgroup_id() {
             && workflow.status != "deployed"
             && workflow.status != "pending_deployment"
         {
-            assert!(false, "incorrect workflow instance status");
+            assert!(
+                false,
+                "incorrect workflow prototype status: {}",
+                &workflow.status
+            );
         }
     }
 }
@@ -1926,11 +1968,15 @@ async fn get_workflow_instances_by_workgroup_id() {
 
     for workflow in get_filtered_workflows_body {
         assert_eq!(&workflow.workgroup_id, &app_id);
-        if workflow.status != "draft"
-            && workflow.status != "deployed"
-            && workflow.status != "pending_deployment"
+        if workflow.status != "init"
+            && workflow.status != "running"
+            && workflow.status != "completed"
         {
-            assert!(false, "incorrect workflow instance status");
+            assert!(
+                false,
+                "incorrect workflow instance status: {}",
+                &workflow.status
+            );
         }
     }
 }
