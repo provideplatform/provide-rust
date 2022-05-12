@@ -1665,12 +1665,21 @@ async fn get_workflow_prototypes() {
         .expect("get workflow prototypes body");
 
     for workflow in get_workflow_prototypes_body {
-        assert_ne!(workflow.status, "init")
+        if workflow.status != "draft"
+            && workflow.status != "pending_deployment"
+            && workflow.status != "deployed"
+        {
+            assert!(
+                false,
+                "incorrect workflow prototype status: {}",
+                &workflow.status
+            );
+        }
     }
 }
 
 #[tokio::test]
-async fn get_workflows_instances() {
+async fn get_workflow_instances() {
     let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
     let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
 
@@ -1742,7 +1751,11 @@ async fn get_workflows_instances() {
             && workflow.status != "running"
             && workflow.status != "completed"
         {
-            assert!(false, "incorrect workflow instance status");
+            assert!(
+                false,
+                "incorrect workflow instance status: {}",
+                &workflow.status
+            );
         }
     }
 }
@@ -1892,7 +1905,11 @@ async fn get_workflow_prototypes_by_workgroup_id() {
             && workflow.status != "deployed"
             && workflow.status != "pending_deployment"
         {
-            assert!(false, "incorrect workflow instance status");
+            assert!(
+                false,
+                "incorrect workflow prototype status: {}",
+                &workflow.status
+            );
         }
     }
 }
@@ -1972,7 +1989,11 @@ async fn get_workflow_instances_by_workgroup_id() {
             && workflow.status != "running"
             && workflow.status != "completed"
         {
-            assert!(false, "incorrect workflow instance status");
+            assert!(
+                false,
+                "incorrect workflow instance status: {}",
+                &workflow.status
+            );
         }
     }
 }
