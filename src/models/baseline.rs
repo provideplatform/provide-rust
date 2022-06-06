@@ -119,7 +119,7 @@ pub struct Participant {
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
 pub struct Workgroup {
-    id: String,
+    pub id: String,
     created_at: String,
     participants: Option<Vec<Participant>>,
     workflows: Option<Vec<Workflow>>,
