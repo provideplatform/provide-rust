@@ -96,6 +96,12 @@ handle_shutdown() {
 
     docker-compose -f ./ops/docker-compose.yml down
     docker volume rm ops_provide-db
+    # TODO-- remove networks
+
+    if [[ $* != *--skip-baseline-startup* ]]; then
+        docker-compose -f ./ops/docker-compose-local-baseline.yml down
+        docker volume rm ops_prvd-baseline-db
+    fi
 
     if [[ "$INVOKE_PRVD_CLI" == "true" && ("$SUITE" == "*" || "$SUITE" == "baseline") ]]; then
         if [[ -f ".test-config.tmp.json" ]]; then
@@ -207,14 +213,21 @@ if [[ $* != *--skip-startup* ]]; then
     # docker-compose -f ./ops/docker-compose.yml build --no-cache
     docker-compose -f ./ops/docker-compose.yml up --build -d
 
+    if [[ $* != *--skip-baseline-startup* ]]; then
+        sleep 20
+        docker-compose -f ./ops/docker-compose-local-baseline.yml up --build -d
+    fi
+
     wait_for_ident_container &
     wait_for_vault_container &
     wait_for_privacy_container &
     wait_for_nchain_container &
-    wait_for_baseline_container &
-    wait
+
+    if [[ $* != *--skip-baseline-startup* ]]; then
+        wait_for_baseline_container &
+    fi
     
-    sleep 30
+    wait
 fi
 
 # should selectively run this if SUITE or TEST is baseline-related, not only if --skip-setup is provided; should prolly be --with-baseline-setup flag instead anyways
@@ -231,7 +244,7 @@ if [[ $* != *--skip-setup* && "$RUN_MANY" == "true" ]]; then
     NCHAIN_API_SCHEME=http \
     BASELINE_API_HOST=localhost:8085 \
     BASELINE_API_SCHEME=http \
-    cargo nextest run --retries 3 --run-ignored ignored-only --status-level all --success-output final --failure-output final 2&> $SETUP_OUTPUT
+    cargo nextest run --retries 3 --run-ignored ignored-only --status-level all --success-output final --failure-output final &> $SETUP_OUTPUT
 
 elif [[ $* != *--skip-setup* ]]; then
     BASELINE_REGISTRY_CONTRACT_ADDRESS=$BASELINE_REGISTRY_CONTRACT_ADDRESS \
@@ -261,7 +274,7 @@ if [[ "$RUN_MANY" == "true" ]]; then
     NCHAIN_API_SCHEME=http \
     BASELINE_API_HOST=localhost:8085 \
     BASELINE_API_SCHEME=http \
-    cargo nextest run $([[ -n "$TEST" ]] && echo "$TEST" || echo --test "$SUITE") --status-level all --no-fail-fast --success-output final --failure-output final 2&> $TEST_OUTPUT
+    cargo nextest run $([[ -n "$TEST" ]] && echo "$TEST" || echo --test "$SUITE") --status-level all --no-fail-fast --success-output final --failure-output final &> $TEST_OUTPUT
 
 else
     IDENT_API_HOST=localhost:8081 \
