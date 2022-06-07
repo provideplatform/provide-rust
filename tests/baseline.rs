@@ -3223,127 +3223,146 @@ async fn version_workflow_fail_on_versioning_with_older_version() {
     );
 }
 
-// #[tokio::test]
-// async fn get_workgroups() {
-//     let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
-//     let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
+#[tokio::test]
+async fn get_workgroups() {
+    let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
+    let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
 
-//     let org_access_token_json = config_vals["org_access_token"].to_string();
-//     let org_access_token = serde_json::from_str::<String>(&org_access_token_json).expect("organzation access token");
+    let org_access_token_json = config_vals["org_access_token"].to_string();
+    let org_access_token = serde_json::from_str::<String>(&org_access_token_json).expect("organzation access token");
 
-//     let app_id_json = config_vals["app_id"].to_string();
-//     let app_id = serde_json::from_str::<String>(&app_id_json)
-//             .expect("workgroup id");
+    let baseline: ApiClient = Baseline::factory(&org_access_token);
 
-//     let baseline: ApiClient = Baseline::factory(&org_access_token);
+    // let workgroup_name = format!("{} workgroup", Name().fake::<String>());
 
-//     let get_workgroups_res = baseline.get_workgroups().await.expect("get workgroups response");
-//     assert_eq!(get_workgroups_res.status(), 200);
-// }
+    // let create_workgroup_params_1 = json!({
+    //     "name": &workgroup_name,
+    //     "config": {
+    //         "onboarding_complete": false
+    //     }
+    // });
 
-// #[tokio::test]
-// async fn get_workgroup() {
-//     let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
-//     let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
+    // let create_workgroup_res = baseline.create_workgroup(Some(create_workgroup_params_1)).await.expect("create workgroup response");
+    // assert_eq!(create_workgroup_res.status(), 201);
 
-//     let org_access_token_json = config_vals["org_access_token"].to_string();
-//     let org_access_token = serde_json::from_str::<String>(&org_access_token_json).expect("organzation access token");
+    // let create_workgroup_params_2 = json!({
+    //     "name": &workgroup_name,
+    //     "config": {
+    //         "onboarding_complete": false
+    //     }
+    // });
 
-//     let app_id_json = config_vals["app_id"].to_string();
-//     let app_id = serde_json::from_str::<String>(&app_id_json)
-//             .expect("workgroup id");
+    // let create_workgroup_res = baseline.create_workgroup(Some(create_workgroup_params_2)).await.expect("create workgroup response");
+    // assert_eq!(create_workgroup_res.status(), 201);
 
-//     let baseline: ApiClient = Baseline::factory(&org_access_token);
+    // let create_workgroup_params_3 = json!({
+    //     "name": &workgroup_name,
+    //     "config": {
+    //         "onboarding_complete": false
+    //     }
+    // });
 
-//     let create_workgroup_params = json!({
-//         "subject_id": "did:prvd:93229a14-5e13-4c45-8352-3ad9948b8ae3",
-//         "description": "An example of the request body for workgroup creation",
-//         "name": "Example workgroup",
-//         "network_id": "07102258-5e49-480e-86af-6d0c3260827d",
-//         "type": "baseline",
-//         "security_policies": [],
-//         "admins": [
-//           "did:prvd:93229a14-5e13-4c45-8352-3ad9948b8ae3"
-//         ],
-//     });
+    // let create_workgroup_res = baseline.create_workgroup(Some(create_workgroup_params_3)).await.expect("create workgroup response");
+    // assert_eq!(create_workgroup_res.status(), 201);
 
-//     let create_workgroup_res = baseline.create_workgroup(Some(create_workgroup_params)).await.expect("create workgroup response");
-//     assert_eq!(create_workgroup_res.status(), 201);
+    let get_workgroups_res = baseline.get_workgroups().await.expect("get workgroups response");
+    assert_eq!(get_workgroups_res.status(), 200);
 
-//     let create_workgroup_body = create_workgroup_res.json::<Workgroup>().await.expect("create workgroup body");
+    // let get_workgroups_body = get_workgroups_res.json::<Vec<Workgroup>>().await.expect("get workgroups body");
 
-//     let get_workgroup_res = baseline.get_workgroup(&create_workgroup_body.id).await.expect("get workgroup response");
-//     assert_eq!(get_workgroup_res.status(), 200);
-// }
+    // for workgroup in get_workgroups_body.iter() {
+    //     // assert_eq!(&workgroup.name, &workgroup_name); // TODO-- add workgroup_id filter to getWorkgroupsHandler
+    //     assert_eq!(workgroup.config.as_ref().unwrap()["onboarding_complete"], false);
+    // }
+}
 
-// #[tokio::test]
-// async fn create_workgroup() {
-//     let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
-//     let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
+#[tokio::test]
+async fn get_workgroup() {
+    let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
+    let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
 
-//     let org_access_token_json = config_vals["org_access_token"].to_string();
-//     let org_access_token = serde_json::from_str::<String>(&org_access_token_json).expect("organzation access token");
+    let org_access_token_json = config_vals["org_access_token"].to_string();
+    let org_access_token = serde_json::from_str::<String>(&org_access_token_json).expect("organzation access token");
 
-//     let app_id_json = config_vals["app_id"].to_string();
-//     let app_id = serde_json::from_str::<String>(&app_id_json)
-//             .expect("workgroup id");
+    let baseline: ApiClient = Baseline::factory(&org_access_token);
 
-//     let baseline: ApiClient = Baseline::factory(&org_access_token);
+    let workgroup_name = format!("{} workgroup", Name().fake::<String>());
+    let create_workgroup_params = json!({
+        "name": &workgroup_name,
+        "config": {
+            "onboarding_complete": false
+        }
+    });
 
-//     let create_workgroup_params = json!({
-//         "subject_id": "did:prvd:93229a14-5e13-4c45-8352-3ad9948b8ae3",
-//         "description": "An example of the request body for workgroup creation",
-//         "name": "Example workgroup",
-//         "network_id": "07102258-5e49-480e-86af-6d0c3260827d",
-//         "type": "baseline",
-//         "security_policies": [],
-//         "admins": [
-//           "did:prvd:93229a14-5e13-4c45-8352-3ad9948b8ae3"
-//         ],
-//     });
+    let create_workgroup_res = baseline.create_workgroup(Some(create_workgroup_params)).await.expect("create workgroup response");
+    assert_eq!(create_workgroup_res.status(), 201);
 
-//     let create_workgroup_res = baseline.create_workgroup(Some(create_workgroup_params)).await.expect("create workgroup response");
-//     assert_eq!(create_workgroup_res.status(), 201);
-// }
+    let create_workgroup_body = create_workgroup_res.json::<Workgroup>().await.expect("create workgroup body");
 
-// #[tokio::test]
-// async fn update_workgroup() {
-//     let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
-//     let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
+    let get_workgroup_res = baseline.get_workgroup(&create_workgroup_body.id).await.expect("get workgroup response");
+    assert_eq!(get_workgroup_res.status(), 200);
 
-//     let org_access_token_json = config_vals["org_access_token"].to_string();
-//     let org_access_token = serde_json::from_str::<String>(&org_access_token_json).expect("organzation access token");
+    let create_workgroup_body = get_workgroup_res.json::<Workgroup>().await.expect("create workgroup body");
 
-//     let app_id_json = config_vals["app_id"].to_string();
-//     let app_id = serde_json::from_str::<String>(&app_id_json)
-//             .expect("workgroup id");
+    assert_eq!(create_workgroup_body.name, workgroup_name);
+    assert_eq!(create_workgroup_body.config.unwrap()["onboarding_complete"], false);
+}
 
-//     let baseline: ApiClient = Baseline::factory(&org_access_token);
+#[tokio::test]
+async fn create_workgroup() {
+    let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
+    let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
 
-//     let create_workgroup_params = json!({
-//         "subject_id": "did:prvd:93229a14-5e13-4c45-8352-3ad9948b8ae3",
-//         "description": "An example of the request body for workgroup creation",
-//         "name": "Example workgroup",
-//         "network_id": "07102258-5e49-480e-86af-6d0c3260827d",
-//         "type": "baseline",
-//         "security_policies": [],
-//         "admins": [
-//           "did:prvd:93229a14-5e13-4c45-8352-3ad9948b8ae3"
-//         ],
-//     });
+    let org_access_token_json = config_vals["org_access_token"].to_string();
+    let org_access_token = serde_json::from_str::<String>(&org_access_token_json).expect("organzation access token");
 
-//     let create_workgroup_res = baseline.create_workgroup(Some(create_workgroup_params)).await.expect("create workgroup response");
-//     assert_eq!(create_workgroup_res.status(), 201);
+    let baseline: ApiClient = Baseline::factory(&org_access_token);
 
-//     let create_workgroup_body = create_workgroup_res.json::<Workgroup>().await.expect("create workgroup body");
+    let workgroup_name = format!("{} workgroup", Name().fake::<String>());
+    let create_workgroup_params = json!({
+        "name": &workgroup_name,
+        "config": {
+            "onboarding_complete": false
+        }
+    });
 
-//     let update_workgroup_params = json!({
-//         "description": "An updated workgroup description",
-//     });
+    let create_workgroup_res = baseline.create_workgroup(Some(create_workgroup_params)).await.expect("create workgroup response");
+    assert_eq!(create_workgroup_res.status(), 201, "create workgroup res: {}", serde_json::to_string_pretty(&create_workgroup_res.json::<Value>().await.unwrap()).unwrap());
 
-//     let update_workgroup_res = baseline.update_workgroup(&create_workgroup_body.id, Some(update_workgroup_params)).await.expect("update workgroup response");
-//     assert_eq!(update_workgroup_res.status(), 204);
-// }
+    let create_workgroup_body = create_workgroup_res.json::<Workgroup>().await.expect("create workgroup body");
+
+    assert_eq!(create_workgroup_body.name, workgroup_name);
+    assert_eq!(create_workgroup_body.config.unwrap()["onboarding_complete"], false);
+}
+
+#[tokio::test]
+async fn update_workgroup() {
+    let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
+    let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
+
+    let org_access_token_json = config_vals["org_access_token"].to_string();
+    let org_access_token = serde_json::from_str::<String>(&org_access_token_json).expect("organzation access token");
+
+    let baseline: ApiClient = Baseline::factory(&org_access_token);
+
+    let create_workgroup_params = json!({
+        "name": format!("{} workgroup", Name().fake::<String>()),
+    });
+
+    let create_workgroup_res = baseline.create_workgroup(Some(create_workgroup_params)).await.expect("create workgroup response");
+    assert_eq!(create_workgroup_res.status(), 201);
+
+    let create_workgroup_body = create_workgroup_res.json::<Workgroup>().await.expect("create workgroup body");
+
+    let update_workgroup_params = json!({
+        "config": {
+            "onboarding_complete": false
+        }
+    });
+
+    let update_workgroup_res = baseline.update_workgroup(&create_workgroup_body.id, Some(update_workgroup_params)).await.expect("update workgroup response");
+    assert_eq!(update_workgroup_res.status(), 204);
+}
 
 #[tokio::test]
 async fn fetch_worksteps() {
