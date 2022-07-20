@@ -1503,7 +1503,7 @@ async fn update_mapping() {
         .update_mapping(&create_mapping_body.id, Some(update_mapping_params))
         .await
         .expect("update mapping response");
-    assert_eq!(update_mapping_res.status(), 204);
+    assert_eq!(update_mapping_res.status(), 204, "update mapping res: {}", serde_json::to_string_pretty(&update_mapping_res.json::<Value>().await.unwrap()).unwrap());
 
     // let get_updated_mapping_res = baseline
     //     .get_mappings()
@@ -1668,6 +1668,7 @@ async fn get_workflow_prototypes() {
         if workflow.status != "draft"
             && workflow.status != "pending_deployment"
             && workflow.status != "deployed"
+            && workflow.status != "deprecated"
         {
             assert!(
                 false,
@@ -1904,6 +1905,7 @@ async fn get_workflow_prototypes_by_workgroup_id() {
         if workflow.status != "draft"
             && workflow.status != "deployed"
             && workflow.status != "pending_deployment"
+            && workflow.status != "deprecated"
         {
             assert!(
                 false,
