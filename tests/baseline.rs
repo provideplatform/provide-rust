@@ -1594,6 +1594,27 @@ async fn get_workflows() {
         .await
         .expect("get workflows response");
     assert_eq!(get_workflows_res.status(), 200);
+
+    // must run tests with full setup twice to test the below
+    let workflows = get_workflows_res.json::<Vec<Workflow>>().await.expect("get workflows body");
+
+    let get_workgroups_res = baseline.get_workgroups().await.expect("get workflows res");
+    let workgroups = get_workgroups_res.json::<Vec<Workgroup>>().await.expect("get workgroups body");
+
+    for workflow in workflows {
+        let workflow_workgroup_id = workflow.workgroup_id;
+
+        let mut is_valid = false;
+        for workgroup in workgroups.clone() {
+            if workflow_workgroup_id == workgroup.id {
+                is_valid = true;
+            }
+        }
+
+        if !is_valid {
+            assert!(false, "incorrect workflow workgroup_id: {}", &workflow_workgroup_id);
+        }
+    }
 }
 
 #[tokio::test]
