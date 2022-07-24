@@ -98,11 +98,6 @@ handle_shutdown() {
     docker volume rm ops_provide-db
     # TODO-- remove networks
 
-    if [[ $* != *--skip-baseline-startup* ]]; then
-        docker-compose -f ./ops/docker-compose-local-baseline.yml down
-        docker volume rm ops_prvd-baseline-db
-    fi
-
     if [[ "$INVOKE_PRVD_CLI" == "true" && ("$SUITE" == "*" || "$SUITE" == "baseline") ]]; then
         if [[ -f ".test-config.tmp.json" ]]; then
             prvd baseline stack stop --name $(jq '.org_name' .test-config.tmp.json | xargs)
@@ -211,11 +206,11 @@ fi
 
 if [[ $* != *--skip-startup* ]]; then
     # docker-compose -f ./ops/docker-compose.yml build --no-cache
-    docker-compose -f ./ops/docker-compose.yml up --build -d
+    docker-compose --profile core -f ./ops/docker-compose.yml up --build -d
 
     if [[ $* != *--skip-baseline-startup* ]]; then
         sleep 20
-        docker-compose -f ./ops/docker-compose-local-baseline.yml up --build -d
+        docker-compose --profile baseline -f ./ops/docker-compose.yml up --build -d
     fi
 
     wait_for_ident_container &
