@@ -19,8 +19,8 @@ use fake::faker::name::en::{FirstName, LastName, Name};
 use fake::Fake;
 use provide_rust::api::baseline::*;
 use provide_rust::api::client::ApiClient;
-use provide_rust::api::ident::{Application, AuthenticateResponse, Ident, Organization, Token};
-use provide_rust::api::nchain::{Account, Contract, NChain};
+use provide_rust::api::ident::{AuthenticateResponse, Ident, Organization, Token};
+use provide_rust::api::nchain::{Account, Wallet, Contract, NChain};
 use provide_rust::api::vault::{Vault, VaultContainer, VaultKey};
 use serde_json::{json, Value};
 use std::io::Write;
@@ -144,29 +144,23 @@ async fn _deploy_workflow(baseline: &ApiClient, workflow_id: &str, expected_stat
     }
 }
 
-async fn generate_baseline_application(ident: &ApiClient, user_id: &str) -> Application {
-    let application_data = json!({
+async fn generate_workgroup(baseline: &ApiClient) -> Workgroup {
+    let workgroup_params = json!({
         "network_id": ROPSTEN_NETWORK_ID,
-        "user_id": user_id,
         "name": format!("{} application", Name().fake::<String>()),
-        "description": "Some application description",
         "type": "baseline",
-        "hidden": false,
-        "config": {
-            "onboarding_complete": true,
-        }
     });
 
-    let create_application_res = ident
-        .create_application(Some(application_data))
+    let create_workgroup_res = baseline
+        .create_workgroup(Some(workgroup_params))
         .await
-        .expect("generate application response");
-    assert_eq!(create_application_res.status(), 201);
+        .expect("generate workgroup response");
+    assert_eq!(create_workgroup_res.status(), 201);
 
-    return create_application_res
-        .json::<Application>()
+    return create_workgroup_res
+        .json::<Workgroup>()
         .await
-        .expect("create application body");
+        .expect("create workgroup body");
 }
 
 async fn generate_baseline_organization(ident: &ApiClient, user_id: &str) -> Organization {
@@ -261,11 +255,13 @@ async fn setup() {
         None => panic!("organization refresh token not found"),
     };
 
-    // create application
-    let create_application_body =
-        generate_baseline_application(&ident, &authentication_res_body.user.id).await;
+    let baseline: ApiClient = Baseline::factory(&org_access_token);
+
+    // create workgroup
+    let create_workgroup_body =
+        generate_workgroup(&baseline).await;
     let application_authorization_params = json!({
-        "application_id": &create_application_body.id,
+        "application_id": &create_workgroup_body.id,
         "scope": "offline_access",
     });
     let application_authorization_res = ident
@@ -282,47 +278,32 @@ async fn setup() {
         None => panic!("application access toke not found"),
     };
 
-    // associate application organization
-    ident.token = app_access_token.to_string();
-
-    let associate_application_org_params = json!({
-        "organization_id": &create_organization_body.id,
-    });
-    let associate_application_org_res = ident
-        .create_application_organization(
-            &create_application_body.id,
-            Some(associate_application_org_params),
-        )
-        .await
-        .expect("create application organization response");
-    assert_eq!(associate_application_org_res.status(), 204);
-
     // get shuttle registry contract
     let registry_contracts_res = ident.client.get("https://s3.amazonaws.com/static.provide.services/capabilities/provide-capabilities-manifest.json").send().await.expect("get registry contracts response");
     let registry_contracts = registry_contracts_res
         .json::<Value>()
         .await
         .expect("registry contracts body");
-    let shuttle_contract = &registry_contracts["baseline"]["contracts"][2];
+    let compiled_artifact = &registry_contracts["baseline"]["contracts"][2];
 
-    let nchain: ApiClient = NChain::factory(&app_access_token);
+    let nchain: ApiClient = NChain::factory(&org_access_token);
 
     // deploy workgroup contract
-    let create_account_params = json!({
-        "network_id": ROPSTEN_NETWORK_ID,
+    let create_wallet_params = json!({
+        "purpose": 44,
     });
-    let create_account_res = nchain
-        .create_account(Some(create_account_params))
+    let create_wallet_res = nchain
+        .create_wallet(Some(create_wallet_params))
         .await
-        .expect("create account response");
+        .expect("create wallet response");
     assert_eq!(
-        create_account_res.status(),
+        create_wallet_res.status(),
         201,
-        "create account response body: {:?}",
-        create_account_res.json::<Value>().await.unwrap()
+        "create wallet response body: {:?}",
+        create_wallet_res.json::<Value>().await.unwrap()
     ); // FAILS HERE RARELY
-    let create_account_body = create_account_res
-        .json::<Account>()
+    let create_wallet_body = create_wallet_res
+        .json::<Wallet>()
         .await
         .expect("create account body");
 
@@ -331,14 +312,14 @@ async fn setup() {
 
     let create_contract_params = json!({
         "address": &baseline_registry_contract_address,
-        "params": {
-            "account_id": &create_account_body.id,
-            "compiled_artifact": shuttle_contract,
-            "argv": [],
-        },
         "name": "Shuttle",
         "network_id": ROPSTEN_NETWORK_ID,
-        "type": "organization-registry",
+        "params": {
+            "argv": [],
+            "compiled_artifact": compiled_artifact,
+            "wallet_id": &create_wallet_body.id,
+        },
+        "type": "registry",
     });
     let create_contract_res = nchain
         .create_contract(Some(create_contract_params))
@@ -416,7 +397,7 @@ async fn setup() {
         "org_id": &create_organization_body.id,
         "org_name": &create_organization_body.name,
         "app_access_token": &app_access_token,
-        "app_id": &create_application_body.id,
+        "app_id": &create_workgroup_body.id,
     });
     serde_json::to_writer_pretty(
         std::fs::File::create(".test-config.tmp.json")
@@ -446,7 +427,7 @@ async fn setup() {
         // yaml config file
         let config_file_contents = format!(
             "access-token: {}\nrefresh-token: {}\n{}:\n  api-token: {}\n",
-            &user_access_token, &user_refresh_token, &create_application_body.id, &app_access_token
+            &user_access_token, &user_refresh_token, &create_workgroup_body.id, &app_access_token
         );
         let cwd = match std::env::current_dir() {
             Ok(path) => path
@@ -516,7 +497,7 @@ async fn setup() {
             " --vault-scheme={}",
             std::env::var("VAULT_API_SCHEME").unwrap_or(String::from("http"))
         );
-        run_cmd += &format!(" --workgroup={}", &create_application_body.id);
+        run_cmd += &format!(" --workgroup={}", &create_workgroup_body.id);
         run_cmd += &format!(
             " --postgres-hostname={}-postgres",
             &create_organization_body.name
@@ -560,8 +541,6 @@ async fn setup() {
 
         assert_eq!(baseline_container_status, "204 No Content");
     } else {
-        let baseline: ApiClient = Baseline::factory(&org_access_token);
-
         let seconds = time::Duration::from_secs(10);
         std::thread::sleep(seconds);
 
@@ -572,7 +551,7 @@ async fn setup() {
                 "organization_id": &create_organization_body.id,
                 "organization_refresh_token": &org_refresh_token,
                 "registry_contract_address": &registry_contract_address,
-                "workgroup_id": &create_application_body.id,
+                "workgroup_id": &create_workgroup_body.id,
             }
         });
 
