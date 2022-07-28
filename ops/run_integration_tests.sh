@@ -180,8 +180,7 @@ elif [[ "$TEST" != "" ]]; then
     SUITE=
 
 else
-    SUITE="*"
-    TEST=
+    ALL=true
     echo "No SUITE or TEST set. Running all tests..."
 fi
 
@@ -259,32 +258,59 @@ elif [[ $* != *--skip-setup* ]]; then
 
 fi
 
+# TODO-- CLEANUP CODE
 if [[ "$RUN_MANY" == "true" ]]; then
-    IDENT_API_HOST=localhost:8081 \
-    IDENT_API_SCHEME=http \
-    VAULT_API_HOST=localhost:8082 \
-    VAULT_API_SCHEME=http \
-    PRIVACY_API_HOST=localhost:8083 \
-    PRIVACY_API_SCHEME=http \
-    NCHAIN_API_HOST=localhost:8084 \
-    NCHAIN_API_SCHEME=http \
-    BASELINE_API_HOST=localhost:8085 \
-    BASELINE_API_SCHEME=http \
-    cargo nextest run $([[ -n "$TEST" ]] && echo "$TEST" || echo --test "$SUITE") --status-level all --no-fail-fast --success-output final --failure-output final &> $TEST_OUTPUT
-
+    if [[ "$ALL" == "true" ]]; then
+        IDENT_API_HOST=localhost:8081 \
+        IDENT_API_SCHEME=http \
+        VAULT_API_HOST=localhost:8082 \
+        VAULT_API_SCHEME=http \
+        PRIVACY_API_HOST=localhost:8083 \
+        PRIVACY_API_SCHEME=http \
+        NCHAIN_API_HOST=localhost:8084 \
+        NCHAIN_API_SCHEME=http \
+        BASELINE_API_HOST=localhost:8085 \
+        BASELINE_API_SCHEME=http \
+        cargo nextest run --status-level all --no-fail-fast --success-output final --failure-output final &> $TEST_OUTPUT
+    else
+        IDENT_API_HOST=localhost:8081 \
+        IDENT_API_SCHEME=http \
+        VAULT_API_HOST=localhost:8082 \
+        VAULT_API_SCHEME=http \
+        PRIVACY_API_HOST=localhost:8083 \
+        PRIVACY_API_SCHEME=http \
+        NCHAIN_API_HOST=localhost:8084 \
+        NCHAIN_API_SCHEME=http \
+        BASELINE_API_HOST=localhost:8085 \
+        BASELINE_API_SCHEME=http \
+        cargo nextest run $([[ -n "$TEST" ]] && echo "$TEST" || echo --test "$SUITE") --status-level all --no-fail-fast --success-output final --failure-output final &> $TEST_OUTPUT
+    fi
 else
-    IDENT_API_HOST=localhost:8081 \
-    IDENT_API_SCHEME=http \
-    VAULT_API_HOST=localhost:8082 \
-    VAULT_API_SCHEME=http \
-    PRIVACY_API_HOST=localhost:8083 \
-    PRIVACY_API_SCHEME=http \
-    NCHAIN_API_HOST=localhost:8084 \
-    NCHAIN_API_SCHEME=http \
-    BASELINE_API_HOST=localhost:8085 \
-    BASELINE_API_SCHEME=http \
-    cargo nextest run $([[ -n "$TEST" ]] && echo "$TEST" || echo --test "$SUITE") --no-fail-fast --failure-output immediate-final
-
+    if [[ "$ALL" == "true" ]]; then
+        IDENT_API_HOST=localhost:8081 \
+        IDENT_API_SCHEME=http \
+        VAULT_API_HOST=localhost:8082 \
+        VAULT_API_SCHEME=http \
+        PRIVACY_API_HOST=localhost:8083 \
+        PRIVACY_API_SCHEME=http \
+        NCHAIN_API_HOST=localhost:8084 \
+        NCHAIN_API_SCHEME=http \
+        BASELINE_API_HOST=localhost:8085 \
+        BASELINE_API_SCHEME=http \
+        cargo nextest run --no-fail-fast --failure-output immediate-final
+    else
+        IDENT_API_HOST=localhost:8081 \
+        IDENT_API_SCHEME=http \
+        VAULT_API_HOST=localhost:8082 \
+        VAULT_API_SCHEME=http \
+        PRIVACY_API_HOST=localhost:8083 \
+        PRIVACY_API_SCHEME=http \
+        NCHAIN_API_HOST=localhost:8084 \
+        NCHAIN_API_SCHEME=http \
+        BASELINE_API_HOST=localhost:8085 \
+        BASELINE_API_SCHEME=http \
+        cargo nextest run $([[ -n "$TEST" ]] && echo "$TEST" || echo --test "$SUITE") --no-fail-fast --failure-output immediate-final
+    fi
 fi
 
 if [[ $* != *--skip-shutdown* ]]; then
