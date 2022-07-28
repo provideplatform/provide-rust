@@ -95,8 +95,12 @@ handle_shutdown() {
     dump_container_logs $CONTAINER_REGEX
 
     docker-compose -f ./ops/docker-compose.yml down
+
     docker volume rm ops_provide-db
-    # TODO-- remove networks
+    docker volume rm ops_prvd-baseline-db
+    
+    docker network rm ops_provide
+    docker network rm ops_prvd-baseline
 
     if [[ "$INVOKE_PRVD_CLI" == "true" && ("$SUITE" == "*" || "$SUITE" == "baseline") ]]; then
         if [[ -f ".test-config.tmp.json" ]]; then
