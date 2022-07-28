@@ -692,7 +692,8 @@ async fn create_network() {
             "platform": "evm",
             "layer2": false,
             "protocol_id": "pow"
-        }
+        },
+        "layer2": false,
     }));
 
     let create_network_res = nchain
@@ -761,14 +762,22 @@ async fn update_network() {
             "platform": "evm",
             "layer2": false,
             "protocol_id": "pow"
-        }
+        },
+        "layer2": false,
     }));
 
     let create_network_res = nchain
         .create_network(create_network_params)
         .await
         .expect("create network response");
-    assert_eq!(create_network_res.status(), 201);
+    assert_eq!(create_network_res.status(), 201, "create network res: {}",
+    serde_json::to_string_pretty(
+        &create_network_res
+            .json::<serde_json::Value>()
+            .await
+            .unwrap()
+    )
+    .unwrap());
 
     let create_network_body = create_network_res
         .json::<Network>()
@@ -834,7 +843,8 @@ async fn get_network() {
             "platform": "evm",
             "layer2": false,
             "protocol_id": "pow"
-        }
+        },
+        "layer2": false,
     }));
 
     let create_network_res = nchain
