@@ -98,9 +98,6 @@ handle_shutdown() {
 
     docker volume rm ops_provide-db
     docker volume rm ops_prvd-baseline-db
-    
-    docker network rm ops_provide
-    docker network rm ops_prvd-baseline
 
     if [[ "$INVOKE_PRVD_CLI" == "true" && ("$SUITE" == "*" || "$SUITE" == "baseline") ]]; then
         if [[ -f ".test-config.tmp.json" ]]; then
@@ -170,6 +167,8 @@ wait_for_baseline_container() {
 
         sleep 1
     done
+
+    sleep 10
     echo "baseline api container is ready"
 }
 
@@ -214,7 +213,6 @@ if [[ $* != *--skip-startup* ]]; then
     if [[ $* != *--skip-baseline-startup* ]]; then
         sleep 20
         docker-compose --profile baseline -f ./ops/docker-compose.yml up --build -d
-        sleep 10
     fi
 
     wait_for_ident_container &

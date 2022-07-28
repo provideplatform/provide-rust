@@ -18,10 +18,10 @@ baseline-integration-dev:
 	SUITE="baseline" ./ops/run_integration_tests.sh --without-prvd-invocation --with-registry-contract-address
 
 baseline-setup-dev:
-	SUITE="-" ./ops/run_integration_tests.sh --without-prvd-invocation --with-registry-contract-address --skip-shutdown
+	TEST="baseline_setup"  ./ops/run_integration_tests.sh --without-prvd-invocation --with-registry-contract-address --skip-shutdown
 
 baseline-setup-local-dev:
-	SUITE="-"  ./ops/run_integration_tests.sh --without-prvd-invocation --with-registry-contract-address --skip-shutdown --skip-baseline-startup
+	TEST="baseline_setup"  ./ops/run_integration_tests.sh --without-prvd-invocation --with-registry-contract-address --skip-shutdown --skip-baseline-startup
 
 # TODO-- add setup cmd to setup stack w/o or running tests testing against local
 # TODO-- add TEST var to run individual tests vs the entire suite
