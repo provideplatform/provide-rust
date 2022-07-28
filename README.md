@@ -30,5 +30,6 @@ Installing `cargo-nextest` is required to run the tests. Install with `cargo ins
 | --without-prvd-invocation        |                                  Run the tests without the PRVD CLI                                   |
 | --with-registry-contract-address |                     Run the tests with a pre-configured registry contract address                     |
 | --skip-startup                   |                        Run the tests without starting up the docker containers                        |
+| --skip-baseline-startup          |                  Start the stack without starting up the baseline docker containers                   |
 | --skip-shutdown                  |                       Run the tests without shutting down the docker containers                       |
 | --skip-setup                     | Run the tests without running the baseline setup function required for the baseline integration suite |
