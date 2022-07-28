@@ -75,7 +75,7 @@ pub struct ConfigSecurity {
 pub struct Contract {
     pub id: String,
     created_at: String,
-    application_id: String,
+    application_id: Option<String>,
     organization_id: Option<String>,
     network_id: String,
     contract_id: Option<String>,

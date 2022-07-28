@@ -211,6 +211,7 @@ if [[ $* != *--skip-startup* ]]; then
     if [[ $* != *--skip-baseline-startup* ]]; then
         sleep 20
         docker-compose --profile baseline -f ./ops/docker-compose.yml up --build -d
+        sleep 10
     fi
 
     wait_for_ident_container &
@@ -299,3 +300,5 @@ fi
 # adding option to handle_shutdown that only shuts down tests if --skip-shutdown wasn't provided
 # --no-restart flag to take place of --skip-shutdown and --skip-restart flags
 # change CONTAINER_REGEX to --log-match-pattern or something similar
+
+# TODO-- pull latest containers
