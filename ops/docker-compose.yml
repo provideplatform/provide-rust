@@ -87,7 +87,7 @@ services:
       - ./ops/await_tcp.sh:/usr/local/bin/await_tcp.sh:cached
 
   ident:
-    build: ../../ident
+    image: provide/ident
     container_name: ident-api
     depends_on:
       - nats
