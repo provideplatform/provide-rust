@@ -87,7 +87,7 @@ services:
       - ./ops/await_tcp.sh:/usr/local/bin/await_tcp.sh:cached
 
   ident:
-    image: provide/ident
+    build: ../../ident
     container_name: ident-api
     depends_on:
       - nats
@@ -313,7 +313,7 @@ services:
       - REQUEST_TIMEOUT=20
       - RPC_TIMEOUT=10
       - EVM_SYNC_TIMEOUT=10
-      - ENABLED_L1_NETWORK_IDS=8d31bf48-df6b-4a71-9d7c-3cb291111e27
+      - ENABLED_L1_NETWORK_IDS=66d44f30-9092-4182-a3c4-bc02736d6ae5,8d31bf48-df6b-4a71-9d7c-3cb291111e27
       - ENABLED_L2_NETWORK_IDS=4251b6fd-c98d-4017-87a3-d691a77a52a7
     healthcheck:
       test: ['CMD', 'curl', '-f', 'http://nchain:8080/status']
@@ -363,6 +363,8 @@ services:
       - REQUEST_TIMEOUT=20
       - RPC_TIMEOUT=10
       - EVM_SYNC_TIMEOUT=10
+      - ENABLED_L1_NETWORK_IDS=66d44f30-9092-4182-a3c4-bc02736d6ae5,8d31bf48-df6b-4a71-9d7c-3cb291111e27
+      - ENABLED_L2_NETWORK_IDS=4251b6fd-c98d-4017-87a3-d691a77a52a7
     healthcheck:
       test: ['CMD', 'curl', '-f', 'http://nchain-consumer:8080/status'] # FIXME
       interval: 1m
@@ -408,6 +410,8 @@ services:
       - REQUEST_TIMEOUT=20
       - RPC_TIMEOUT=10
       - EVM_SYNC_TIMEOUT=10
+      - ENABLED_L1_NETWORK_IDS=66d44f30-9092-4182-a3c4-bc02736d6ae5,8d31bf48-df6b-4a71-9d7c-3cb291111e27
+      - ENABLED_L2_NETWORK_IDS=4251b6fd-c98d-4017-87a3-d691a77a52a7
     healthcheck:
       test: ['CMD', 'curl', '-f', 'http://statsdaemon:8080/status']
       interval: 1m
