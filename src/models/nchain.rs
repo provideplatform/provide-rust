@@ -106,7 +106,7 @@ pub struct Network {
     user_id: Option<String>,
     name: String,
     description: Option<String>,
-    enabled: bool,
+    enabled: Option<bool>,
     chain_id: String,
     config: Value,
 }
