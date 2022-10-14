@@ -230,3 +230,46 @@ pub struct WorkstepInstance {
 // pub struct BpiAccount {
 
 // }
+
+#[derive(Serialize, Deserialize, Debug, Default, Clone)]
+pub struct System {
+	pub id: String,
+    created_at: String,
+
+    pub name: String,
+    description: Option<String>,
+    r#type: String,
+    organization_id: String,
+    workgroup_id: String,
+
+    auth: Option<SystemAuth>,
+    endpoint_url: String,
+    middleware: Option<SystemMiddleware>,
+
+    vault_id: Option<String>,
+    secret_id: Option<String>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Default, Clone)]
+pub struct SystemAuth {
+    method: Option<String>,
+    username: Option<String>,
+    password: Option<String>,
+
+    require_client_credentials: Option<bool>,
+    client_id: Option<String>,
+    client_secret: Option<String>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Default, Clone)]
+pub struct SystemMiddlewarePolicy {
+    auth: Option<SystemAuth>,
+    name: Option<String>,
+    url: Option<String>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Default, Clone)]
+pub struct SystemMiddleware {
+	inbound: Option<SystemMiddlewarePolicy>,
+	outbound: Option<SystemMiddlewarePolicy>,
+}

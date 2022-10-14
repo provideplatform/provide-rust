@@ -5380,3 +5380,280 @@ async fn delete_workstep_participant_fail_on_deployed() {
 }
 
 // test passing participant with invalid witness / proof?
+
+// #[tokio::test]
+// async fn system_reachability() {}
+
+#[tokio::test]
+async fn list_systems() {
+    let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
+    let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
+
+    let org_access_token_json = config_vals["org_access_token"].to_string();
+    let org_access_token =
+        serde_json::from_str::<String>(&org_access_token_json).expect("organzation access token");
+
+    let app_id_json = config_vals["app_id"].to_string();
+    let app_id = serde_json::from_str::<String>(&app_id_json).expect("workgroup id");
+
+    let baseline: ApiClient = Baseline::factory(&org_access_token);
+
+    let fetch_systems_res = baseline
+        .list_systems(&app_id, None)
+        .await
+        .expect("list systems response");
+    assert_eq!(fetch_systems_res.status(), 200);
+}
+
+#[tokio::test]
+async fn get_system_details() {
+    let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
+    let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
+
+    let org_access_token_json = config_vals["org_access_token"].to_string();
+    let org_access_token =
+        serde_json::from_str::<String>(&org_access_token_json).expect("organzation access token");
+
+    let app_id_json = config_vals["app_id"].to_string();
+    let app_id = serde_json::from_str::<String>(&app_id_json).expect("workgroup id");
+
+    let baseline: ApiClient = Baseline::factory(&org_access_token);
+
+    let create_system_params = json!({
+        "type": "sap",
+        "name": "test system",
+        "auth": {
+            "method": "Basic Auth",
+            "username": "username",
+            "password": "password",
+            "require_client_credentials": false,
+            "client_id": null,
+            "client_secret": null
+        },
+        "middleware": {
+            "inbound": {
+                "name": null,
+                "url": null,
+                "auth": {
+                    "method": "Basic Auth",
+                    "username": null,
+                    "password": null,
+                    "require_client_credentials": false,
+                    "client_id": null,
+                    "client_secret": null
+                }
+            },
+            "outbound": {
+                "name": null,
+                "url": null,
+                "auth": {
+                    "method": "Basic Auth",
+                    "username": null,
+                    "password": null,
+                    "require_client_credentials": false,
+                    "client_id": null,
+                    "client_secret": null
+                }
+            }
+        },
+        "endpoint_url": "http://localhost:8070"
+    });
+
+    let create_system_res = baseline.create_system(&app_id, Some(create_system_params)).await.expect("create system res");
+
+    let create_system_body = create_system_res.json::<System>().await.expect("create system body");
+
+    let get_system_details = baseline
+        .get_system_details(&app_id, &create_system_body.id, None)
+        .await
+        .expect("get system details response");
+    assert_eq!(get_system_details.status(), 200);
+}
+
+#[tokio::test]
+async fn create_system() {
+    let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
+    let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
+
+    let org_access_token_json = config_vals["org_access_token"].to_string();
+    let org_access_token =
+        serde_json::from_str::<String>(&org_access_token_json).expect("organzation access token");
+
+    let app_id_json = config_vals["app_id"].to_string();
+    let app_id = serde_json::from_str::<String>(&app_id_json).expect("workgroup id");
+
+    let baseline: ApiClient = Baseline::factory(&org_access_token);
+
+    let create_system_params = json!({
+        "type": "sap",
+        "name": "test system",
+        "auth": {
+            "method": "Basic Auth",
+            "username": "username",
+            "password": "password",
+            "require_client_credentials": false,
+            "client_id": null,
+            "client_secret": null
+        },
+        "middleware": {
+            "inbound": {
+                "name": null,
+                "url": null,
+                "auth": {
+                    "method": "Basic Auth",
+                    "username": null,
+                    "password": null,
+                    "require_client_credentials": false,
+                    "client_id": null,
+                    "client_secret": null
+                }
+            },
+            "outbound": {
+                "name": null,
+                "url": null,
+                "auth": {
+                    "method": "Basic Auth",
+                    "username": null,
+                    "password": null,
+                    "require_client_credentials": false,
+                    "client_id": null,
+                    "client_secret": null
+                }
+            }
+        },
+        "endpoint_url": "http://localhost:8070"
+    });
+
+    let create_system_res = baseline.create_system(&app_id, Some(create_system_params)).await.expect("create system res");
+    assert_eq!(create_system_res.status(), 201);
+}
+
+#[tokio::test]
+async fn update_system() {
+    let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
+    let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
+
+    let org_access_token_json = config_vals["org_access_token"].to_string();
+    let org_access_token =
+        serde_json::from_str::<String>(&org_access_token_json).expect("organzation access token");
+
+    let app_id_json = config_vals["app_id"].to_string();
+    let app_id = serde_json::from_str::<String>(&app_id_json).expect("workgroup id");
+
+    let baseline: ApiClient = Baseline::factory(&org_access_token);
+
+    let create_system_params = json!({
+        "type": "sap",
+        "name": "test system",
+        "auth": {
+            "method": "Basic Auth",
+            "username": "username",
+            "password": "password",
+            "require_client_credentials": false,
+            "client_id": null,
+            "client_secret": null
+        },
+        "middleware": {
+            "inbound": {
+                "name": null,
+                "url": null,
+                "auth": {
+                    "method": "Basic Auth",
+                    "username": null,
+                    "password": null,
+                    "require_client_credentials": false,
+                    "client_id": null,
+                    "client_secret": null
+                }
+            },
+            "outbound": {
+                "name": null,
+                "url": null,
+                "auth": {
+                    "method": "Basic Auth",
+                    "username": null,
+                    "password": null,
+                    "require_client_credentials": false,
+                    "client_id": null,
+                    "client_secret": null
+                }
+            }
+        },
+        "endpoint_url": "http://localhost:8070"
+    });
+
+    let create_system_res = baseline.create_system(&app_id, Some(create_system_params)).await.expect("create system res");
+    assert_eq!(create_system_res.status(), 201);
+
+    let create_system_body = create_system_res.json::<System>().await.expect("create system body");
+
+    let update_system_params = json!({
+        "name": "updated system",
+    });
+
+    let update_system_res = baseline.update_system(&app_id, &create_system_body.id, Some(update_system_params)).await.expect("update system res");
+    assert_eq!(update_system_res.status(), 204);
+}
+
+#[tokio::test]
+async fn delete_system() {
+    let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
+    let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
+
+    let org_access_token_json = config_vals["org_access_token"].to_string();
+    let org_access_token =
+        serde_json::from_str::<String>(&org_access_token_json).expect("organzation access token");
+
+    let app_id_json = config_vals["app_id"].to_string();
+    let app_id = serde_json::from_str::<String>(&app_id_json).expect("workgroup id");
+
+    let baseline: ApiClient = Baseline::factory(&org_access_token);
+
+    let create_system_params = json!({
+        "type": "sap",
+        "name": "test system",
+        "auth": {
+            "method": "Basic Auth",
+            "username": "username",
+            "password": "password",
+            "require_client_credentials": false,
+            "client_id": null,
+            "client_secret": null
+        },
+        "middleware": {
+            "inbound": {
+                "name": null,
+                "url": null,
+                "auth": {
+                    "method": "Basic Auth",
+                    "username": null,
+                    "password": null,
+                    "require_client_credentials": false,
+                    "client_id": null,
+                    "client_secret": null
+                }
+            },
+            "outbound": {
+                "name": null,
+                "url": null,
+                "auth": {
+                    "method": "Basic Auth",
+                    "username": null,
+                    "password": null,
+                    "require_client_credentials": false,
+                    "client_id": null,
+                    "client_secret": null
+                }
+            }
+        },
+        "endpoint_url": "http://localhost:8070"
+    });
+
+    let create_system_res = baseline.create_system(&app_id, Some(create_system_params)).await.expect("create system res");
+    assert_eq!(create_system_res.status(), 201);
+
+    let create_system_body = create_system_res.json::<System>().await.expect("create system body");
+
+    let delete_system_res = baseline.delete_system(&app_id, &create_system_body.id).await.expect("delete system res");
+    assert_eq!(delete_system_res.status(), 204);
+}
