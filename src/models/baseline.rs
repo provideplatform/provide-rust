@@ -79,7 +79,7 @@ pub struct MappingField {
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
 pub struct MappingModel {
-    id: String,
+    pub id: String,
     created_at: String,
 
     description: Option<String>,
