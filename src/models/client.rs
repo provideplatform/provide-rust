@@ -27,3 +27,4 @@ pub struct ApiClient {
 
 pub type Response = Result<reqwest::Response, reqwest::Error>;
 pub type Params = Option<Value>;
+pub type QueryParams = Option<Vec<(String, String)>>;

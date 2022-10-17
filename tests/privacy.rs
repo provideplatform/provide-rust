@@ -90,7 +90,7 @@ async fn list_provers() {
 
     let privacy: ApiClient = Privacy::factory(&access_token);
 
-    let list_provers_res = privacy.list_provers().await.expect("list provers response");
+    let list_provers_res = privacy.list_provers(None).await.expect("list provers response");
     assert_eq!(list_provers_res.status(), 200);
 }
 
@@ -118,7 +118,7 @@ async fn get_prover() {
     let deploy_prover_body = deploy_prover(&privacy).await;
 
     let get_prover_res = privacy
-        .get_prover(&deploy_prover_body.id)
+        .get_prover(&deploy_prover_body.id, None)
         .await
         .expect("get prover response");
     assert_eq!(get_prover_res.status(), 200);
@@ -159,7 +159,7 @@ async fn generate_proof() {
     }));
 
     let application_auth_res = ident
-        .application_authorization(application_auth_params)
+        .authenticate_application(application_auth_params)
         .await
         .expect("application authorization response");
 
@@ -186,7 +186,7 @@ async fn generate_proof() {
         interval.tick().await;
 
         let get_prover_res = privacy
-            .get_prover(&deploy_prover_body.id)
+            .get_prover(&deploy_prover_body.id, None)
             .await
             .expect("get prover response");
         assert_eq!(get_prover_res.status(), 200);
@@ -256,7 +256,7 @@ async fn verify_proof() {
     }));
 
     let application_auth_res = ident
-        .application_authorization(application_auth_params)
+        .authenticate_application(application_auth_params)
         .await
         .expect("application authorization response");
 
@@ -283,7 +283,7 @@ async fn verify_proof() {
         interval.tick().await;
 
         let get_prover_res = privacy
-            .get_prover(&deploy_prover_body.id)
+            .get_prover(&deploy_prover_body.id, None)
             .await
             .expect("get prover response");
         assert_eq!(get_prover_res.status(), 200);
@@ -372,7 +372,7 @@ async fn retrieve_store_value() {
     }));
 
     let application_auth_res = ident
-        .application_authorization(application_auth_params)
+        .authenticate_application(application_auth_params)
         .await
         .expect("application authorization response");
 
@@ -399,7 +399,7 @@ async fn retrieve_store_value() {
         interval.tick().await;
 
         let get_prover_res = privacy
-            .get_prover(&deploy_prover_body.id)
+            .get_prover(&deploy_prover_body.id, None)
             .await
             .expect("get prover response");
         assert_eq!(get_prover_res.status(), 200);
@@ -434,7 +434,7 @@ async fn retrieve_store_value() {
     assert_eq!(generate_proof_res.status(), 200);
 
     let retrieve_store_value_res = privacy
-        .retrieve_store_value(&deploy_prover_body.id, "0")
+        .retrieve_store_value(&deploy_prover_body.id, "0", None)
         .await
         .expect("retrieve store value response");
     assert_eq!(retrieve_store_value_res.status(), 200);

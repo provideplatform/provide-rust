@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-pub use crate::models::client::{ApiClient, Params, Response};
+pub use crate::models::client::{ApiClient, Params, Response, QueryParams};
 use reqwest::{
-    header::{HeaderMap, HeaderName, HeaderValue, AUTHORIZATION, CONTENT_TYPE, USER_AGENT},
+    header::{HeaderMap, HeaderValue, AUTHORIZATION, CONTENT_TYPE, USER_AGENT},
     Client,
 };
 
@@ -37,16 +37,13 @@ impl ApiClient {
     pub fn get(
         &self,
         uri: &str,
-        params: Params,
-        additional_headers: Option<Vec<(String, String)>>,
-        query_params: Option<Vec<(String, String)>>,
+        query_params: QueryParams,
     ) -> impl std::future::Future<Output = Response> {
         let url = format!("{}/{}", self.base_url, uri);
         self.client
             .get(url)
-            .headers(self.construct_headers(additional_headers.unwrap_or(vec![]), "GET"))
+            .headers(self.construct_headers( "GET"))
             .query(&query_params.unwrap_or(vec![]))
-            .json(&params)
             .send()
     }
 
@@ -54,12 +51,11 @@ impl ApiClient {
         &self,
         uri: &str,
         params: Params,
-        additional_headers: Option<Vec<(String, String)>>,
     ) -> impl std::future::Future<Output = Response> {
         let url = format!("{}/{}", self.base_url, uri);
         self.client
             .patch(url)
-            .headers(self.construct_headers(additional_headers.unwrap_or(vec![]), "PATCH"))
+            .headers(self.construct_headers( "PATCH"))
             .json(&params)
             .send()
     }
@@ -68,12 +64,11 @@ impl ApiClient {
         &self,
         uri: &str,
         params: Params,
-        additional_headers: Option<Vec<(String, String)>>,
     ) -> impl std::future::Future<Output = Response> {
         let url = format!("{}/{}", self.base_url, uri);
         self.client
             .put(url)
-            .headers(self.construct_headers(additional_headers.unwrap_or(vec![]), "PUT"))
+            .headers(self.construct_headers( "PUT"))
             .json(&params)
             .send()
     }
@@ -82,12 +77,11 @@ impl ApiClient {
         &self,
         uri: &str,
         params: Params,
-        additional_headers: Option<Vec<(String, String)>>,
     ) -> impl std::future::Future<Output = Response> {
         let url = format!("{}/{}", self.base_url, uri);
         self.client
             .post(url)
-            .headers(self.construct_headers(additional_headers.unwrap_or(vec![]), "POST"))
+            .headers(self.construct_headers( "POST"))
             .json(&params)
             .send()
     }
@@ -95,14 +89,11 @@ impl ApiClient {
     pub fn delete(
         &self,
         uri: &str,
-        params: Params,
-        additional_headers: Option<Vec<(String, String)>>,
     ) -> impl std::future::Future<Output = Response> {
         let url = format!("{}/{}", self.base_url, uri);
         self.client
             .delete(url)
-            .headers(self.construct_headers(additional_headers.unwrap_or(vec![]), "DELETE"))
-            .json(&params)
+            .headers(self.construct_headers( "DELETE"))
             .send()
     }
 
@@ -118,7 +109,6 @@ impl ApiClient {
 
     fn construct_headers(
         &self,
-        additional_headers: Vec<(String, String)>,
         method: &str,
     ) -> HeaderMap {
         let mut headers = HeaderMap::new();
@@ -140,14 +130,7 @@ impl ApiClient {
             headers.insert(AUTHORIZATION, HeaderValue::from_str(&auth).expect("token"));
         }
 
-        for (key, value) in additional_headers {
-            let header_name = HeaderName::from_bytes(key.as_bytes()).expect("header name");
-            let header_value = HeaderValue::from_str(&value).expect("header value");
-            headers.insert(header_name, header_value);
-        }
-
         headers
     }
 }
 
-// TODO-- GET pagination capabilities

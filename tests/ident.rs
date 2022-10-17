@@ -144,8 +144,7 @@ async fn get_user() {
     let get_user_res = ident
         .get_user(
             &authentication_res_body.user.id,
-            &authentication_res_body.user.name,
-            None,
+            None
         )
         .await
         .expect("get user response");
@@ -162,7 +161,7 @@ async fn list_users() {
 
     let ident: ApiClient = Ident::factory(&access_token);
 
-    let get_users_res = ident.get_users().await.expect("get users response");
+    let get_users_res = ident.list_users(None).await.expect("get users response");
     assert_eq!(get_users_res.status(), 403)
 }
 
@@ -182,7 +181,7 @@ async fn update_user() {
     let update_user_res = ident
         .update_user(
             &authentication_res_body.user.id,
-            &authentication_res_body.user.name,
+            
             Some(update_params),
         )
         .await
@@ -231,7 +230,7 @@ async fn list_organizations() {
     let ident: ApiClient = Ident::factory(&access_token);
 
     let list_organizations_res = ident
-        .list_organizations()
+        .list_organizations(None)
         .await
         .expect("list organizations response");
     assert_eq!(list_organizations_res.status(), 200);
@@ -251,7 +250,7 @@ async fn get_organization() {
         generate_organization(&ident, &authentication_res_body.user.id).await;
 
     let get_organization_res = ident
-        .get_organization(&create_organization_body.id)
+        .get_organization(&create_organization_body.id, None)
         .await
         .expect("get organization response");
     assert_eq!(get_organization_res.status(), 200);
@@ -286,7 +285,7 @@ async fn update_organization() {
 }
 
 #[tokio::test]
-async fn organization_authorization() {
+async fn authenticate_organization() {
     let authentication_res_body = generate_new_user_and_token().await;
     let access_token = match authentication_res_body.token.access_token {
         Some(string) => string,
@@ -303,7 +302,7 @@ async fn organization_authorization() {
         "scope": "offline_access"
     });
     let organization_authorization_res = ident
-        .organization_authorization(Some(organization_authorization_params))
+        .authenticate_organization(Some(organization_authorization_params))
         .await
         .expect("organization authorization response");
     assert_eq!(organization_authorization_res.status(), 201)
@@ -320,46 +319,46 @@ async fn list_tokens() {
 
     let ident: ApiClient = Ident::factory(&access_token);
 
-    let create_organization_params = json!({
-        "name": "ACME Inc.",
-        "description": "Organization for testing",
-        "user_id": &authentication_res_body.user.id,
-        "metadata": {
-            "hello": "world",
-            "arbitrary": "input"
-        }
-    });
-    let create_organization_res = ident
-        .create_organization(Some(create_organization_params))
-        .await
-        .expect("create organization response");
-    assert_eq!(create_organization_res.status(), 201);
+    // let create_organization_params = json!({
+    //     "name": "ACME Inc.",
+    //     "description": "Organization for testing",
+    //     "user_id": &authentication_res_body.user.id,
+    //     "metadata": {
+    //         "hello": "world",
+    //         "arbitrary": "input"
+    //     }
+    // });
+    // let create_organization_res = ident
+    //     .create_organization(Some(create_organization_params))
+    //     .await
+    //     .expect("create organization response");
+    // assert_eq!(create_organization_res.status(), 201);
 
-    let create_organization_body = create_organization_res
-        .json::<Organization>()
-        .await
-        .expect("create organization body");
+    // let create_organization_body = create_organization_res
+    //     .json::<Organization>()
+    //     .await
+    //     .expect("create organization body");
 
-    let organization_authorization_params = json!({
-        "organization_id": create_organization_body.id,
-        "scope": "offline_access"
-    });
-    let organization_authorization_res = ident
-        .organization_authorization(Some(organization_authorization_params))
-        .await
-        .expect("organization authorization response");
-    assert_eq!(organization_authorization_res.status(), 201);
+    // let organization_authorization_params = json!({
+    //     "organization_id": create_organization_body.id,
+    //     "scope": "offline_access"
+    // });
+    // let organization_authorization_res = ident
+    //     .authenticate_organization(Some(organization_authorization_params))
+    //     .await
+    //     .expect("organization authorization response");
+    // assert_eq!(organization_authorization_res.status(), 201);
 
-    let organization_authorization_body = organization_authorization_res
-        .json::<Token>()
-        .await
-        .expect("organization authorization body");
+    // let organization_authorization_body = organization_authorization_res
+    //     .json::<Token>()
+    //     .await
+    //     .expect("organization authorization body");
 
-    let list_tokens_params = json!({
-        "refresh_token": organization_authorization_body.refresh_token
-    });
+    // let list_tokens_params = json!({
+    //     "refresh_token": organization_authorization_body.refresh_token
+    // });
     let list_tokens_res = ident
-        .list_tokens(Some(list_tokens_params))
+        .list_tokens(None)
         .await
         .expect("list tokens res");
     assert_eq!(list_tokens_res.status(), 200);
@@ -376,7 +375,7 @@ async fn list_appications() {
     let ident: ApiClient = Ident::factory(&access_token);
 
     let list_applications_res = ident
-        .list_applications()
+        .list_applications(None)
         .await
         .expect("list applications response");
     assert_eq!(list_applications_res.status(), 200);
@@ -409,7 +408,7 @@ async fn get_application() {
         generate_new_application(&ident, &authentication_res_body.user.id).await;
 
     let get_application_res = ident
-        .get_application(&create_application_body.id)
+        .get_application(&create_application_body.id, None)
         .await
         .expect("get application response");
     assert_eq!(get_application_res.status(), 200);
@@ -472,7 +471,7 @@ async fn list_application_users() {
         generate_new_application(&ident, &authentication_res_body.user.id).await;
 
     let list_application_users_res = ident
-        .list_application_users(&create_application_body.id)
+        .list_application_users(&create_application_body.id, None)
         .await
         .expect("list application users res");
     assert_eq!(list_application_users_res.status(), 200);
@@ -496,7 +495,7 @@ async fn create_application_user() {
         "scope": "offline_access"
     });
     let application_authorization_res = ident
-        .application_authorization(Some(application_authorization_params))
+        .authenticate_application(Some(application_authorization_params))
         .await
         .expect("application authorization response");
     assert_eq!(application_authorization_res.status(), 201);
@@ -542,7 +541,7 @@ async fn create_application_user() {
 }
 
 #[tokio::test]
-async fn application_authorization() {
+async fn authenticate_application() {
     let authentication_res_body = generate_new_user_and_token().await;
     let access_token = match authentication_res_body.token.access_token {
         Some(string) => string,
@@ -559,7 +558,7 @@ async fn application_authorization() {
         "scope": "offline_access"
     });
     let application_authorization_res = ident
-        .application_authorization(Some(application_authorization_params))
+        .authenticate_application(Some(application_authorization_params))
         .await
         .expect("application authorization response");
     assert_eq!(application_authorization_res.status(), 201);
@@ -582,7 +581,7 @@ async fn revoke_token() {
         "application_id": create_application_body.id
     });
     let application_authorization_res = ident
-        .application_authorization(Some(application_authorization_params))
+        .authenticate_application(Some(application_authorization_params))
         .await
         .expect("application authorization response");
     assert_eq!(application_authorization_res.status(), 201);
@@ -617,7 +616,7 @@ async fn create_application_organization() {
         "scope": "offline_access"
     });
     let application_authorization_res = ident
-        .application_authorization(Some(application_authorization_params))
+        .authenticate_application(Some(application_authorization_params))
         .await
         .expect("application authorization response");
     assert_eq!(application_authorization_res.status(), 201);
@@ -685,7 +684,7 @@ async fn fetch_application_organizations() {
         generate_new_application(&ident, &authentication_res_body.user.id).await;
 
     let fetch_application_organizations_res = ident
-        .fetch_application_organizations(&create_application_body.id)
+        .list_application_organizations(&create_application_body.id, None)
         .await
         .expect("fetch application organizations response");
     assert_eq!(fetch_application_organizations_res.status(), 200);
@@ -709,7 +708,7 @@ async fn fetch_application_organizations() {
 //         "scope": "offline_access"
 //     });
 //     let application_authorization_res = ident
-//         .application_authorization(Some(application_authorization_params))
+//         .authenticate_application(Some(application_authorization_params))
 //         .await
 //         .expect("application authorization response");
 //     assert_eq!(application_authorization_res.status(), 201);
@@ -773,7 +772,7 @@ async fn delete_application_organization() {
         "scope": "offline_access"
     });
     let application_authorization_res = ident
-        .application_authorization(Some(application_authorization_params))
+        .authenticate_application(Some(application_authorization_params))
         .await
         .expect("application authorization response");
     assert_eq!(application_authorization_res.status(), 201);
@@ -825,7 +824,7 @@ async fn fetch_application_invitations() {
         generate_new_application(&ident, &authentication_res_body.user.id).await;
 
     let fetch_application_invitations_res = ident
-        .fetch_application_invitations(&create_application_body.id)
+        .list_application_invitations(&create_application_body.id, None)
         .await
         .expect("fetch application invitations response");
     assert_eq!(fetch_application_invitations_res.status(), 200);
@@ -845,7 +844,7 @@ async fn fetch_application_tokens() {
         generate_new_application(&ident, &authentication_res_body.user.id).await;
 
     let fetch_application_tokens_res = ident
-        .fetch_application_tokens(&create_application_body.id)
+        .list_application_tokens(&create_application_body.id, None)
         .await
         .expect("fetch application tokens response");
     assert_eq!(fetch_application_tokens_res.status(), 200);
@@ -869,7 +868,7 @@ async fn authenticate_application_user() {
         "scope": "offline_access"
     });
     let application_authorization_res = ident
-        .application_authorization(Some(application_authorization_params))
+        .authenticate_application(Some(application_authorization_params))
         .await
         .expect("application authorization response");
     assert_eq!(application_authorization_res.status(), 201);
@@ -939,7 +938,7 @@ async fn authenticate_application_user() {
 //         "scope": "offline_access"
 //     });
 //     let application_authorization_res = ident
-//         .application_authorization(Some(application_authorization_params))
+//         .authenticate_application(Some(application_authorization_params))
 //         .await
 //         .expect("application authorization response");
 //     assert_eq!(application_authorization_res.status(), 201);
@@ -1016,7 +1015,7 @@ async fn delete_application_user() {
         "scope": "offline_access"
     });
     let application_authorization_res = ident
-        .application_authorization(Some(application_authorization_params))
+        .authenticate_application(Some(application_authorization_params))
         .await
         .expect("application authorization response");
     assert_eq!(application_authorization_res.status(), 201);
@@ -1081,7 +1080,7 @@ async fn fetch_organization_invitations() {
         generate_organization(&ident, &authentication_res_body.user.id).await;
 
     let fetch_organization_invitations_res = ident
-        .fetch_organization_invitations(&create_organization_body.id)
+        .list_organization_invitations(&create_organization_body.id, None)
         .await
         .expect("fetch organization invitations response");
     assert_eq!(fetch_organization_invitations_res.status(), 200);
@@ -1101,7 +1100,7 @@ async fn fetch_organization_users() {
         generate_organization(&ident, &authentication_res_body.user.id).await;
 
     let fetch_organization_users_res = ident
-        .fetch_organization_users(&create_organization_body.id)
+        .list_organization_users(&create_organization_body.id, None)
         .await
         .expect("fetch organization users response");
     assert_eq!(fetch_organization_users_res.status(), 200);
@@ -1125,7 +1124,7 @@ async fn create_organization_user() {
         "scope": "offline_access"
     });
     let organization_authorization_res = ident
-        .organization_authorization(Some(organization_authorization_params))
+        .authenticate_organization(Some(organization_authorization_params))
         .await
         .expect("organization authorization response");
     assert_eq!(organization_authorization_res.status(), 201);
@@ -1188,7 +1187,7 @@ async fn create_organization_user() {
 //         "scope": "offline_access"
 //     });
 //     let organization_authorization_res = ident
-//         .organization_authorization(Some(organization_authorization_params))
+//         .authenticate_organization(Some(organization_authorization_params))
 //         .await
 //         .expect("organization authorization response");
 //     assert_eq!(organization_authorization_res.status(), 201);
@@ -1265,7 +1264,7 @@ async fn delete_organization_user() {
         "scope": "offline_access"
     });
     let organization_authorization_res = ident
-        .organization_authorization(Some(organization_authorization_params))
+        .authenticate_organization(Some(organization_authorization_params))
         .await
         .expect("organization authorization response");
     assert_eq!(organization_authorization_res.status(), 201);
@@ -1330,7 +1329,7 @@ async fn fetch_organization_vaults() {
         generate_organization(&ident, &authentication_res_body.user.id).await;
 
     let fetch_organization_vaults_res = ident
-        .fetch_organization_vaults(&create_organization_body.id)
+        .list_organization_vaults(&create_organization_body.id, None)
         .await
         .expect("fetch organization vaults response");
     assert_eq!(fetch_organization_vaults_res.status(), 200);
@@ -1353,9 +1352,10 @@ async fn fetch_organization_vault_keys() {
     let create_organization_vault_body = generate_vault(&vault, &create_organization_body.id).await;
 
     let fetch_organization_vault_keys_res = ident
-        .fetch_organization_vault_keys(
+        .list_organization_vault_keys(
             &create_organization_body.id,
             &create_organization_vault_body.id,
+            None
         )
         .await
         .expect("fetch organization vault keys response");
@@ -1494,9 +1494,10 @@ async fn fetch_organization_vault_secrets() {
     let create_organization_vault_body = generate_vault(&vault, &create_organization_body.id).await;
 
     let fetch_organization_vault_secrets_res = ident
-        .fetch_organization_vault_secrets(
+        .list_organization_vault_secrets(
             &create_organization_body.id,
             &create_organization_vault_body.id,
+            None
         )
         .await
         .expect("fetch organization vault secrets response");
@@ -1612,7 +1613,7 @@ async fn create_invitation() {
         "scope": "offline_access"
     });
     let application_authorization_res = ident
-        .application_authorization(Some(application_authorization_params))
+        .authenticate_application(Some(application_authorization_params))
         .await
         .expect("application authorization response");
     assert_eq!(application_authorization_res.status(), 201);
@@ -1649,7 +1650,7 @@ async fn create_invitation() {
     });
 
     let organization_authorization_res = ident
-        .organization_authorization(Some(organization_authorization_params))
+        .authenticate_organization(Some(organization_authorization_params))
         .await
         .expect("organization authorization response");
     assert_eq!(organization_authorization_res.status(), 201);
@@ -1685,7 +1686,7 @@ async fn create_invitation() {
     assert_eq!(create_invitation_res.status(), 204);
 
     let fetch_organization_invitations_res = ident
-        .fetch_organization_invitations(&create_organization_body.id)
+        .list_organization_invitations(&create_organization_body.id, None)
         .await
         .expect("fetch organization invitations response");
     assert_eq!(fetch_organization_invitations_res.status(), 200);

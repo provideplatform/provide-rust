@@ -104,7 +104,7 @@ async fn _deploy_registry_contract(
     while registry_contract.address == "0x" {
         interval.tick().await;
         let get_contract_res = nchain
-            .get_contract(&registry_contract.id)
+            .get_contract(&registry_contract.id, None)
             .await
             .expect("get contract response");
         assert_eq!(get_contract_res.status(), 200);
@@ -186,7 +186,7 @@ async fn _deploy_workflow(baseline: &ApiClient, workflow_id: &str, expected_stat
 
         while deployed_worksteps_status != true {
             let fetch_worksteps_res = baseline
-                .fetch_worksteps(workflow_id)
+                .list_worksteps(workflow_id, None)
                 .await
                 .expect("fetch worksteps response");
             let fetch_worksteps_body = fetch_worksteps_res
@@ -214,7 +214,7 @@ async fn _deploy_workflow(baseline: &ApiClient, workflow_id: &str, expected_stat
 
         while deployed_workflow_status != true {
             let get_workflow_res = baseline
-                .get_workflow(workflow_id)
+                .get_workflow(workflow_id, None)
                 .await
                 .expect("get workflow response");
             let get_workflow_body = get_workflow_res
@@ -326,7 +326,7 @@ async fn baseline_setup() {
         "scope": "offline_access",
     });
     let organization_authorization_res = ident
-        .organization_authorization(Some(organization_authorization_params))
+        .authenticate_organization(Some(organization_authorization_params))
         .await
         .expect("organization authorization response");
     assert_eq!(organization_authorization_res.status(), 201);
@@ -385,7 +385,7 @@ async fn baseline_setup() {
         "scope": "offline_access",
     });
     let application_authorization_res = ident
-        .application_authorization(Some(application_authorization_params))
+        .authenticate_application(Some(application_authorization_params))
         .await
         .expect("application authorization response");
     assert_eq!(application_authorization_res.status(), 201);
@@ -397,14 +397,6 @@ async fn baseline_setup() {
         Some(tkn) => tkn,
         None => panic!("application access toke not found"),
     };
-
-    // get shuttle registry contract
-    let registry_contracts_res = ident.client.get("https://s3.amazonaws.com/static.provide.services/capabilities/provide-capabilities-manifest.json").send().await.expect("get registry contracts response");
-    let registry_contracts = registry_contracts_res
-        .json::<Value>()
-        .await
-        .expect("registry contracts body");
-    let compiled_artifact = &registry_contracts["baseline"]["contracts"][2];
 
     let nchain: ApiClient = NChain::factory(&org_access_token);
 
@@ -631,7 +623,7 @@ async fn baseline_setup() {
 
         while baseline_container_status == "" {
             baseline_container_status =
-                match baseline_status_client.get("status", None, None, None).await {
+                match baseline_status_client.get("status", None).await {
                     Ok(res) => res.status().to_string(),
                     Err(_) => String::from(""),
                 };
@@ -1464,7 +1456,7 @@ async fn get_mappings() {
     let baseline: ApiClient = Baseline::factory(&org_access_token);
 
     let get_mappings_res = baseline
-        .get_mappings(None)
+        .list_mappings(None)
         .await
         .expect("get mappings response");
     assert_eq!(get_mappings_res.status(), 200);
@@ -1485,7 +1477,7 @@ async fn get_mappings_by_workgroup() {
     let baseline: ApiClient = Baseline::factory(&org_access_token);
 
     let get_mappings_res = baseline
-        .get_mappings(Some(vec![("workgroup_id".to_string(), app_id)]))
+        .list_mappings(Some(vec![("workgroup_id".to_string(), app_id)]))
         .await
         .expect("get mappings response");
     assert_eq!(get_mappings_res.status(), 200);
@@ -1695,7 +1687,7 @@ async fn delete_mapping() {
 // async fn update_config() {}
 
 #[tokio::test]
-async fn get_workflows() {
+async fn list_workflows() {
     let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
     let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
 
@@ -1706,7 +1698,7 @@ async fn get_workflows() {
     let baseline: ApiClient = Baseline::factory(&org_access_token);
 
     let get_workflows_res = baseline
-        .get_workflows(None)
+        .list_workflows(None)
         .await
         .expect("get workflows response");
     assert_eq!(get_workflows_res.status(), 200);
@@ -1717,7 +1709,7 @@ async fn get_workflows() {
         .await
         .expect("get workflows body");
 
-    let get_workgroups_res = baseline.get_workgroups().await.expect("get workflows res");
+    let get_workgroups_res = baseline.list_workgroups(None).await.expect("get workflows res");
     let workgroups = get_workgroups_res
         .json::<Vec<Workgroup>>()
         .await
@@ -1830,7 +1822,7 @@ async fn get_workflow_prototypes() {
     let _ = _create_workflow(&baseline, create_workflow_instance_params, 201).await;
 
     let get_workflows_res = baseline
-        .get_workflows(Some(vec![(
+        .list_workflows(Some(vec![(
             "filter_instances".to_string(),
             "true".to_string(),
         )]))
@@ -1945,7 +1937,7 @@ async fn get_workflow_instances() {
     let _ = _create_workflow(&baseline, create_workflow_instance_params, 201).await;
 
     let get_workflows_res = baseline
-        .get_workflows(Some(vec![(
+        .list_workflows(Some(vec![(
             "filter_prototypes".to_string(),
             "true".to_string(),
         )]))
@@ -2059,7 +2051,7 @@ async fn get_workflows_by_workgroup_id() {
     let _ = _create_workflow(&baseline, create_workflow_instance_params, 201).await;
 
     let get_workflows_res = baseline
-        .get_workflows(Some(vec![("workgroup_id".to_string(), app_id.clone())]))
+        .list_workflows(Some(vec![("workgroup_id".to_string(), app_id.clone())]))
         .await
         .expect("get workflows by workgroup id response");
     assert_eq!(get_workflows_res.status(), 200);
@@ -2161,7 +2153,7 @@ async fn get_workflow_prototypes_by_workgroup_id() {
     let _ = _create_workflow(&baseline, create_workflow_instance_params, 201).await;
 
     let get_workflows_res = baseline
-        .get_workflows(Some(vec![
+        .list_workflows(Some(vec![
             ("workgroup_id".to_string(), app_id.clone()),
             ("filter_instances".to_string(), "true".to_string()),
         ]))
@@ -2278,7 +2270,7 @@ async fn get_workflow_instances_by_workgroup_id() {
     let _ = _create_workflow(&baseline, create_workflow_instance_params, 201).await;
 
     let get_workflows_res = baseline
-        .get_workflows(Some(vec![
+        .list_workflows(Some(vec![
             ("workgroup_id".to_string(), app_id.clone()),
             ("filter_prototypes".to_string(), "true".to_string()),
         ]))
@@ -2329,7 +2321,7 @@ async fn get_workflow() {
     let create_workflow_body = _create_workflow(&baseline, create_workflow_params, 201).await;
 
     let get_workflow_res = baseline
-        .get_workflow(&create_workflow_body.id)
+        .get_workflow(&create_workflow_body.id, None)
         .await
         .expect("get workflow response");
     assert_eq!(get_workflow_res.status(), 200);
@@ -2734,7 +2726,7 @@ async fn create_workflow_instance_worksteps() {
         _create_workflow(&baseline, create_workflow_instance_params, 201).await;
 
     let fetch_workflow_instance_worksteps_res = baseline
-        .fetch_worksteps(&create_workflow_instance_body.id)
+        .list_worksteps(&create_workflow_instance_body.id, None)
         .await
         .expect("fetch workflow instance worksteps response");
     assert_eq!(fetch_workflow_instance_worksteps_res.status(), 200);
@@ -2883,7 +2875,7 @@ async fn update_workflow() {
     );
 
     let get_updated_workflow_res = baseline
-        .get_workflow(&create_workflow_body.id)
+        .get_workflow(&create_workflow_body.id, None)
         .await
         .expect("get updated workflow response");
     assert_eq!(get_updated_workflow_res.status(), 200);
@@ -3610,7 +3602,7 @@ async fn version_workflow() {
     assert_eq!(&version_workflow_body.worksteps_count.unwrap(), &5);
 
     let get_versioned_workflow_worksteps = baseline
-        .fetch_worksteps(&version_workflow_body.id)
+        .list_worksteps(&version_workflow_body.id, None)
         .await
         .expect("get versioned workflow worksteps response");
     assert_eq!(get_versioned_workflow_worksteps.status(), 200);
@@ -3749,7 +3741,7 @@ async fn version_workflow_updates_name_and_description() {
     assert_eq!(&version_workflow_body.worksteps_count.unwrap(), &5);
 
     let get_versioned_workflow_worksteps = baseline
-        .fetch_worksteps(&version_workflow_body.id)
+        .list_worksteps(&version_workflow_body.id, None)
         .await
         .expect("get versioned workflow worksteps response");
     assert_eq!(get_versioned_workflow_worksteps.status(), 200);
@@ -4114,7 +4106,7 @@ async fn get_workgroups() {
     // assert_eq!(create_workgroup_res.status(), 201);
 
     let get_workgroups_res = baseline
-        .get_workgroups()
+        .list_workgroups(None)
         .await
         .expect("get workgroups response");
     assert_eq!(get_workgroups_res.status(), 200);
@@ -4158,7 +4150,7 @@ async fn get_workgroup() {
         .expect("create workgroup body");
 
     let get_workgroup_res = baseline
-        .get_workgroup(&create_workgroup_body.id)
+        .get_workgroup(&create_workgroup_body.id, None)
         .await
         .expect("get workgroup response");
     assert_eq!(get_workgroup_res.status(), 200);
@@ -4257,7 +4249,7 @@ async fn update_workgroup() {
 }
 
 #[tokio::test]
-async fn fetch_worksteps() {
+async fn list_worksteps() {
     let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
     let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
 
@@ -4278,7 +4270,7 @@ async fn fetch_worksteps() {
     let create_workflow_body = _create_workflow(&baseline, create_workflow_params, 201).await;
 
     let fetch_worksteps_res = baseline
-        .fetch_worksteps(&create_workflow_body.id)
+        .list_worksteps(&create_workflow_body.id, None)
         .await
         .expect("fetch worksteps response");
     assert_eq!(fetch_worksteps_res.status(), 200);
@@ -4316,7 +4308,7 @@ async fn get_workstep() {
     .await;
 
     let get_workstep_res = baseline
-        .get_workstep(&create_workflow_body.id, &create_workstep_body.id)
+        .get_workstep(&create_workflow_body.id, &create_workstep_body.id, None)
         .await
         .expect("get workstep response");
     assert_eq!(get_workstep_res.status(), 200);
@@ -4434,7 +4426,7 @@ async fn update_workstep() {
     );
 
     let get_updated_workstep_res = baseline
-        .get_workstep(&create_workflow_body.id, &create_workstep_body.id)
+        .get_workstep(&create_workflow_body.id, &create_workstep_body.id, None)
         .await
         .expect("get updated workstep response");
     assert_eq!(get_updated_workstep_res.status(), 200);
@@ -4764,7 +4756,7 @@ async fn update_workstep_move_cardinality_3_worksteps() {
     }
 
     let fetch_worksteps_res = baseline
-        .fetch_worksteps(&create_workflow_body.id)
+        .list_worksteps(&create_workflow_body.id, None)
         .await
         .expect("fetch worksteps response");
     assert_eq!(fetch_worksteps_res.status(), 200);
@@ -4801,7 +4793,7 @@ async fn update_workstep_move_cardinality_3_worksteps() {
             );
 
             let updated_workstep_res = baseline
-                .get_workstep(&create_workflow_body.id, &current_workstep.id)
+                .get_workstep(&create_workflow_body.id, &current_workstep.id, None)
                 .await
                 .expect("fetch updated workstep response");
             assert_eq!(updated_workstep_res.status(), 200);
@@ -4835,7 +4827,7 @@ async fn update_workstep_move_cardinality_3_worksteps() {
             );
 
             let get_reverted_cardinality_workstep_res = baseline
-                .get_workstep(&create_workflow_body.id, &current_workstep.id)
+                .get_workstep(&create_workflow_body.id, &current_workstep.id, None)
                 .await
                 .expect("get reverted cardinality workstep response");
             assert_eq!(get_reverted_cardinality_workstep_res.status(), 200);
@@ -4889,7 +4881,7 @@ async fn update_workstep_move_cardinality_12_worksteps() {
     }
 
     let fetch_worksteps_res = baseline
-        .fetch_worksteps(&create_workflow_body.id)
+        .list_worksteps(&create_workflow_body.id, None)
         .await
         .expect("fetch worksteps response");
     assert_eq!(fetch_worksteps_res.status(), 200);
@@ -4926,7 +4918,7 @@ async fn update_workstep_move_cardinality_12_worksteps() {
             );
 
             let updated_workstep_res = baseline
-                .get_workstep(&create_workflow_body.id, &current_workstep.id)
+                .get_workstep(&create_workflow_body.id, &current_workstep.id, None)
                 .await
                 .expect("fetch updated workstep response");
             assert_eq!(updated_workstep_res.status(), 200);
@@ -4960,7 +4952,7 @@ async fn update_workstep_move_cardinality_12_worksteps() {
             );
 
             let get_reverted_cardinality_workstep_res = baseline
-                .get_workstep(&create_workflow_body.id, &current_workstep.id)
+                .get_workstep(&create_workflow_body.id, &current_workstep.id, None)
                 .await
                 .expect("get reverted cardinality workstep response");
             assert_eq!(get_reverted_cardinality_workstep_res.status(), 200);
@@ -5172,7 +5164,7 @@ async fn delete_workstep_updates_worksteps_count() {
     assert_eq!(delete_workstep_res.status(), 204);
 
     let get_workflow_res = baseline
-        .get_workflow(&create_workflow_body.id)
+        .get_workflow(&create_workflow_body.id, None)
         .await
         .expect("get workstep response");
     assert_eq!(get_workflow_res.status(), 200);
@@ -5238,7 +5230,7 @@ async fn delete_workstep_updates_cardinality() {
     assert_eq!(delete_workstep_res.status(), 204);
 
     let get_workstep_res = baseline
-        .get_workstep(&create_workflow_body.id, &create_second_workstep_body.id)
+        .get_workstep(&create_workflow_body.id, &create_second_workstep_body.id, None)
         .await
         .expect("get workstep response");
     assert_eq!(get_workstep_res.status(), 200);
@@ -5440,7 +5432,7 @@ async fn execute_workstep() {
         _create_workflow(&baseline, create_workflow_instance_params, 201).await;
 
     let fetch_workflow_instance_worksteps_res = baseline
-        .fetch_worksteps(&create_workflow_instance_body.id)
+        .list_worksteps(&create_workflow_instance_body.id, None)
         .await
         .expect("fetch workflow instance worksteps response");
     assert_eq!(fetch_workflow_instance_worksteps_res.status(), 200);
@@ -5672,7 +5664,7 @@ async fn workflow_instance_running_status() {
         _create_workflow(&baseline, create_workflow_instance_params, 201).await;
 
     let fetch_workflow_instance_worksteps_res = baseline
-        .fetch_worksteps(&create_workflow_instance_body.id)
+        .list_worksteps(&create_workflow_instance_body.id, None)
         .await
         .expect("fetch workflow instance worksteps response");
     assert_eq!(fetch_workflow_instance_worksteps_res.status(), 200);
@@ -5705,7 +5697,7 @@ async fn workflow_instance_running_status() {
     );
 
     let get_workflow_instance_details_res = baseline
-        .get_workflow(&create_workflow_instance_body.id)
+        .get_workflow(&create_workflow_instance_body.id, None)
         .await
         .unwrap();
     let get_workflow_instance_details_body = get_workflow_instance_details_res
@@ -5804,7 +5796,7 @@ async fn workflow_instance_completed_status() {
         _create_workflow(&baseline, create_workflow_instance_params, 201).await;
 
     let fetch_workflow_instance_worksteps_res = baseline
-        .fetch_worksteps(&create_workflow_instance_body.id)
+        .list_worksteps(&create_workflow_instance_body.id, None)
         .await
         .expect("fetch workflow instance worksteps response");
     assert_eq!(fetch_workflow_instance_worksteps_res.status(), 200);
@@ -5837,7 +5829,7 @@ async fn workflow_instance_completed_status() {
     );
 
     let get_workflow_instance_details_res = baseline
-        .get_workflow(&create_workflow_instance_body.id)
+        .get_workflow(&create_workflow_instance_body.id, None)
         .await
         .unwrap();
     let get_workflow_instance_details_body = get_workflow_instance_details_res
@@ -5936,7 +5928,7 @@ async fn execute_workstep_with_arbitrary_data() {
         _create_workflow(&baseline, create_workflow_instance_params, 201).await;
 
     let fetch_workflow_instance_worksteps_res = baseline
-        .fetch_worksteps(&create_workflow_instance_body.id)
+        .list_worksteps(&create_workflow_instance_body.id, None)
         .await
         .expect("fetch workflow instance worksteps response");
     assert_eq!(fetch_workflow_instance_worksteps_res.status(), 200);
@@ -6068,7 +6060,7 @@ async fn fetch_workstep_participants() {
     .await;
 
     let fetch_workstep_participants_res = baseline
-        .fetch_workstep_participants(&create_workflow_body.id, &create_workstep_body.id)
+        .list_workstep_participants(&create_workflow_body.id, &create_workstep_body.id, None)
         .await
         .expect("fetch workstep participants response");
     assert_eq!(fetch_workstep_participants_res.status(), 200);

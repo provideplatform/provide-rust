@@ -86,7 +86,7 @@ async fn generate_application_auth(ident: &ApiClient, application_id: &str) -> T
     }));
 
     let application_auth_res = ident
-        .application_authorization(application_authorization_params)
+        .authenticate_application(application_authorization_params)
         .await
         .expect("application authorization response");
     assert_eq!(application_auth_res.status(), 201);
@@ -126,7 +126,7 @@ async fn generate_organization_auth(ident: &ApiClient, organization_id: &str) ->
     }));
 
     let organization_auth_res = ident
-        .organization_authorization(organization_authorization_params)
+        .authenticate_organization(organization_authorization_params)
         .await
         .expect("organization authorization response");
     assert_eq!(organization_auth_res.status(), 201);
@@ -148,7 +148,7 @@ async fn list_accounts() {
     let nchain: ApiClient = NChain::factory(&access_token);
 
     let get_accounts_res = nchain
-        .list_accounts()
+        .list_accounts(None)
         .await
         .expect("list accounts response");
     assert_eq!(
@@ -211,7 +211,7 @@ async fn get_account() {
         .expect("create account body");
 
     let get_account_res = nchain
-        .get_account(&create_account_body.id)
+        .get_account(&create_account_body.id, None)
         .await
         .expect("get account response");
     assert_eq!(get_account_res.status(), 200);
@@ -241,7 +241,7 @@ async fn get_connectors() {
     let nchain: ApiClient = NChain::factory(&application_access_token);
 
     let get_connectors_res = nchain
-        .get_connectors()
+        .list_connectors(None)
         .await
         .expect("get connectors response");
     assert_eq!(get_connectors_res.status(), 200);
@@ -346,7 +346,7 @@ async fn get_connector() {
         .expect("create connector body");
 
     let get_connector_res = nchain
-        .get_connector(&create_connector_body.id)
+        .get_connector(&create_connector_body.id, None)
         .await
         .expect("get connector response");
     assert_eq!(get_connector_res.status(), 200);
@@ -434,7 +434,7 @@ async fn list_contracts() {
     let nchain: ApiClient = NChain::factory(&application_access_token);
 
     let get_contracts_res = nchain
-        .get_contracts()
+        .list_contracts(None)
         .await
         .expect("get contracts response");
     assert_eq!(get_contracts_res.status(), 200);
@@ -519,7 +519,7 @@ async fn get_contract() {
         .expect("create contract body");
 
     let get_contract_res = nchain
-        .get_contract(&create_contract_body.id)
+        .get_contract(&create_contract_body.id, None)
         .await
         .expect("get contract response");
     assert_eq!(get_contract_res.status(), 200);
@@ -603,7 +603,7 @@ async fn get_wallets() {
 
     let nchain: ApiClient = NChain::factory(&access_token);
 
-    let get_wallets_res = nchain.get_wallets().await.expect("get wallets response");
+    let get_wallets_res = nchain.list_wallets(None).await.expect("get wallets response");
     assert_eq!(get_wallets_res.status(), 200);
 }
 
@@ -654,7 +654,7 @@ async fn get_wallet_accounts() {
         .expect("create wallet body");
 
     let get_wallet_accounts_res = nchain
-        .get_wallet_accounts(&create_wallet_body.id)
+        .list_wallet_accounts(&create_wallet_body.id, None)
         .await
         .expect("get wallet accounts response");
     assert_eq!(get_wallet_accounts_res.status(), 200);
@@ -687,7 +687,7 @@ async fn get_networks() {
 
     let nchain: ApiClient = NChain::factory(&organization_access_token);
 
-    let get_networks_res = nchain.get_networks().await.expect("get networks response");
+    let get_networks_res = nchain.list_networks(None).await.expect("get networks response");
     assert_eq!(get_networks_res.status(), 200);
 
     let get_networks_body = get_networks_res
@@ -928,7 +928,7 @@ async fn get_network() {
         .expect("create network body");
 
     let get_network_res = nchain
-        .get_network(&create_network_body.id)
+        .get_network(&create_network_body.id, None)
         .await
         .expect("get network response");
     assert_eq!(get_network_res.status(), 200);
@@ -959,7 +959,7 @@ async fn get_transactions() {
     let nchain: ApiClient = NChain::factory(&access_token);
 
     let get_transactions_res = nchain
-        .get_transactions()
+        .list_transactions(None)
         .await
         .expect("get transactions response");
     assert_eq!(get_transactions_res.status(), 200);
@@ -1052,7 +1052,7 @@ async fn get_transaction() {
         .expect("create transaction body");
 
     let get_transaction_res = nchain
-        .get_transaction(&create_transaction_body.id)
+        .get_transaction(&create_transaction_body.id, None)
         .await
         .expect("get transaction response");
     assert_eq!(get_transaction_res.status(), 200);
