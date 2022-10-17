@@ -22,6 +22,8 @@ services:
     ports:
       - 5432:5432
     restart: always
+    profiles:
+      - core
 
   redis:
     image: redis
@@ -38,6 +40,8 @@ services:
     ports:
       - 6379:6379
     restart: always
+    profiles:
+      - core
 
   nats:
     image: provide/nats-server:2.5.0-PRVD
@@ -85,6 +89,8 @@ services:
     restart: always
     volumes:
       - ./ops/await_tcp.sh:/usr/local/bin/await_tcp.sh:cached
+    profiles:
+      - core
 
   ident:
     image: provide/ident
@@ -123,6 +129,8 @@ services:
     ports:
       - 8081:8080
     restart: always
+    profiles:
+      - core
 
   ident-consumer:
     image: provide/ident
@@ -162,6 +170,8 @@ services:
     networks:
       - provide
     restart: always
+    profiles:
+      - core
 
   vault:
     image: provide/vault
@@ -197,6 +207,8 @@ services:
     ports:
       - 8082:8080
     restart: always
+    profiles:
+      - core
 
   privacy:
     image: provide/privacy
