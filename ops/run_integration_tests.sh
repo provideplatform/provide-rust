@@ -97,7 +97,7 @@ handle_shutdown() {
     docker-compose -f ./ops/docker-compose.yml down
 
     docker volume rm ops_provide-db
-    docker volume rm ops_prvd-baseline-db
+    docker volume rm ops_prvd-bpi-1-db
 
     if [[ "$INVOKE_PRVD_CLI" == "true" && ("$SUITE" == "*" || "$SUITE" == "baseline") ]]; then
         if [[ -f ".test-config.tmp.json" ]]; then
@@ -212,7 +212,7 @@ if [[ $* != *--skip-startup* ]]; then
 
     if [[ $* != *--skip-baseline-startup* ]]; then
         sleep 20
-        docker-compose --profile baseline -f ./ops/docker-compose.yml up --build -d
+        docker-compose --profile bpi-1 -f ./ops/docker-compose.yml up --build -d
     fi
 
     wait_for_ident_container &
