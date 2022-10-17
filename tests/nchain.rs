@@ -18,7 +18,7 @@ use fake::faker::internet::en::{FreeEmail, Password};
 use fake::faker::name::en::{FirstName, LastName, Name};
 use fake::Fake;
 use provide_rust::api::client::ApiClient;
-use provide_rust::api::ident::{Application, AuthenticateResponse, Ident, Token};
+use provide_rust::api::ident::{Application, AuthenticateResponse, Ident, Organization, Token};
 use provide_rust::api::nchain::*;
 use serde_json::{json, Value};
 
@@ -97,6 +97,46 @@ async fn generate_application_auth(ident: &ApiClient, application_id: &str) -> T
         .json::<Token>()
         .await
         .expect("application authorization body");
+}
+
+async fn generate_new_organization(ident: &ApiClient, user_id: &str) -> Organization {
+    let organization_data = Some(json!({
+        "network_id": ROPSTEN_NETWORK_ID,
+        "user_id": user_id,
+        "name": format!("{} organization", Name().fake::<String>()),
+        "description": "Some organization description",
+        "type": "baseline",
+        "hidden": false
+    }));
+
+    let create_organization_res = ident
+        .create_organization(organization_data)
+        .await
+        .expect("generate organization response");
+    assert_eq!(create_organization_res.status(), 201);
+
+    return create_organization_res
+        .json::<Organization>()
+        .await
+        .expect("create organization body");
+}
+
+async fn generate_organization_auth(ident: &ApiClient, organization_id: &str) -> Token {
+    let organization_authorization_params = Some(json!({
+        "organization_id": organization_id,
+        "scope": "offline_access",
+    }));
+
+    let organization_auth_res = ident
+        .organization_authorization(organization_authorization_params)
+        .await
+        .expect("organization authorization response");
+    assert_eq!(organization_auth_res.status(), 201);
+
+    return organization_auth_res
+        .json::<Token>()
+        .await
+        .expect("organization authorization body");
 }
 
 #[tokio::test]
@@ -624,16 +664,43 @@ async fn get_wallet_accounts() {
 
 #[tokio::test]
 async fn get_networks() {
+    // org access token is the only one that returns globally enabled networks
     let authentication_res_body = generate_new_user_and_token().await;
     let access_token = match authentication_res_body.token.access_token {
         Some(string) => string,
         None => panic!("authentication response access token not found"),
     };
 
-    let nchain: ApiClient = NChain::factory(&access_token);
+    let ident: ApiClient = Ident::factory(&access_token);
+
+    let create_organization_body =
+        generate_new_organization(&ident, &authentication_res_body.user.id).await;
+
+    let organization_auth_body =
+        generate_organization_auth(&ident, &create_organization_body.id).await;
+
+    let organization_access_token = match organization_auth_body.access_token {
+        Some(string) => string,
+        None => panic!(
+            "organization authentication response access token not found {:?}",
+            organization_auth_body
+        ),
+    };
+
+    let nchain: ApiClient = NChain::factory(&organization_access_token);
 
     let get_networks_res = nchain.get_networks().await.expect("get networks response");
     assert_eq!(get_networks_res.status(), 200);
+
+    let get_networks_body = get_networks_res
+        .json::<Vec<Network>>()
+        .await
+        .expect("get networks body");
+    assert!(
+        get_networks_body.len() > 2,
+        "get networks body length: {}",
+        get_networks_body.len()
+    );
 }
 
 #[tokio::test]
@@ -692,7 +759,8 @@ async fn create_network() {
             "platform": "evm",
             "layer2": false,
             "protocol_id": "pow"
-        }
+        },
+        "layer2": false,
     }));
 
     let create_network_res = nchain
@@ -761,14 +829,26 @@ async fn update_network() {
             "platform": "evm",
             "layer2": false,
             "protocol_id": "pow"
-        }
+        },
+        "layer2": false,
     }));
 
     let create_network_res = nchain
         .create_network(create_network_params)
         .await
         .expect("create network response");
-    assert_eq!(create_network_res.status(), 201);
+    assert_eq!(
+        create_network_res.status(),
+        201,
+        "create network res: {}",
+        serde_json::to_string_pretty(
+            &create_network_res
+                .json::<serde_json::Value>()
+                .await
+                .unwrap()
+        )
+        .unwrap()
+    );
 
     let create_network_body = create_network_res
         .json::<Network>()
@@ -834,7 +914,8 @@ async fn get_network() {
             "platform": "evm",
             "layer2": false,
             "protocol_id": "pow"
-        }
+        },
+        "layer2": false,
     }));
 
     let create_network_res = nchain

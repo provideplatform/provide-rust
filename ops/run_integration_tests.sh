@@ -60,6 +60,15 @@
 
 trap handle_shutdown INT
 
+RUN_MANY=false
+if [[ $OUTPUT_DIR != "" ]]; then
+    RUN_MANY=true
+
+    DOCKER_OUTPUT=$OUTPUT_DIR/docker-output.txt
+    SETUP_OUTPUT=$OUTPUT_DIR/setup-output.txt
+    TEST_OUTPUT=$OUTPUT_DIR/test-output.txt
+fi
+
 bounce_docker() {
     # FIXME-- make sure $(which docker) is a thing...
 
@@ -86,7 +95,9 @@ handle_shutdown() {
     dump_container_logs $CONTAINER_REGEX
 
     docker-compose -f ./ops/docker-compose.yml down
+
     docker volume rm ops_provide-db
+    docker volume rm ops_prvd-bpi-1-db
 
     if [[ "$INVOKE_PRVD_CLI" == "true" && ("$SUITE" == "*" || "$SUITE" == "baseline") ]]; then
         if [[ -f ".test-config.tmp.json" ]]; then
@@ -147,6 +158,20 @@ wait_for_nchain_container() {
     echo "nchain api container is ready"
 }
 
+wait_for_baseline_container() {
+    baseline_status=false
+
+    while [[ "$baseline_status" == "false" ]]; do
+        baseline_status_code=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8085/status)
+        [[ "$baseline_status_code" == "204" ]] && baseline_status=true
+
+        sleep 1
+    done
+
+    sleep 10
+    echo "baseline api container is ready"
+}
+
 # SUITE = ident, baseline, vault, etc
 if [[ "$SUITE" != "" ]]; then
     echo "Running tests for $SUITE..."
@@ -158,8 +183,7 @@ elif [[ "$TEST" != "" ]]; then
     SUITE=
 
 else
-    SUITE="*"
-    TEST=
+    ALL=true
     echo "No SUITE or TEST set. Running all tests..."
 fi
 
@@ -184,16 +208,42 @@ fi
 
 if [[ $* != *--skip-startup* ]]; then
     # docker-compose -f ./ops/docker-compose.yml build --no-cache
-    docker-compose -f ./ops/docker-compose.yml up --build -d
+    docker-compose --profile core -f ./ops/docker-compose.yml up --build -d
 
-    wait_for_ident_container
-    wait_for_vault_container
-    wait_for_privacy_container
-    wait_for_nchain_container
+    if [[ $* != *--skip-baseline-startup* ]]; then
+        sleep 20
+        docker-compose --profile bpi-1 -f ./ops/docker-compose.yml up --build -d
+    fi
+
+    wait_for_ident_container &
+    wait_for_vault_container &
+    wait_for_privacy_container &
+    wait_for_nchain_container &
+
+    if [[ $* != *--skip-baseline-startup* ]]; then
+        wait_for_baseline_container &
+    fi
+    
+    wait
 fi
 
 # should selectively run this if SUITE or TEST is baseline-related, not only if --skip-setup is provided; should prolly be --with-baseline-setup flag instead anyways
-if [[ $* != *--skip-setup* ]]; then
+if [[ $* != *--skip-setup* && "$RUN_MANY" == "true" ]]; then
+    BASELINE_REGISTRY_CONTRACT_ADDRESS=$BASELINE_REGISTRY_CONTRACT_ADDRESS \
+    INVOKE_PRVD_CLI=$INVOKE_PRVD_CLI \
+    IDENT_API_HOST=localhost:8081 \
+    IDENT_API_SCHEME=http \
+    VAULT_API_HOST=localhost:8082 \
+    VAULT_API_SCHEME=http \
+    PRIVACY_API_HOST=localhost:8083 \
+    PRIVACY_API_SCHEME=http \
+    NCHAIN_API_HOST=localhost:8084 \
+    NCHAIN_API_SCHEME=http \
+    BASELINE_API_HOST=localhost:8085 \
+    BASELINE_API_SCHEME=http \
+    cargo nextest run --retries 3 --run-ignored ignored-only --status-level all --success-output final --failure-output final &> $SETUP_OUTPUT
+
+elif [[ $* != *--skip-setup* ]]; then
     BASELINE_REGISTRY_CONTRACT_ADDRESS=$BASELINE_REGISTRY_CONTRACT_ADDRESS \
     INVOKE_PRVD_CLI=$INVOKE_PRVD_CLI \
     IDENT_API_HOST=localhost:8081 \
@@ -208,20 +258,62 @@ if [[ $* != *--skip-setup* ]]; then
     BASELINE_API_SCHEME=http \
     cargo nextest run --retries 3 --run-ignored ignored-only
 
-    printf "Successfully configured local baseline suite; running tests...\n"
 fi
 
-IDENT_API_HOST=localhost:8081 \
-IDENT_API_SCHEME=http \
-VAULT_API_HOST=localhost:8082 \
-VAULT_API_SCHEME=http \
-PRIVACY_API_HOST=localhost:8083 \
-PRIVACY_API_SCHEME=http \
-NCHAIN_API_HOST=localhost:8084 \
-NCHAIN_API_SCHEME=http \
-BASELINE_API_HOST=localhost:8085 \
-BASELINE_API_SCHEME=http \
-cargo nextest run $([[ -n "$TEST" ]] && echo "$TEST" || echo --test "$SUITE") --no-fail-fast --failure-output immediate-final
+# TODO-- CLEANUP CODE
+if [[ "$RUN_MANY" == "true" ]]; then
+    if [[ "$ALL" == "true" ]]; then
+        IDENT_API_HOST=localhost:8081 \
+        IDENT_API_SCHEME=http \
+        VAULT_API_HOST=localhost:8082 \
+        VAULT_API_SCHEME=http \
+        PRIVACY_API_HOST=localhost:8083 \
+        PRIVACY_API_SCHEME=http \
+        NCHAIN_API_HOST=localhost:8084 \
+        NCHAIN_API_SCHEME=http \
+        BASELINE_API_HOST=localhost:8085 \
+        BASELINE_API_SCHEME=http \
+        cargo nextest run --status-level all --no-fail-fast --success-output final --failure-output final &> $TEST_OUTPUT
+    else
+        IDENT_API_HOST=localhost:8081 \
+        IDENT_API_SCHEME=http \
+        VAULT_API_HOST=localhost:8082 \
+        VAULT_API_SCHEME=http \
+        PRIVACY_API_HOST=localhost:8083 \
+        PRIVACY_API_SCHEME=http \
+        NCHAIN_API_HOST=localhost:8084 \
+        NCHAIN_API_SCHEME=http \
+        BASELINE_API_HOST=localhost:8085 \
+        BASELINE_API_SCHEME=http \
+        cargo nextest run $([[ -n "$TEST" ]] && echo "$TEST" || echo --test "$SUITE") --status-level all --no-fail-fast --success-output final --failure-output final &> $TEST_OUTPUT
+    fi
+else
+    if [[ "$ALL" == "true" ]]; then
+        IDENT_API_HOST=localhost:8081 \
+        IDENT_API_SCHEME=http \
+        VAULT_API_HOST=localhost:8082 \
+        VAULT_API_SCHEME=http \
+        PRIVACY_API_HOST=localhost:8083 \
+        PRIVACY_API_SCHEME=http \
+        NCHAIN_API_HOST=localhost:8084 \
+        NCHAIN_API_SCHEME=http \
+        BASELINE_API_HOST=localhost:8085 \
+        BASELINE_API_SCHEME=http \
+        cargo nextest run --no-fail-fast --failure-output immediate-final
+    else
+        IDENT_API_HOST=localhost:8081 \
+        IDENT_API_SCHEME=http \
+        VAULT_API_HOST=localhost:8082 \
+        VAULT_API_SCHEME=http \
+        PRIVACY_API_HOST=localhost:8083 \
+        PRIVACY_API_SCHEME=http \
+        NCHAIN_API_HOST=localhost:8084 \
+        NCHAIN_API_SCHEME=http \
+        BASELINE_API_HOST=localhost:8085 \
+        BASELINE_API_SCHEME=http \
+        cargo nextest run $([[ -n "$TEST" ]] && echo "$TEST" || echo --test "$SUITE") --no-fail-fast --failure-output immediate-final
+    fi
+fi
 
 if [[ $* != *--skip-shutdown* ]]; then
     handle_shutdown
@@ -234,3 +326,7 @@ fi
 
 # timeouts where relevant?
 # adding option to handle_shutdown that only shuts down tests if --skip-shutdown wasn't provided
+# --no-restart flag to take place of --skip-shutdown and --skip-restart flags
+# change CONTAINER_REGEX to --log-match-pattern or something similar
+
+# TODO-- pull latest containers
