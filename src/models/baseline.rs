@@ -233,7 +233,7 @@ pub struct WorkstepInstance {
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
 pub struct System {
-	pub id: String,
+    pub id: String,
     created_at: String,
 
     pub name: String,
@@ -270,6 +270,6 @@ pub struct SystemMiddlewarePolicy {
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
 pub struct SystemMiddleware {
-	inbound: Option<SystemMiddlewarePolicy>,
-	outbound: Option<SystemMiddlewarePolicy>,
+    inbound: Option<SystemMiddlewarePolicy>,
+    outbound: Option<SystemMiddlewarePolicy>,
 }

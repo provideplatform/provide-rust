@@ -20,7 +20,7 @@ use fake::Fake;
 use provide_rust::api::baseline::*;
 use provide_rust::api::client::ApiClient;
 use provide_rust::api::ident::{AuthenticateResponse, Ident, Organization, Token};
-use provide_rust::api::nchain::{Account, Wallet, Contract, NChain};
+use provide_rust::api::nchain::{Account, Contract, NChain, Wallet};
 use provide_rust::api::vault::{Vault, VaultContainer, VaultKey};
 use serde_json::{json, Value};
 use std::io::Write;
@@ -258,8 +258,7 @@ async fn baseline_setup() {
     let baseline: ApiClient = Baseline::factory(&org_access_token);
 
     // create workgroup
-    let create_workgroup_body =
-        generate_workgroup(&baseline).await;
+    let create_workgroup_body = generate_workgroup(&baseline).await;
     let application_authorization_params = json!({
         "application_id": &create_workgroup_body.id,
         "scope": "offline_access",
@@ -1479,7 +1478,12 @@ async fn update_mapping() {
         .update_mapping(&create_mapping_body.id, Some(update_mapping_params))
         .await
         .expect("update mapping response");
-    assert_eq!(update_mapping_res.status(), 204, "update mapping res: {}", serde_json::to_string_pretty(&update_mapping_res.json::<Value>().await.unwrap()).unwrap());
+    assert_eq!(
+        update_mapping_res.status(),
+        204,
+        "update mapping res: {}",
+        serde_json::to_string_pretty(&update_mapping_res.json::<Value>().await.unwrap()).unwrap()
+    );
 
     // let get_updated_mapping_res = baseline
     //     .get_mappings()
@@ -1572,10 +1576,16 @@ async fn get_workflows() {
     assert_eq!(get_workflows_res.status(), 200);
 
     // must run tests with full setup twice to test the below
-    let workflows = get_workflows_res.json::<Vec<Workflow>>().await.expect("get workflows body");
+    let workflows = get_workflows_res
+        .json::<Vec<Workflow>>()
+        .await
+        .expect("get workflows body");
 
     let get_workgroups_res = baseline.get_workgroups().await.expect("get workflows res");
-    let workgroups = get_workgroups_res.json::<Vec<Workgroup>>().await.expect("get workgroups body");
+    let workgroups = get_workgroups_res
+        .json::<Vec<Workgroup>>()
+        .await
+        .expect("get workgroups body");
 
     for workflow in workflows {
         let workflow_workgroup_id = workflow.workgroup_id;
@@ -1588,7 +1598,11 @@ async fn get_workflows() {
         }
 
         if !is_valid {
-            assert!(false, "incorrect workflow workgroup_id: {}", &workflow_workgroup_id);
+            assert!(
+                false,
+                "incorrect workflow workgroup_id: {}",
+                &workflow_workgroup_id
+            );
         }
     }
 }
@@ -1616,31 +1630,34 @@ async fn get_workflow_prototypes() {
     let create_workflow_body = _create_workflow(&baseline, create_workflow_params, 201).await;
 
     let create_mapping_params = json!({
-        "name": format!("{} Mapping", Name().fake::<String>()),
-        "type": "mapping_type",
-        "workgroup_id": &app_id,
-        "models": [
-          {
-            "description": "test model",
-            "primary_key": "id",
-            "type": "test",
-            "fields": [
-              {
-                "is_primary_key": true,
-                "name": "id",
-                "type": "string"
-              }
-            ]
-          }
-        ]
-      });
-  
+      "name": format!("{} Mapping", Name().fake::<String>()),
+      "type": "mapping_type",
+      "workgroup_id": &app_id,
+      "models": [
+        {
+          "description": "test model",
+          "primary_key": "id",
+          "type": "test",
+          "fields": [
+            {
+              "is_primary_key": true,
+              "name": "id",
+              "type": "string"
+            }
+          ]
+        }
+      ]
+    });
+
     let create_mapping_res = baseline
         .create_mapping(Some(create_mapping_params))
         .await
         .expect("create mapping response");
 
-    let create_mapping_body = create_mapping_res.json::<Mapping>().await.expect("create mapping body");
+    let create_mapping_body = create_mapping_res
+        .json::<Mapping>()
+        .await
+        .expect("create mapping body");
     let mapping_model = &create_mapping_body.models[0];
 
     let create_workstep_params = json!({
@@ -1728,31 +1745,34 @@ async fn get_workflow_instances() {
     let create_workflow_body = _create_workflow(&baseline, create_workflow_params, 201).await;
 
     let create_mapping_params = json!({
-        "name": format!("{} Mapping", Name().fake::<String>()),
-        "type": "mapping_type",
-        "workgroup_id": &app_id,
-        "models": [
-          {
-            "description": "test model",
-            "primary_key": "id",
-            "type": "test",
-            "fields": [
-              {
-                "is_primary_key": true,
-                "name": "id",
-                "type": "string"
-              }
-            ]
-          }
-        ]
-      });
-  
+      "name": format!("{} Mapping", Name().fake::<String>()),
+      "type": "mapping_type",
+      "workgroup_id": &app_id,
+      "models": [
+        {
+          "description": "test model",
+          "primary_key": "id",
+          "type": "test",
+          "fields": [
+            {
+              "is_primary_key": true,
+              "name": "id",
+              "type": "string"
+            }
+          ]
+        }
+      ]
+    });
+
     let create_mapping_res = baseline
         .create_mapping(Some(create_mapping_params))
         .await
         .expect("create mapping response");
 
-    let create_mapping_body = create_mapping_res.json::<Mapping>().await.expect("create mapping body");
+    let create_mapping_body = create_mapping_res
+        .json::<Mapping>()
+        .await
+        .expect("create mapping body");
     let mapping_model = &create_mapping_body.models[0];
 
     let create_workstep_params = json!({
@@ -1839,31 +1859,34 @@ async fn get_workflows_by_workgroup_id() {
     let create_workflow_body = _create_workflow(&baseline, create_workflow_params, 201).await;
 
     let create_mapping_params = json!({
-        "name": format!("{} Mapping", Name().fake::<String>()),
-        "type": "mapping_type",
-        "workgroup_id": &app_id,
-        "models": [
-          {
-            "description": "test model",
-            "primary_key": "id",
-            "type": "test",
-            "fields": [
-              {
-                "is_primary_key": true,
-                "name": "id",
-                "type": "string"
-              }
-            ]
-          }
-        ]
-      });
-  
+      "name": format!("{} Mapping", Name().fake::<String>()),
+      "type": "mapping_type",
+      "workgroup_id": &app_id,
+      "models": [
+        {
+          "description": "test model",
+          "primary_key": "id",
+          "type": "test",
+          "fields": [
+            {
+              "is_primary_key": true,
+              "name": "id",
+              "type": "string"
+            }
+          ]
+        }
+      ]
+    });
+
     let create_mapping_res = baseline
         .create_mapping(Some(create_mapping_params))
         .await
         .expect("create mapping response");
 
-    let create_mapping_body = create_mapping_res.json::<Mapping>().await.expect("create mapping body");
+    let create_mapping_body = create_mapping_res
+        .json::<Mapping>()
+        .await
+        .expect("create mapping body");
     let mapping_model = &create_mapping_body.models[0];
 
     let create_workstep_params = json!({
@@ -1938,31 +1961,34 @@ async fn get_workflow_prototypes_by_workgroup_id() {
     let create_workflow_body = _create_workflow(&baseline, create_workflow_params, 201).await;
 
     let create_mapping_params = json!({
-        "name": format!("{} Mapping", Name().fake::<String>()),
-        "type": "mapping_type",
-        "workgroup_id": &app_id,
-        "models": [
-          {
-            "description": "test model",
-            "primary_key": "id",
-            "type": "test",
-            "fields": [
-              {
-                "is_primary_key": true,
-                "name": "id",
-                "type": "string"
-              }
-            ]
-          }
-        ]
-      });
-  
+      "name": format!("{} Mapping", Name().fake::<String>()),
+      "type": "mapping_type",
+      "workgroup_id": &app_id,
+      "models": [
+        {
+          "description": "test model",
+          "primary_key": "id",
+          "type": "test",
+          "fields": [
+            {
+              "is_primary_key": true,
+              "name": "id",
+              "type": "string"
+            }
+          ]
+        }
+      ]
+    });
+
     let create_mapping_res = baseline
         .create_mapping(Some(create_mapping_params))
         .await
         .expect("create mapping response");
 
-    let create_mapping_body = create_mapping_res.json::<Mapping>().await.expect("create mapping body");
+    let create_mapping_body = create_mapping_res
+        .json::<Mapping>()
+        .await
+        .expect("create mapping body");
     let mapping_model = &create_mapping_body.models[0];
 
     let create_workstep_params = json!({
@@ -2052,31 +2078,34 @@ async fn get_workflow_instances_by_workgroup_id() {
     let create_workflow_body = _create_workflow(&baseline, create_workflow_params, 201).await;
 
     let create_mapping_params = json!({
-        "name": format!("{} Mapping", Name().fake::<String>()),
-        "type": "mapping_type",
-        "workgroup_id": &app_id,
-        "models": [
-          {
-            "description": "test model",
-            "primary_key": "id",
-            "type": "test",
-            "fields": [
-              {
-                "is_primary_key": true,
-                "name": "id",
-                "type": "string"
-              }
-            ]
-          }
-        ]
-      });
-  
+      "name": format!("{} Mapping", Name().fake::<String>()),
+      "type": "mapping_type",
+      "workgroup_id": &app_id,
+      "models": [
+        {
+          "description": "test model",
+          "primary_key": "id",
+          "type": "test",
+          "fields": [
+            {
+              "is_primary_key": true,
+              "name": "id",
+              "type": "string"
+            }
+          ]
+        }
+      ]
+    });
+
     let create_mapping_res = baseline
         .create_mapping(Some(create_mapping_params))
         .await
         .expect("create mapping response");
 
-    let create_mapping_body = create_mapping_res.json::<Mapping>().await.expect("create mapping body");
+    let create_mapping_body = create_mapping_res
+        .json::<Mapping>()
+        .await
+        .expect("create mapping body");
     let mapping_model = &create_mapping_body.models[0];
 
     let create_workstep_params = json!({
@@ -2216,31 +2245,34 @@ async fn create_workflow_instance() {
     let create_workflow_body = _create_workflow(&baseline, create_workflow_params, 201).await;
 
     let create_mapping_params = json!({
-        "name": format!("{} Mapping", Name().fake::<String>()),
-        "type": "mapping_type",
-        "workgroup_id": &app_id,
-        "models": [
-          {
-            "description": "test model",
-            "primary_key": "id",
-            "type": "test",
-            "fields": [
-              {
-                "is_primary_key": true,
-                "name": "id",
-                "type": "string"
-              }
-            ]
-          }
-        ]
-      });
-  
+      "name": format!("{} Mapping", Name().fake::<String>()),
+      "type": "mapping_type",
+      "workgroup_id": &app_id,
+      "models": [
+        {
+          "description": "test model",
+          "primary_key": "id",
+          "type": "test",
+          "fields": [
+            {
+              "is_primary_key": true,
+              "name": "id",
+              "type": "string"
+            }
+          ]
+        }
+      ]
+    });
+
     let create_mapping_res = baseline
         .create_mapping(Some(create_mapping_params))
         .await
         .expect("create mapping response");
 
-    let create_mapping_body = create_mapping_res.json::<Mapping>().await.expect("create mapping body");
+    let create_mapping_body = create_mapping_res
+        .json::<Mapping>()
+        .await
+        .expect("create mapping body");
     let mapping_model = &create_mapping_body.models[0];
 
     let create_workstep_params = json!({
@@ -2313,31 +2345,34 @@ async fn create_workflow_instance_without_version_has_version() {
     let create_workflow_body = _create_workflow(&baseline, create_workflow_params, 201).await;
 
     let create_mapping_params = json!({
-        "name": format!("{} Mapping", Name().fake::<String>()),
-        "type": "mapping_type",
-        "workgroup_id": &app_id,
-        "models": [
-          {
-            "description": "test model",
-            "primary_key": "id",
-            "type": "test",
-            "fields": [
-              {
-                "is_primary_key": true,
-                "name": "id",
-                "type": "string"
-              }
-            ]
-          }
-        ]
-      });
-  
+      "name": format!("{} Mapping", Name().fake::<String>()),
+      "type": "mapping_type",
+      "workgroup_id": &app_id,
+      "models": [
+        {
+          "description": "test model",
+          "primary_key": "id",
+          "type": "test",
+          "fields": [
+            {
+              "is_primary_key": true,
+              "name": "id",
+              "type": "string"
+            }
+          ]
+        }
+      ]
+    });
+
     let create_mapping_res = baseline
         .create_mapping(Some(create_mapping_params))
         .await
         .expect("create mapping response");
 
-    let create_mapping_body = create_mapping_res.json::<Mapping>().await.expect("create mapping body");
+    let create_mapping_body = create_mapping_res
+        .json::<Mapping>()
+        .await
+        .expect("create mapping body");
     let mapping_model = &create_mapping_body.models[0];
 
     let create_workstep_params = json!({
@@ -2409,31 +2444,34 @@ async fn create_workflow_instance_fail_with_new_instance_version() {
     let create_workflow_body = _create_workflow(&baseline, create_workflow_params, 201).await;
 
     let create_mapping_params = json!({
-        "name": format!("{} Mapping", Name().fake::<String>()),
-        "type": "mapping_type",
-        "workgroup_id": &app_id,
-        "models": [
-          {
-            "description": "test model",
-            "primary_key": "id",
-            "type": "test",
-            "fields": [
-              {
-                "is_primary_key": true,
-                "name": "id",
-                "type": "string"
-              }
-            ]
-          }
-        ]
-      });
-  
+      "name": format!("{} Mapping", Name().fake::<String>()),
+      "type": "mapping_type",
+      "workgroup_id": &app_id,
+      "models": [
+        {
+          "description": "test model",
+          "primary_key": "id",
+          "type": "test",
+          "fields": [
+            {
+              "is_primary_key": true,
+              "name": "id",
+              "type": "string"
+            }
+          ]
+        }
+      ]
+    });
+
     let create_mapping_res = baseline
         .create_mapping(Some(create_mapping_params))
         .await
         .expect("create mapping response");
 
-    let create_mapping_body = create_mapping_res.json::<Mapping>().await.expect("create mapping body");
+    let create_mapping_body = create_mapping_res
+        .json::<Mapping>()
+        .await
+        .expect("create mapping body");
     let mapping_model = &create_mapping_body.models[0];
 
     let create_workstep_params = json!({
@@ -2494,31 +2532,34 @@ async fn create_workflow_instance_worksteps() {
     let create_workflow_body = _create_workflow(&baseline, create_workflow_params, 201).await;
 
     let create_mapping_params = json!({
-        "name": format!("{} Mapping", Name().fake::<String>()),
-        "type": "mapping_type",
-        "workgroup_id": &app_id,
-        "models": [
-          {
-            "description": "test model",
-            "primary_key": "id",
-            "type": "test",
-            "fields": [
-              {
-                "is_primary_key": true,
-                "name": "id",
-                "type": "string"
-              }
-            ]
-          }
-        ]
-      });
-  
+      "name": format!("{} Mapping", Name().fake::<String>()),
+      "type": "mapping_type",
+      "workgroup_id": &app_id,
+      "models": [
+        {
+          "description": "test model",
+          "primary_key": "id",
+          "type": "test",
+          "fields": [
+            {
+              "is_primary_key": true,
+              "name": "id",
+              "type": "string"
+            }
+          ]
+        }
+      ]
+    });
+
     let create_mapping_res = baseline
         .create_mapping(Some(create_mapping_params))
         .await
         .expect("create mapping response");
 
-    let create_mapping_body = create_mapping_res.json::<Mapping>().await.expect("create mapping body");
+    let create_mapping_body = create_mapping_res
+        .json::<Mapping>()
+        .await
+        .expect("create mapping body");
     let mapping_model = &create_mapping_body.models[0];
 
     let create_workstep_params = json!({
@@ -2601,31 +2642,34 @@ async fn create_workflow_instance_fail_on_draft_workflow() {
     let create_workflow_body = _create_workflow(&baseline, create_workflow_params, 201).await;
 
     let create_mapping_params = json!({
-        "name": format!("{} Mapping", Name().fake::<String>()),
-        "type": "mapping_type",
-        "workgroup_id": &app_id,
-        "models": [
-          {
-            "description": "test model",
-            "primary_key": "id",
-            "type": "test",
-            "fields": [
-              {
-                "is_primary_key": true,
-                "name": "id",
-                "type": "string"
-              }
-            ]
-          }
-        ]
-      });
-  
+      "name": format!("{} Mapping", Name().fake::<String>()),
+      "type": "mapping_type",
+      "workgroup_id": &app_id,
+      "models": [
+        {
+          "description": "test model",
+          "primary_key": "id",
+          "type": "test",
+          "fields": [
+            {
+              "is_primary_key": true,
+              "name": "id",
+              "type": "string"
+            }
+          ]
+        }
+      ]
+    });
+
     let create_mapping_res = baseline
         .create_mapping(Some(create_mapping_params))
         .await
         .expect("create mapping response");
 
-    let create_mapping_body = create_mapping_res.json::<Mapping>().await.expect("create mapping body");
+    let create_mapping_body = create_mapping_res
+        .json::<Mapping>()
+        .await
+        .expect("create mapping body");
     let mapping_model = &create_mapping_body.models[0];
 
     let create_workstep_params = json!({
@@ -2745,31 +2789,34 @@ async fn update_workflow_fail_on_deployed() {
     let create_workflow_body = _create_workflow(&baseline, create_workflow_params, 201).await;
 
     let create_mapping_params = json!({
-        "name": format!("{} Mapping", Name().fake::<String>()),
-        "type": "mapping_type",
-        "workgroup_id": &app_id,
-        "models": [
-          {
-            "description": "test model",
-            "primary_key": "id",
-            "type": "test",
-            "fields": [
-              {
-                "is_primary_key": true,
-                "name": "id",
-                "type": "string"
-              }
-            ]
-          }
-        ]
-      });
-  
+      "name": format!("{} Mapping", Name().fake::<String>()),
+      "type": "mapping_type",
+      "workgroup_id": &app_id,
+      "models": [
+        {
+          "description": "test model",
+          "primary_key": "id",
+          "type": "test",
+          "fields": [
+            {
+              "is_primary_key": true,
+              "name": "id",
+              "type": "string"
+            }
+          ]
+        }
+      ]
+    });
+
     let create_mapping_res = baseline
         .create_mapping(Some(create_mapping_params))
         .await
         .expect("create mapping response");
 
-    let create_mapping_body = create_mapping_res.json::<Mapping>().await.expect("create mapping body");
+    let create_mapping_body = create_mapping_res
+        .json::<Mapping>()
+        .await
+        .expect("create mapping body");
     let mapping_model = &create_mapping_body.models[0];
 
     let create_workstep_params = json!({
@@ -2839,31 +2886,34 @@ async fn deploy_workflow() {
     let create_workflow_body = _create_workflow(&baseline, create_workflow_params, 201).await;
 
     let create_mapping_params = json!({
-        "name": format!("{} Mapping", Name().fake::<String>()),
-        "type": "mapping_type",
-        "workgroup_id": &app_id,
-        "models": [
-          {
-            "description": "test model",
-            "primary_key": "id",
-            "type": "test",
-            "fields": [
-              {
-                "is_primary_key": true,
-                "name": "id",
-                "type": "string"
-              }
-            ]
-          }
-        ]
-      });
-  
+      "name": format!("{} Mapping", Name().fake::<String>()),
+      "type": "mapping_type",
+      "workgroup_id": &app_id,
+      "models": [
+        {
+          "description": "test model",
+          "primary_key": "id",
+          "type": "test",
+          "fields": [
+            {
+              "is_primary_key": true,
+              "name": "id",
+              "type": "string"
+            }
+          ]
+        }
+      ]
+    });
+
     let create_mapping_res = baseline
         .create_mapping(Some(create_mapping_params))
         .await
         .expect("create mapping response");
 
-    let create_mapping_body = create_mapping_res.json::<Mapping>().await.expect("create mapping body");
+    let create_mapping_body = create_mapping_res
+        .json::<Mapping>()
+        .await
+        .expect("create mapping body");
     let mapping_model = &create_mapping_body.models[0];
 
     let create_workstep_params = json!({
@@ -2951,6 +3001,53 @@ async fn deploy_workflow_fail_without_worksteps() {
     });
 
     let create_workflow_body = _create_workflow(&baseline, create_workflow_params, 201).await;
+
+    let _ = _deploy_workflow(&baseline, &create_workflow_body.id, 422).await;
+}
+
+#[tokio::test]
+async fn deploy_workflow_fail_without_model_on_all_worksteps() {
+    let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
+    let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
+
+    let org_access_token_json = config_vals["org_access_token"].to_string();
+    let org_access_token =
+        serde_json::from_str::<String>(&org_access_token_json).expect("organzation access token");
+
+    let app_id_json = config_vals["app_id"].to_string();
+    let app_id = serde_json::from_str::<String>(&app_id_json).expect("workgroup id");
+
+    let baseline: ApiClient = Baseline::factory(&org_access_token);
+
+    let create_workflow_params = json!({
+        "workgroup_id": &app_id,
+        "name": format!("{} workflow", Name().fake::<String>()),
+        "version": "v0.0.1",
+    });
+
+    let create_workflow_body = _create_workflow(&baseline, create_workflow_params, 201).await;
+
+    let create_workstep_params = json!({
+        "name": format!("{} workstep", Name().fake::<String>()),
+        "require_finality": true,
+        "metadata": {
+            "prover": {
+                "identifier": "cubic",
+                "name": "General Consistency",
+                "provider": "gnark",
+                "proving_scheme": "groth16",
+                "curve": "BN254",
+            },
+        }
+    });
+
+    let _ = _create_workstep(
+        &baseline,
+        &create_workflow_body.id,
+        create_workstep_params,
+        201,
+    )
+    .await;
 
     let _ = _deploy_workflow(&baseline, &create_workflow_body.id, 422).await;
 }
@@ -3061,31 +3158,34 @@ async fn update_workflow_deployed_to_deprecated() {
     let create_workflow_body = _create_workflow(&baseline, create_workflow_params, 201).await;
 
     let create_mapping_params = json!({
-        "name": format!("{} Mapping", Name().fake::<String>()),
-        "type": "mapping_type",
-        "workgroup_id": &app_id,
-        "models": [
-          {
-            "description": "test model",
-            "primary_key": "id",
-            "type": "test",
-            "fields": [
-              {
-                "is_primary_key": true,
-                "name": "id",
-                "type": "string"
-              }
-            ]
-          }
-        ]
-      });
-  
+      "name": format!("{} Mapping", Name().fake::<String>()),
+      "type": "mapping_type",
+      "workgroup_id": &app_id,
+      "models": [
+        {
+          "description": "test model",
+          "primary_key": "id",
+          "type": "test",
+          "fields": [
+            {
+              "is_primary_key": true,
+              "name": "id",
+              "type": "string"
+            }
+          ]
+        }
+      ]
+    });
+
     let create_mapping_res = baseline
         .create_mapping(Some(create_mapping_params))
         .await
         .expect("create mapping response");
 
-    let create_mapping_body = create_mapping_res.json::<Mapping>().await.expect("create mapping body");
+    let create_mapping_body = create_mapping_res
+        .json::<Mapping>()
+        .await
+        .expect("create mapping body");
     let mapping_model = &create_mapping_body.models[0];
 
     let create_workstep_params = json!({
@@ -3194,31 +3294,34 @@ async fn delete_workflow_fail_on_deployed() {
     let create_workflow_body = _create_workflow(&baseline, create_workflow_params, 201).await;
 
     let create_mapping_params = json!({
-        "name": format!("{} Mapping", Name().fake::<String>()),
-        "type": "mapping_type",
-        "workgroup_id": &app_id,
-        "models": [
-          {
-            "description": "test model",
-            "primary_key": "id",
-            "type": "test",
-            "fields": [
-              {
-                "is_primary_key": true,
-                "name": "id",
-                "type": "string"
-              }
-            ]
-          }
-        ]
-      });
-  
+      "name": format!("{} Mapping", Name().fake::<String>()),
+      "type": "mapping_type",
+      "workgroup_id": &app_id,
+      "models": [
+        {
+          "description": "test model",
+          "primary_key": "id",
+          "type": "test",
+          "fields": [
+            {
+              "is_primary_key": true,
+              "name": "id",
+              "type": "string"
+            }
+          ]
+        }
+      ]
+    });
+
     let create_mapping_res = baseline
         .create_mapping(Some(create_mapping_params))
         .await
         .expect("create mapping response");
 
-    let create_mapping_body = create_mapping_res.json::<Mapping>().await.expect("create mapping body");
+    let create_mapping_body = create_mapping_res
+        .json::<Mapping>()
+        .await
+        .expect("create mapping body");
     let mapping_model = &create_mapping_body.models[0];
 
     let create_workstep_params = json!({
@@ -3288,33 +3391,36 @@ async fn version_workflow() {
         }
 
         let create_mapping_params = json!({
-            "name": format!("{} Mapping", Name().fake::<String>()),
-            "type": "mapping_type",
-            "workgroup_id": &app_id,
-            "models": [
-              {
-                "description": "test model",
-                "primary_key": "id",
-                "type": "test",
-                "fields": [
-                  {
-                    "is_primary_key": true,
-                    "name": "id",
-                    "type": "string"
-                  }
-                ]
-              }
-            ]
-          });
-      
+          "name": format!("{} Mapping", Name().fake::<String>()),
+          "type": "mapping_type",
+          "workgroup_id": &app_id,
+          "models": [
+            {
+              "description": "test model",
+              "primary_key": "id",
+              "type": "test",
+              "fields": [
+                {
+                  "is_primary_key": true,
+                  "name": "id",
+                  "type": "string"
+                }
+              ]
+            }
+          ]
+        });
+
         let create_mapping_res = baseline
             .create_mapping(Some(create_mapping_params))
             .await
             .expect("create mapping response");
-    
-        let create_mapping_body = create_mapping_res.json::<Mapping>().await.expect("create mapping body");
+
+        let create_mapping_body = create_mapping_res
+            .json::<Mapping>()
+            .await
+            .expect("create mapping body");
         let mapping_model = &create_mapping_body.models[0];
-    
+
         let create_workstep_params = json!({
             "name": format!("{} workstep", Name().fake::<String>()),
             "require_finality": finality,
@@ -3415,33 +3521,36 @@ async fn version_workflow_updates_name_and_description() {
         }
 
         let create_mapping_params = json!({
-            "name": format!("{} Mapping", Name().fake::<String>()),
-            "type": "mapping_type",
-            "workgroup_id": &app_id,
-            "models": [
-              {
-                "description": "test model",
-                "primary_key": "id",
-                "type": "test",
-                "fields": [
-                  {
-                    "is_primary_key": true,
-                    "name": "id",
-                    "type": "string"
-                  }
-                ]
-              }
-            ]
-          });
-      
+          "name": format!("{} Mapping", Name().fake::<String>()),
+          "type": "mapping_type",
+          "workgroup_id": &app_id,
+          "models": [
+            {
+              "description": "test model",
+              "primary_key": "id",
+              "type": "test",
+              "fields": [
+                {
+                  "is_primary_key": true,
+                  "name": "id",
+                  "type": "string"
+                }
+              ]
+            }
+          ]
+        });
+
         let create_mapping_res = baseline
             .create_mapping(Some(create_mapping_params))
             .await
             .expect("create mapping response");
-    
-        let create_mapping_body = create_mapping_res.json::<Mapping>().await.expect("create mapping body");
+
+        let create_mapping_body = create_mapping_res
+            .json::<Mapping>()
+            .await
+            .expect("create mapping body");
         let mapping_model = &create_mapping_body.models[0];
-    
+
         let create_workstep_params = json!({
             "name": format!("{} workstep", Name().fake::<String>()),
             "require_finality": finality,
@@ -3551,33 +3660,36 @@ async fn version_workflow_fail_on_prototype() {
         }
 
         let create_mapping_params = json!({
-            "name": format!("{} Mapping", Name().fake::<String>()),
-            "type": "mapping_type",
-            "workgroup_id": &app_id,
-            "models": [
-              {
-                "description": "test model",
-                "primary_key": "id",
-                "type": "test",
-                "fields": [
-                  {
-                    "is_primary_key": true,
-                    "name": "id",
-                    "type": "string"
-                  }
-                ]
-              }
-            ]
-          });
-      
+          "name": format!("{} Mapping", Name().fake::<String>()),
+          "type": "mapping_type",
+          "workgroup_id": &app_id,
+          "models": [
+            {
+              "description": "test model",
+              "primary_key": "id",
+              "type": "test",
+              "fields": [
+                {
+                  "is_primary_key": true,
+                  "name": "id",
+                  "type": "string"
+                }
+              ]
+            }
+          ]
+        });
+
         let create_mapping_res = baseline
             .create_mapping(Some(create_mapping_params))
             .await
             .expect("create mapping response");
-    
-        let create_mapping_body = create_mapping_res.json::<Mapping>().await.expect("create mapping body");
+
+        let create_mapping_body = create_mapping_res
+            .json::<Mapping>()
+            .await
+            .expect("create mapping body");
         let mapping_model = &create_mapping_body.models[0];
-    
+
         let create_workstep_params = json!({
             "name": format!("{} workstep", Name().fake::<String>()),
             "require_finality": finality,
@@ -3648,33 +3760,36 @@ async fn version_workflow_fail_on_versioning_with_same_version() {
         }
 
         let create_mapping_params = json!({
-            "name": format!("{} Mapping", Name().fake::<String>()),
-            "type": "mapping_type",
-            "workgroup_id": &app_id,
-            "models": [
-              {
-                "description": "test model",
-                "primary_key": "id",
-                "type": "test",
-                "fields": [
-                  {
-                    "is_primary_key": true,
-                    "name": "id",
-                    "type": "string"
-                  }
-                ]
-              }
-            ]
-          });
-      
+          "name": format!("{} Mapping", Name().fake::<String>()),
+          "type": "mapping_type",
+          "workgroup_id": &app_id,
+          "models": [
+            {
+              "description": "test model",
+              "primary_key": "id",
+              "type": "test",
+              "fields": [
+                {
+                  "is_primary_key": true,
+                  "name": "id",
+                  "type": "string"
+                }
+              ]
+            }
+          ]
+        });
+
         let create_mapping_res = baseline
             .create_mapping(Some(create_mapping_params))
             .await
             .expect("create mapping response");
-    
-        let create_mapping_body = create_mapping_res.json::<Mapping>().await.expect("create mapping body");
+
+        let create_mapping_body = create_mapping_res
+            .json::<Mapping>()
+            .await
+            .expect("create mapping body");
         let mapping_model = &create_mapping_body.models[0];
-    
+
         let create_workstep_params = json!({
             "name": format!("{} workstep", Name().fake::<String>()),
             "require_finality": finality,
@@ -3747,33 +3862,36 @@ async fn version_workflow_fail_on_versioning_with_older_version() {
         }
 
         let create_mapping_params = json!({
-            "name": format!("{} Mapping", Name().fake::<String>()),
-            "type": "mapping_type",
-            "workgroup_id": &app_id,
-            "models": [
-              {
-                "description": "test model",
-                "primary_key": "id",
-                "type": "test",
-                "fields": [
-                  {
-                    "is_primary_key": true,
-                    "name": "id",
-                    "type": "string"
-                  }
-                ]
-              }
-            ]
-          });
-      
+          "name": format!("{} Mapping", Name().fake::<String>()),
+          "type": "mapping_type",
+          "workgroup_id": &app_id,
+          "models": [
+            {
+              "description": "test model",
+              "primary_key": "id",
+              "type": "test",
+              "fields": [
+                {
+                  "is_primary_key": true,
+                  "name": "id",
+                  "type": "string"
+                }
+              ]
+            }
+          ]
+        });
+
         let create_mapping_res = baseline
             .create_mapping(Some(create_mapping_params))
             .await
             .expect("create mapping response");
-    
-        let create_mapping_body = create_mapping_res.json::<Mapping>().await.expect("create mapping body");
+
+        let create_mapping_body = create_mapping_res
+            .json::<Mapping>()
+            .await
+            .expect("create mapping body");
         let mapping_model = &create_mapping_body.models[0];
-    
+
         let create_workstep_params = json!({
             "name": format!("{} workstep", Name().fake::<String>()),
             "require_finality": finality,
@@ -3822,7 +3940,8 @@ async fn get_workgroups() {
     let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
 
     let org_access_token_json = config_vals["org_access_token"].to_string();
-    let org_access_token = serde_json::from_str::<String>(&org_access_token_json).expect("organzation access token");
+    let org_access_token =
+        serde_json::from_str::<String>(&org_access_token_json).expect("organzation access token");
 
     let baseline: ApiClient = Baseline::factory(&org_access_token);
 
@@ -3858,7 +3977,10 @@ async fn get_workgroups() {
     // let create_workgroup_res = baseline.create_workgroup(Some(create_workgroup_params_3)).await.expect("create workgroup response");
     // assert_eq!(create_workgroup_res.status(), 201);
 
-    let get_workgroups_res = baseline.get_workgroups().await.expect("get workgroups response");
+    let get_workgroups_res = baseline
+        .get_workgroups()
+        .await
+        .expect("get workgroups response");
     assert_eq!(get_workgroups_res.status(), 200);
 
     // let get_workgroups_body = get_workgroups_res.json::<Vec<Workgroup>>().await.expect("get workgroups body");
@@ -3875,7 +3997,8 @@ async fn get_workgroup() {
     let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
 
     let org_access_token_json = config_vals["org_access_token"].to_string();
-    let org_access_token = serde_json::from_str::<String>(&org_access_token_json).expect("organzation access token");
+    let org_access_token =
+        serde_json::from_str::<String>(&org_access_token_json).expect("organzation access token");
 
     let baseline: ApiClient = Baseline::factory(&org_access_token);
 
@@ -3887,18 +4010,33 @@ async fn get_workgroup() {
         }
     });
 
-    let create_workgroup_res = baseline.create_workgroup(Some(create_workgroup_params)).await.expect("create workgroup response");
+    let create_workgroup_res = baseline
+        .create_workgroup(Some(create_workgroup_params))
+        .await
+        .expect("create workgroup response");
     assert_eq!(create_workgroup_res.status(), 201);
 
-    let create_workgroup_body = create_workgroup_res.json::<Workgroup>().await.expect("create workgroup body");
+    let create_workgroup_body = create_workgroup_res
+        .json::<Workgroup>()
+        .await
+        .expect("create workgroup body");
 
-    let get_workgroup_res = baseline.get_workgroup(&create_workgroup_body.id).await.expect("get workgroup response");
+    let get_workgroup_res = baseline
+        .get_workgroup(&create_workgroup_body.id)
+        .await
+        .expect("get workgroup response");
     assert_eq!(get_workgroup_res.status(), 200);
 
-    let create_workgroup_body = get_workgroup_res.json::<Workgroup>().await.expect("create workgroup body");
+    let create_workgroup_body = get_workgroup_res
+        .json::<Workgroup>()
+        .await
+        .expect("create workgroup body");
 
     assert_eq!(create_workgroup_body.name, workgroup_name);
-    assert_eq!(create_workgroup_body.config.unwrap()["onboarding_complete"], false);
+    assert_eq!(
+        create_workgroup_body.config.unwrap()["onboarding_complete"],
+        false
+    );
 }
 
 #[tokio::test]
@@ -3907,7 +4045,8 @@ async fn create_workgroup() {
     let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
 
     let org_access_token_json = config_vals["org_access_token"].to_string();
-    let org_access_token = serde_json::from_str::<String>(&org_access_token_json).expect("organzation access token");
+    let org_access_token =
+        serde_json::from_str::<String>(&org_access_token_json).expect("organzation access token");
 
     let baseline: ApiClient = Baseline::factory(&org_access_token);
 
@@ -3919,13 +4058,27 @@ async fn create_workgroup() {
         }
     });
 
-    let create_workgroup_res = baseline.create_workgroup(Some(create_workgroup_params)).await.expect("create workgroup response");
-    assert_eq!(create_workgroup_res.status(), 201, "create workgroup res: {}", serde_json::to_string_pretty(&create_workgroup_res.json::<Value>().await.unwrap()).unwrap());
+    let create_workgroup_res = baseline
+        .create_workgroup(Some(create_workgroup_params))
+        .await
+        .expect("create workgroup response");
+    assert_eq!(
+        create_workgroup_res.status(),
+        201,
+        "create workgroup res: {}",
+        serde_json::to_string_pretty(&create_workgroup_res.json::<Value>().await.unwrap()).unwrap()
+    );
 
-    let create_workgroup_body = create_workgroup_res.json::<Workgroup>().await.expect("create workgroup body");
+    let create_workgroup_body = create_workgroup_res
+        .json::<Workgroup>()
+        .await
+        .expect("create workgroup body");
 
     assert_eq!(create_workgroup_body.name, workgroup_name);
-    assert_eq!(create_workgroup_body.config.unwrap()["onboarding_complete"], false);
+    assert_eq!(
+        create_workgroup_body.config.unwrap()["onboarding_complete"],
+        false
+    );
 }
 
 #[tokio::test]
@@ -3934,7 +4087,8 @@ async fn update_workgroup() {
     let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
 
     let org_access_token_json = config_vals["org_access_token"].to_string();
-    let org_access_token = serde_json::from_str::<String>(&org_access_token_json).expect("organzation access token");
+    let org_access_token =
+        serde_json::from_str::<String>(&org_access_token_json).expect("organzation access token");
 
     let baseline: ApiClient = Baseline::factory(&org_access_token);
 
@@ -3942,10 +4096,16 @@ async fn update_workgroup() {
         "name": format!("{} workgroup", Name().fake::<String>()),
     });
 
-    let create_workgroup_res = baseline.create_workgroup(Some(create_workgroup_params)).await.expect("create workgroup response");
+    let create_workgroup_res = baseline
+        .create_workgroup(Some(create_workgroup_params))
+        .await
+        .expect("create workgroup response");
     assert_eq!(create_workgroup_res.status(), 201);
 
-    let create_workgroup_body = create_workgroup_res.json::<Workgroup>().await.expect("create workgroup body");
+    let create_workgroup_body = create_workgroup_res
+        .json::<Workgroup>()
+        .await
+        .expect("create workgroup body");
 
     let update_workgroup_params = json!({
         "config": {
@@ -3953,7 +4113,10 @@ async fn update_workgroup() {
         }
     });
 
-    let update_workgroup_res = baseline.update_workgroup(&create_workgroup_body.id, Some(update_workgroup_params)).await.expect("update workgroup response");
+    let update_workgroup_res = baseline
+        .update_workgroup(&create_workgroup_body.id, Some(update_workgroup_params))
+        .await
+        .expect("update workgroup response");
     assert_eq!(update_workgroup_res.status(), 204);
 }
 
@@ -4253,31 +4416,34 @@ async fn update_workstep_fail_on_deployed() {
     let create_workflow_body = _create_workflow(&baseline, create_workflow_params, 201).await;
 
     let create_mapping_params = json!({
-        "name": format!("{} Mapping", Name().fake::<String>()),
-        "type": "mapping_type",
-        "workgroup_id": &app_id,
-        "models": [
-          {
-            "description": "test model",
-            "primary_key": "id",
-            "type": "test",
-            "fields": [
-              {
-                "is_primary_key": true,
-                "name": "id",
-                "type": "string"
-              }
-            ]
-          }
-        ]
-      });
-  
+      "name": format!("{} Mapping", Name().fake::<String>()),
+      "type": "mapping_type",
+      "workgroup_id": &app_id,
+      "models": [
+        {
+          "description": "test model",
+          "primary_key": "id",
+          "type": "test",
+          "fields": [
+            {
+              "is_primary_key": true,
+              "name": "id",
+              "type": "string"
+            }
+          ]
+        }
+      ]
+    });
+
     let create_mapping_res = baseline
         .create_mapping(Some(create_mapping_params))
         .await
         .expect("create mapping response");
 
-    let create_mapping_body = create_mapping_res.json::<Mapping>().await.expect("create mapping body");
+    let create_mapping_body = create_mapping_res
+        .json::<Mapping>()
+        .await
+        .expect("create mapping body");
     let mapping_model = &create_mapping_body.models[0];
 
     let create_workstep_params = json!({
@@ -4966,31 +5132,34 @@ async fn create_workstep_fail_on_deployed() {
     let create_workflow_body = _create_workflow(&baseline, create_workflow_params, 201).await;
 
     let create_mapping_params = json!({
-        "name": format!("{} Mapping", Name().fake::<String>()),
-        "type": "mapping_type",
-        "workgroup_id": &app_id,
-        "models": [
-          {
-            "description": "test model",
-            "primary_key": "id",
-            "type": "test",
-            "fields": [
-              {
-                "is_primary_key": true,
-                "name": "id",
-                "type": "string"
-              }
-            ]
-          }
-        ]
-      });
-  
+      "name": format!("{} Mapping", Name().fake::<String>()),
+      "type": "mapping_type",
+      "workgroup_id": &app_id,
+      "models": [
+        {
+          "description": "test model",
+          "primary_key": "id",
+          "type": "test",
+          "fields": [
+            {
+              "is_primary_key": true,
+              "name": "id",
+              "type": "string"
+            }
+          ]
+        }
+      ]
+    });
+
     let create_mapping_res = baseline
         .create_mapping(Some(create_mapping_params))
         .await
         .expect("create mapping response");
 
-    let create_mapping_body = create_mapping_res.json::<Mapping>().await.expect("create mapping body");
+    let create_mapping_body = create_mapping_res
+        .json::<Mapping>()
+        .await
+        .expect("create mapping body");
     let mapping_model = &create_mapping_body.models[0];
 
     let create_workstep_params = json!({
@@ -5064,31 +5233,34 @@ async fn execute_workstep() {
     let create_workflow_body = _create_workflow(&baseline, create_workflow_params, 201).await;
 
     let create_mapping_params = json!({
-        "name": format!("{} Mapping", Name().fake::<String>()),
-        "type": "mapping_type",
-        "workgroup_id": &app_id,
-        "models": [
-          {
-            "description": "test model",
-            "primary_key": "id",
-            "type": "test",
-            "fields": [
-              {
-                "is_primary_key": true,
-                "name": "id",
-                "type": "string"
-              }
-            ]
-          }
-        ]
-      });
-  
+      "name": format!("{} Mapping", Name().fake::<String>()),
+      "type": "mapping_type",
+      "workgroup_id": &app_id,
+      "models": [
+        {
+          "description": "test model",
+          "primary_key": "id",
+          "type": "test",
+          "fields": [
+            {
+              "is_primary_key": true,
+              "name": "id",
+              "type": "string"
+            }
+          ]
+        }
+      ]
+    });
+
     let create_mapping_res = baseline
         .create_mapping(Some(create_mapping_params))
         .await
         .expect("create mapping response");
 
-    let create_mapping_body = create_mapping_res.json::<Mapping>().await.expect("create mapping body");
+    let create_mapping_body = create_mapping_res
+        .json::<Mapping>()
+        .await
+        .expect("create mapping body");
     let mapping_model = &create_mapping_body.models[0];
 
     let create_workstep_params = json!({
@@ -5460,31 +5632,34 @@ async fn execute_workstep_fail_without_valid_witness() {
     let create_workflow_body = _create_workflow(&baseline, create_workflow_params, 201).await;
 
     let create_mapping_params = json!({
-        "name": format!("{} Mapping", Name().fake::<String>()),
-        "type": "mapping_type",
-        "workgroup_id": &app_id,
-        "models": [
-          {
-            "description": "test model",
-            "primary_key": "id",
-            "type": "test",
-            "fields": [
-              {
-                "is_primary_key": true,
-                "name": "id",
-                "type": "string"
-              }
-            ]
-          }
-        ]
-      });
-  
+      "name": format!("{} Mapping", Name().fake::<String>()),
+      "type": "mapping_type",
+      "workgroup_id": &app_id,
+      "models": [
+        {
+          "description": "test model",
+          "primary_key": "id",
+          "type": "test",
+          "fields": [
+            {
+              "is_primary_key": true,
+              "name": "id",
+              "type": "string"
+            }
+          ]
+        }
+      ]
+    });
+
     let create_mapping_res = baseline
         .create_mapping(Some(create_mapping_params))
         .await
         .expect("create mapping response");
 
-    let create_mapping_body = create_mapping_res.json::<Mapping>().await.expect("create mapping body");
+    let create_mapping_body = create_mapping_res
+        .json::<Mapping>()
+        .await
+        .expect("create mapping body");
     let mapping_model = &create_mapping_body.models[0];
 
     let create_workstep_params = json!({
@@ -5768,31 +5943,34 @@ async fn create_workstep_participant_fail_on_deployed() {
     let create_workflow_body = _create_workflow(&baseline, create_workflow_params, 201).await;
 
     let create_mapping_params = json!({
-        "name": format!("{} Mapping", Name().fake::<String>()),
-        "type": "mapping_type",
-        "workgroup_id": &app_id,
-        "models": [
-          {
-            "description": "test model",
-            "primary_key": "id",
-            "type": "test",
-            "fields": [
-              {
-                "is_primary_key": true,
-                "name": "id",
-                "type": "string"
-              }
-            ]
-          }
-        ]
-      });
-  
+      "name": format!("{} Mapping", Name().fake::<String>()),
+      "type": "mapping_type",
+      "workgroup_id": &app_id,
+      "models": [
+        {
+          "description": "test model",
+          "primary_key": "id",
+          "type": "test",
+          "fields": [
+            {
+              "is_primary_key": true,
+              "name": "id",
+              "type": "string"
+            }
+          ]
+        }
+      ]
+    });
+
     let create_mapping_res = baseline
         .create_mapping(Some(create_mapping_params))
         .await
         .expect("create mapping response");
 
-    let create_mapping_body = create_mapping_res.json::<Mapping>().await.expect("create mapping body");
+    let create_mapping_body = create_mapping_res
+        .json::<Mapping>()
+        .await
+        .expect("create mapping body");
     let mapping_model = &create_mapping_body.models[0];
 
     let create_workstep_params = json!({
@@ -5987,31 +6165,34 @@ async fn delete_workstep_participant_fail_on_deployed() {
     let create_workflow_body = _create_workflow(&baseline, create_workflow_params, 201).await;
 
     let create_mapping_params = json!({
-        "name": format!("{} Mapping", Name().fake::<String>()),
-        "type": "mapping_type",
-        "workgroup_id": &app_id,
-        "models": [
-          {
-            "description": "test model",
-            "primary_key": "id",
-            "type": "test",
-            "fields": [
-              {
-                "is_primary_key": true,
-                "name": "id",
-                "type": "string"
-              }
-            ]
-          }
-        ]
-      });
-  
+      "name": format!("{} Mapping", Name().fake::<String>()),
+      "type": "mapping_type",
+      "workgroup_id": &app_id,
+      "models": [
+        {
+          "description": "test model",
+          "primary_key": "id",
+          "type": "test",
+          "fields": [
+            {
+              "is_primary_key": true,
+              "name": "id",
+              "type": "string"
+            }
+          ]
+        }
+      ]
+    });
+
     let create_mapping_res = baseline
         .create_mapping(Some(create_mapping_params))
         .await
         .expect("create mapping response");
 
-    let create_mapping_body = create_mapping_res.json::<Mapping>().await.expect("create mapping body");
+    let create_mapping_body = create_mapping_res
+        .json::<Mapping>()
+        .await
+        .expect("create mapping body");
     let mapping_model = &create_mapping_body.models[0];
 
     let create_workstep_params = json!({
@@ -6178,9 +6359,15 @@ async fn get_system_details() {
         "endpoint_url": "http://localhost:8070"
     });
 
-    let create_system_res = baseline.create_system(&app_id, Some(create_system_params)).await.expect("create system res");
+    let create_system_res = baseline
+        .create_system(&app_id, Some(create_system_params))
+        .await
+        .expect("create system res");
 
-    let create_system_body = create_system_res.json::<System>().await.expect("create system body");
+    let create_system_body = create_system_res
+        .json::<System>()
+        .await
+        .expect("create system body");
 
     let get_system_details = baseline
         .get_system_details(&app_id, &create_system_body.id, None)
@@ -6243,7 +6430,10 @@ async fn create_system() {
         "endpoint_url": "http://localhost:8070"
     });
 
-    let create_system_res = baseline.create_system(&app_id, Some(create_system_params)).await.expect("create system res");
+    let create_system_res = baseline
+        .create_system(&app_id, Some(create_system_params))
+        .await
+        .expect("create system res");
     assert_eq!(create_system_res.status(), 201);
 }
 
@@ -6301,16 +6491,25 @@ async fn update_system() {
         "endpoint_url": "http://localhost:8070"
     });
 
-    let create_system_res = baseline.create_system(&app_id, Some(create_system_params)).await.expect("create system res");
+    let create_system_res = baseline
+        .create_system(&app_id, Some(create_system_params))
+        .await
+        .expect("create system res");
     assert_eq!(create_system_res.status(), 201);
 
-    let create_system_body = create_system_res.json::<System>().await.expect("create system body");
+    let create_system_body = create_system_res
+        .json::<System>()
+        .await
+        .expect("create system body");
 
     let update_system_params = json!({
         "name": "updated system",
     });
 
-    let update_system_res = baseline.update_system(&app_id, &create_system_body.id, Some(update_system_params)).await.expect("update system res");
+    let update_system_res = baseline
+        .update_system(&app_id, &create_system_body.id, Some(update_system_params))
+        .await
+        .expect("update system res");
     assert_eq!(update_system_res.status(), 204);
 }
 
@@ -6368,11 +6567,20 @@ async fn delete_system() {
         "endpoint_url": "http://localhost:8070"
     });
 
-    let create_system_res = baseline.create_system(&app_id, Some(create_system_params)).await.expect("create system res");
+    let create_system_res = baseline
+        .create_system(&app_id, Some(create_system_params))
+        .await
+        .expect("create system res");
     assert_eq!(create_system_res.status(), 201);
 
-    let create_system_body = create_system_res.json::<System>().await.expect("create system body");
+    let create_system_body = create_system_res
+        .json::<System>()
+        .await
+        .expect("create system body");
 
-    let delete_system_res = baseline.delete_system(&app_id, &create_system_body.id).await.expect("delete system res");
+    let delete_system_res = baseline
+        .delete_system(&app_id, &create_system_body.id)
+        .await
+        .expect("delete system res");
     assert_eq!(delete_system_res.status(), 204);
 }

@@ -131,15 +131,12 @@ pub trait Baseline {
         participant_address: &str,
     ) -> Response;
 
-    async fn system_reachability(
-        &self,
-        params: Params,
-    ) -> Response;
+    async fn system_reachability(&self, params: Params) -> Response;
 
     async fn list_systems(
         &self,
         workgroup_id: &str,
-        query_params: Option<Vec<(String, String)>>
+        query_params: Option<Vec<(String, String)>>,
     ) -> Response;
 
     async fn get_system_details(
@@ -149,24 +146,11 @@ pub trait Baseline {
         query_params: Option<Vec<(String, String)>>,
     ) -> Response;
 
-    async fn create_system(
-        &self,
-        workgroup_id: &str,
-        params: Params,
-    ) -> Response;
+    async fn create_system(&self, workgroup_id: &str, params: Params) -> Response;
 
-    async fn update_system(
-        &self,
-        workgroup_id: &str,
-        system_id: &str,
-        params: Params,
-    ) -> Response;
+    async fn update_system(&self, workgroup_id: &str, system_id: &str, params: Params) -> Response;
 
-    async fn delete_system(
-        &self,
-        workgroup_id: &str,
-        system_id: &str
-    ) -> Response;
+    async fn delete_system(&self, workgroup_id: &str, system_id: &str) -> Response;
 }
 
 #[async_trait]
@@ -401,17 +385,14 @@ impl Baseline for ApiClient {
         return self.delete(&uri, None, None).await;
     }
 
-    async fn system_reachability(
-        &self,
-        params: Params,
-    ) -> Response {
+    async fn system_reachability(&self, params: Params) -> Response {
         return self.post("systems/reachability", params, None).await;
     }
 
     async fn list_systems(
         &self,
         workgroup_id: &str,
-        query_params: Option<Vec<(String, String)>>
+        query_params: Option<Vec<(String, String)>>,
     ) -> Response {
         let uri = format!("workgroups/{}/systems", workgroup_id);
         return self.get(&uri, None, None, query_params).await;
@@ -427,30 +408,17 @@ impl Baseline for ApiClient {
         return self.get(&uri, None, None, query_params).await;
     }
 
-    async fn create_system(
-        &self,
-        workgroup_id: &str,
-        params: Params,
-    ) -> Response {
+    async fn create_system(&self, workgroup_id: &str, params: Params) -> Response {
         let uri = format!("workgroups/{}/systems", workgroup_id);
         return self.post(&uri, params, None).await;
     }
 
-    async fn update_system(
-        &self,
-        workgroup_id: &str,
-        system_id: &str,
-        params: Params,
-    ) -> Response {
+    async fn update_system(&self, workgroup_id: &str, system_id: &str, params: Params) -> Response {
         let uri = format!("workgroups/{}/systems/{}", workgroup_id, system_id);
         return self.put(&uri, params, None).await;
     }
 
-    async fn delete_system(
-        &self,
-        workgroup_id: &str,
-        system_id: &str
-    ) -> Response {
+    async fn delete_system(&self, workgroup_id: &str, system_id: &str) -> Response {
         let uri = format!("workgroups/{}/systems/{}", workgroup_id, system_id);
         return self.delete(&uri, None, None).await;
     }

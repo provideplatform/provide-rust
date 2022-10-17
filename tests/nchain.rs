@@ -18,7 +18,7 @@ use fake::faker::internet::en::{FreeEmail, Password};
 use fake::faker::name::en::{FirstName, LastName, Name};
 use fake::Fake;
 use provide_rust::api::client::ApiClient;
-use provide_rust::api::ident::{Application, AuthenticateResponse, Ident, Token, Organization};
+use provide_rust::api::ident::{Application, AuthenticateResponse, Ident, Organization, Token};
 use provide_rust::api::nchain::*;
 use serde_json::{json, Value};
 
@@ -681,7 +681,10 @@ async fn get_networks() {
 
     let organization_access_token = match organization_auth_body.access_token {
         Some(string) => string,
-        None => panic!("organization authentication response access token not found {:?}", organization_auth_body),
+        None => panic!(
+            "organization authentication response access token not found {:?}",
+            organization_auth_body
+        ),
     };
 
     let nchain: ApiClient = NChain::factory(&organization_access_token);
@@ -689,8 +692,15 @@ async fn get_networks() {
     let get_networks_res = nchain.get_networks().await.expect("get networks response");
     assert_eq!(get_networks_res.status(), 200);
 
-    let get_networks_body = get_networks_res.json::<Vec<Network>>().await.expect("get networks body");
-    assert!(get_networks_body.len() > 2, "get networks body length: {}", get_networks_body.len());
+    let get_networks_body = get_networks_res
+        .json::<Vec<Network>>()
+        .await
+        .expect("get networks body");
+    assert!(
+        get_networks_body.len() > 2,
+        "get networks body length: {}",
+        get_networks_body.len()
+    );
 }
 
 #[tokio::test]
@@ -827,14 +837,18 @@ async fn update_network() {
         .create_network(create_network_params)
         .await
         .expect("create network response");
-    assert_eq!(create_network_res.status(), 201, "create network res: {}",
-    serde_json::to_string_pretty(
-        &create_network_res
-            .json::<serde_json::Value>()
-            .await
-            .unwrap()
-    )
-    .unwrap());
+    assert_eq!(
+        create_network_res.status(),
+        201,
+        "create network res: {}",
+        serde_json::to_string_pretty(
+            &create_network_res
+                .json::<serde_json::Value>()
+                .await
+                .unwrap()
+        )
+        .unwrap()
+    );
 
     let create_network_body = create_network_res
         .json::<Network>()
