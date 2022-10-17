@@ -437,7 +437,7 @@ services:
     profiles:
       - core
 
-  prvd-postgres:
+  baseline-postgres-1:
     image: postgres
     container_name: baseline-postgres-1
     environment:
@@ -450,7 +450,7 @@ services:
       timeout: 1s
       retries: 2
       start_period: 10s
-    hostname: prvd-postgres
+    hostname: baseline-postgres-1
     volumes:
       - prvd-bpi-1-db:/var/lib/postgresql/data
     networks:
@@ -461,7 +461,7 @@ services:
     profiles:
       - bpi-1
 
-  prvd-redis:
+  baseline-redis-1:
     image: redis
     container_name: baseline-redis-1
     healthcheck:
@@ -470,7 +470,7 @@ services:
       timeout: 1s
       retries: 2
       start_period: 10s
-    hostname: prvd-redis
+    hostname: baseline-redis-1
     networks:
       - prvd-bpi-1
     ports:
@@ -479,7 +479,7 @@ services:
     profiles:
       - bpi-1
 
-  prvd-nats:
+  baseline-nats-1:
     image: provide/nats-server:2.5.0-PRVD
     container_name: baseline-nats-1
     command:
@@ -516,7 +516,7 @@ services:
       timeout: 1s
       retries: 2
       start_period: 10s
-    hostname: prvd-nats
+    hostname: baseline-nats-1
     networks:
       - prvd-bpi-1
     ports:
@@ -528,7 +528,7 @@ services:
     profiles:
       - bpi-1
 
-  prvd-elasticsearch:
+  baseline-elasticsearch-1:
     image: elasticsearch:8.3.3
     container_name: baseline-elasticsearch-1
     environment:
@@ -539,27 +539,28 @@ services:
       timeout: 1s
       retries: 2
       start_period: 10s
-    hostname: prvd-elasticsearch
+    hostname: baseline-elasticsearch-1
     networks:
       - prvd-bpi-1
     ports:
       - 9200:9200
+      - 9300:9300
     restart: always
     profiles:
       - bpi-1
 
-  baseline:
+  baseline-api-1:
     image: provide/baseline
     entrypoint: ./ops/run_api.sh
     container_name: baseline-api-1
     depends_on:
-      - prvd-nats
-      - prvd-postgres
-      - prvd-redis
+      - baseline-nats-1
+      - baseline-postgres-1
+      - baseline-redis-1
     environment:
       - BASELINE_ORGANIZATION_ADDRESS=
       - BASELINE_REGISTRY_CONTRACT_ADDRESS=
-      - DATABASE_HOST=prvd-postgres
+      - DATABASE_HOST=baseline-postgres-1
       - DATABASE_NAME=baseline_dev
       - DATABASE_USER=baseline
       - DATABASE_PASSWORD=baseline
@@ -567,8 +568,8 @@ services:
       - IDENT_API_SCHEME=http
       - LOG_LEVEL=DEBUG
       - NATS_CLIENT_PREFIX=baseline
-      - NATS_URL=nats://prvd-nats:4224
-      - NATS_JETSTREAM_URL=nats://prvd-nats:4224
+      - NATS_URL=nats://baseline-nats-1:4224
+      - NATS_JETSTREAM_URL=nats://baseline-nats-1:4224
       - NCHAIN_API_HOST=host.docker.internal:8084
       - NCHAIN_API_SCHEME=http
       - NCHAIN_BASELINE_NETWORK_ID=
@@ -579,13 +580,13 @@ services:
       - BASELINE_WORKGROUP_ID=
       - PROVIDE_SOR_IDENTIFIER=ephemeral
       - PROVIDE_SOR_URL=
-      - REDIS_HOSTS=prvd-redis:6379
+      - REDIS_HOSTS=baseline-redis-1:6379
       - VAULT_API_HOST=host.docker.internal:8082
       - VAULT_API_SCHEME=http
       - VAULT_REFRESH_TOKEN=eyJhbGciOiJSUzI1NiIsImtpZCI6IjEwOjJlOmQ5OmUxOmI4OmEyOjM0OjM3Ojk5OjNhOjI0OmZjOmFhOmQxOmM4OjU5IiwidHlwIjoiSldUIn0.eyJhdWQiOiJodHRwczovL3Byb3ZpZGUuc2VydmljZXMvYXBpL3YxIiwiaWF0IjoxNjA1NzkxMjQ4LCJpc3MiOiJodHRwczovL2lkZW50LnByb3ZpZGUuc2VydmljZXMiLCJqdGkiOiI5YjUxNGIxNS01NTdlLTRhYWQtYTcwOC0wMTcwZTAwZWE1ZmIiLCJuYXRzIjp7InBlcm1pc3Npb25zIjp7InN1YnNjcmliZSI6eyJhbGxvdyI6WyJhcHBsaWNhdGlvbi4zNjAxNTdmOC1kNWExLTQ0NDAtOTE4Yi1mNjhiYjM5YzBkODAiLCJ1c2VyLjIzY2MwN2UwLTM4NTEtNDBkZC1iNjc1LWRmNzY4MDY3MmY3ZCIsIm5ldHdvcmsuKi5jb25uZWN0b3IuKiIsIm5ldHdvcmsuKi5zdGF0dXMiLCJwbGF0Zm9ybS5cdTAwM2UiXX19fSwicHJ2ZCI6eyJhcHBsaWNhdGlvbl9pZCI6IjM2MDE1N2Y4LWQ1YTEtNDQ0MC05MThiLWY2OGJiMzljMGQ4MCIsImV4dGVuZGVkIjp7InBlcm1pc3Npb25zIjp7IioiOjUxMH19LCJwZXJtaXNzaW9ucyI6NTEwLCJ1c2VyX2lkIjoiMjNjYzA3ZTAtMzg1MS00MGRkLWI2NzUtZGY3NjgwNjcyZjdkIn0sInN1YiI6ImFwcGxpY2F0aW9uOjM2MDE1N2Y4LWQ1YTEtNDQ0MC05MThiLWY2OGJiMzljMGQ4MCJ9.SUh84MKBNstdu3KFu1zEAQq03xbPw1D0lLXeogz1HfBJy77bIGf7HLvCuc6bjkh0xj3cEuEus1dC1Dj3BvlZoSXsvz_biTzSapkXzJjpkwOL6qkYDmqTPZvXwqmk-mUNrHTPkqdiIJL7xA46tzHW3E_hjSA9HjEk1kXjPdJQ6_ifkgWNoAaSD--kudIrhZ7vLnfy0H1JEAOsXzSAMoc5_pNG2n79m0ywvb_4l9BqdsHW8N3xSQOFjcp9gD_tqo6ffug3pkpoy-RSguM_OaMR2lj_CHhYxAt0phtjUceDD3K1h5iZ38kSl7izhOdULMmGBhVpBMoSy6_R6ZzpCL3pj8FcReX9RXR5oYpm8PDtlmWqblQzjwY00-uYLfOX0_iS4MGfEsjadZPfTmJLcOTYC7H4PL9ZRu_XtMDUrGBQQz5b_ad2ZzMXbBNeU6vbxVKDG8VFKWOHAemqHTcvuOAsOCLIqOu-eJpZHlXbx-FXPTYledd-GBDe7IjaC9ll_JK3utCOnCq0qUs6lnXIrQ_Sp1LcTKJJ7aY5f9TxeoAuL-ghDbQ3Xkw6huKyPCz2evOwVLwrB9ZRMlQXgmTnB1OeQvWii1WbmkyV1Zhbz_RPB8ckK7_mFxuPvsXK8wTFiWFmj96sRX470kV-ooSfM5CzKZhSLqgyyaUNC0VaCPq0uuE
-      - BASELINE_ORGANIZATION_MESSAGING_ENDPOINT=nats://prvd-nats:4223
+      - BASELINE_ORGANIZATION_MESSAGING_ENDPOINT=nats://baseline-nats-1:4223
       - BASELINE_ORGANIZATION_PROXY_ENDPOINT=http://prvd-bpi-1:8080
-      - ELASTICSEARCH_HOSTS=prvd-elasticsearch:9200
+      - ELASTICSEARCH_HOSTS=baseline-elasticsearch-1:9200
       - ELASTICSEARCH_ACCEPT_SELF_SIGNED_CERTIFICATE=true
       - ELASTICSEARCH_API_SCHEME=https
       - ELASTICSEARCH_USERNAME=elastic
@@ -605,18 +606,18 @@ services:
     profiles:
       - bpi-1
 
-  baseline-consumer:
+  baseline-consumer-1:
     image: provide/baseline
     entrypoint: ./ops/run_consumer.sh
     container_name: baseline-consumer-1
     depends_on:
-      - prvd-nats
-      - prvd-postgres
-      - prvd-redis
+      - baseline-nats-1
+      - baseline-postgres-1
+      - baseline-redis-1
     environment:
       - BASELINE_ORGANIZATION_ADDRESS=
       - BASELINE_REGISTRY_CONTRACT_ADDRESS=
-      - DATABASE_HOST=prvd-postgres
+      - DATABASE_HOST=baseline-postgres-1
       - DATABASE_NAME=baseline_dev
       - DATABASE_USER=baseline
       - DATABASE_PASSWORD=baseline
@@ -624,8 +625,8 @@ services:
       - IDENT_API_SCHEME=http
       - LOG_LEVEL=DEBUG
       - NATS_CLIENT_PREFIX=baseline
-      - NATS_URL=nats://prvd-nats:4224
-      - NATS_JETSTREAM_URL=nats://prvd-nats:4224
+      - NATS_URL=nats://baseline-nats-1:4224
+      - NATS_JETSTREAM_URL=nats://baseline-nats-1:4224
       - NCHAIN_API_HOST=host.docker.internal:8084
       - NCHAIN_API_SCHEME=http
       - NCHAIN_BASELINE_NETWORK_ID=
@@ -636,16 +637,16 @@ services:
       - BASELINE_WORKGROUP_ID=
       - PROVIDE_SOR_IDENTIFIER=ephemeral
       - PROVIDE_SOR_URL=
-      - REDIS_HOSTS=prvd-redis:6379
+      - REDIS_HOSTS=baseline-redis-1:6379
       - VAULT_API_HOST=host.docker.internal:8082
       - VAULT_API_SCHEME=http
       - VAULT_REFRESH_TOKEN=eyJhbGciOiJSUzI1NiIsImtpZCI6IjEwOjJlOmQ5OmUxOmI4OmEyOjM0OjM3Ojk5OjNhOjI0OmZjOmFhOmQxOmM4OjU5IiwidHlwIjoiSldUIn0.eyJhdWQiOiJodHRwczovL3Byb3ZpZGUuc2VydmljZXMvYXBpL3YxIiwiaWF0IjoxNjA1NzkxMjQ4LCJpc3MiOiJodHRwczovL2lkZW50LnByb3ZpZGUuc2VydmljZXMiLCJqdGkiOiI5YjUxNGIxNS01NTdlLTRhYWQtYTcwOC0wMTcwZTAwZWE1ZmIiLCJuYXRzIjp7InBlcm1pc3Npb25zIjp7InN1YnNjcmliZSI6eyJhbGxvdyI6WyJhcHBsaWNhdGlvbi4zNjAxNTdmOC1kNWExLTQ0NDAtOTE4Yi1mNjhiYjM5YzBkODAiLCJ1c2VyLjIzY2MwN2UwLTM4NTEtNDBkZC1iNjc1LWRmNzY4MDY3MmY3ZCIsIm5ldHdvcmsuKi5jb25uZWN0b3IuKiIsIm5ldHdvcmsuKi5zdGF0dXMiLCJwbGF0Zm9ybS5cdTAwM2UiXX19fSwicHJ2ZCI6eyJhcHBsaWNhdGlvbl9pZCI6IjM2MDE1N2Y4LWQ1YTEtNDQ0MC05MThiLWY2OGJiMzljMGQ4MCIsImV4dGVuZGVkIjp7InBlcm1pc3Npb25zIjp7IioiOjUxMH19LCJwZXJtaXNzaW9ucyI6NTEwLCJ1c2VyX2lkIjoiMjNjYzA3ZTAtMzg1MS00MGRkLWI2NzUtZGY3NjgwNjcyZjdkIn0sInN1YiI6ImFwcGxpY2F0aW9uOjM2MDE1N2Y4LWQ1YTEtNDQ0MC05MThiLWY2OGJiMzljMGQ4MCJ9.SUh84MKBNstdu3KFu1zEAQq03xbPw1D0lLXeogz1HfBJy77bIGf7HLvCuc6bjkh0xj3cEuEus1dC1Dj3BvlZoSXsvz_biTzSapkXzJjpkwOL6qkYDmqTPZvXwqmk-mUNrHTPkqdiIJL7xA46tzHW3E_hjSA9HjEk1kXjPdJQ6_ifkgWNoAaSD--kudIrhZ7vLnfy0H1JEAOsXzSAMoc5_pNG2n79m0ywvb_4l9BqdsHW8N3xSQOFjcp9gD_tqo6ffug3pkpoy-RSguM_OaMR2lj_CHhYxAt0phtjUceDD3K1h5iZ38kSl7izhOdULMmGBhVpBMoSy6_R6ZzpCL3pj8FcReX9RXR5oYpm8PDtlmWqblQzjwY00-uYLfOX0_iS4MGfEsjadZPfTmJLcOTYC7H4PL9ZRu_XtMDUrGBQQz5b_ad2ZzMXbBNeU6vbxVKDG8VFKWOHAemqHTcvuOAsOCLIqOu-eJpZHlXbx-FXPTYledd-GBDe7IjaC9ll_JK3utCOnCq0qUs6lnXIrQ_Sp1LcTKJJ7aY5f9TxeoAuL-ghDbQ3Xkw6huKyPCz2evOwVLwrB9ZRMlQXgmTnB1OeQvWii1WbmkyV1Zhbz_RPB8ckK7_mFxuPvsXK8wTFiWFmj96sRX470kV-ooSfM5CzKZhSLqgyyaUNC0VaCPq0uuE
-      - BASELINE_ORGANIZATION_MESSAGING_ENDPOINT=nats://prvd-nats:4223
+      - BASELINE_ORGANIZATION_MESSAGING_ENDPOINT=nats://baseline-nats-1:4223
       - BASELINE_ORGANIZATION_PROXY_ENDPOINT=http://prvd-bpi-1:8080
       - BASELINE_API_SCHEME=http
       - BASELINE_API_HOST=prvd-bpi-1:8080
       - BASELINE_API_PATH=api/v1
-      - ELASTICSEARCH_HOSTS=prvd-elasticsearch:9200
+      - ELASTICSEARCH_HOSTS=baseline-elasticsearch-1:9200
       - ELASTICSEARCH_ACCEPT_SELF_SIGNED_CERTIFICATE=true
       - ELASTICSEARCH_API_SCHEME=https
       - ELASTICSEARCH_USERNAME=elastic
