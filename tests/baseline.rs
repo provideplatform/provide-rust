@@ -20,14 +20,12 @@ use fake::Fake;
 use provide_rust::api::baseline::*;
 use provide_rust::api::client::ApiClient;
 use provide_rust::api::ident::{AuthenticateResponse, Ident, Organization, Token};
-use provide_rust::api::nchain::{Account, Contract, NChain, Wallet};
+use provide_rust::api::nchain::{Account, Contract, NChain, Wallet, ROPSTEN_TESTNET_NETWORK_ID};
 use provide_rust::api::vault::{Vault, VaultContainer, VaultKey};
 use serde_json::{json, Value};
 use std::io::Write;
 use std::process::Command;
 use tokio::time::{self, Duration};
-
-const ROPSTEN_NETWORK_ID: &str = "66d44f30-9092-4182-a3c4-bc02736d6ae5";
 
 async fn _create_workflow(baseline: &ApiClient, params: Value, expected_status: u16) -> Workflow {
     let create_workflow_res = baseline
@@ -146,7 +144,7 @@ async fn _deploy_workflow(baseline: &ApiClient, workflow_id: &str, expected_stat
 
 async fn generate_workgroup(baseline: &ApiClient) -> Workgroup {
     let workgroup_params = json!({
-        "network_id": ROPSTEN_NETWORK_ID,
+        "network_id": ROPSTEN_TESTNET_NETWORK_ID,
         "name": format!("{} application", Name().fake::<String>()),
         "type": "baseline",
     });
@@ -312,7 +310,7 @@ async fn baseline_setup() {
     let create_contract_params = json!({
         "address": &baseline_registry_contract_address,
         "name": "Shuttle",
-        "network_id": ROPSTEN_NETWORK_ID,
+        "network_id": ROPSTEN_TESTNET_NETWORK_ID,
         "params": {
             "argv": [],
             "compiled_artifact": compiled_artifact,
@@ -467,7 +465,7 @@ async fn baseline_setup() {
             " --nchain-scheme={}",
             std::env::var("NCHAIN_API_SCHEME").unwrap_or(String::from("http"))
         );
-        run_cmd += &format!(" --nchain-network-id={}", ROPSTEN_NETWORK_ID);
+        run_cmd += &format!(" --nchain-network-id={}", ROPSTEN_TESTNET_NETWORK_ID);
         run_cmd += &format!(" --organization={}", &create_organization_body.id);
         run_cmd += &format!(" --organization-address={}", &org_address);
         run_cmd += &format!(" --organization-refresh-token={}", &org_refresh_token);
@@ -542,7 +540,7 @@ async fn baseline_setup() {
     } else {
         let create_subject_account_params = json!({
             "metadata": {
-                "network_id": ROPSTEN_NETWORK_ID,
+                "network_id": ROPSTEN_TESTNET_NETWORK_ID,
                 "organization_address": &registry_contract_address,
                 "organization_id": &create_organization_body.id,
                 "organization_refresh_token": &org_refresh_token,
@@ -597,7 +595,7 @@ async fn create_subject_account_fail_with_existing_account() {
 
     let create_subject_account_params = json!({
         "metadata": {
-            "network_id": ROPSTEN_NETWORK_ID,
+            "network_id": ROPSTEN_TESTNET_NETWORK_ID,
             "organization_address": &registry_contract_address,
             "organization_id": &org_id,
             "organization_refresh_token": &org_refresh_token,
@@ -643,7 +641,7 @@ async fn create_subject_account_fail_without_workgroup_id() {
 
     let create_subject_account_params = json!({
         "metadata": {
-            "network_id": ROPSTEN_NETWORK_ID,
+            "network_id": ROPSTEN_TESTNET_NETWORK_ID,
             "organization_address": &registry_contract_address,
             "organization_id": &org_id,
             "organization_refresh_token": &org_refresh_token,
@@ -723,7 +721,7 @@ async fn create_subject_account_fail_without_organization_refresh_token() {
 
     let create_subject_account_params = json!({
         "metadata": {
-            "network_id": ROPSTEN_NETWORK_ID,
+            "network_id": ROPSTEN_TESTNET_NETWORK_ID,
             "organization_address": &registry_contract_address,
             "organization_id": &org_id,
             "registry_contract_address": &registry_contract_address,
@@ -765,7 +763,7 @@ async fn create_subject_account_fail_without_registry_contract_address() {
 
     let create_subject_account_params = json!({
         "metadata": {
-            "network_id": ROPSTEN_NETWORK_ID,
+            "network_id": ROPSTEN_TESTNET_NETWORK_ID,
             "organization_address": &registry_contract_address,
             "organization_id": &org_id,
             "organization_refresh_token": &org_refresh_token,
@@ -807,7 +805,7 @@ async fn create_subject_account_fail_without_organization_address() {
 
     let create_subject_account_params = json!({
         "metadata": {
-            "network_id": ROPSTEN_NETWORK_ID,
+            "network_id": ROPSTEN_TESTNET_NETWORK_ID,
             "organization_id": &org_id,
             "organization_refresh_token": &org_refresh_token,
             "registry_contract_address": &registry_contract_address,
@@ -873,7 +871,7 @@ async fn create_subject_account_fail_with_id() {
     let create_subject_account_params = json!({
         "id": &org_id,
         "metadata": {
-            "network_id": ROPSTEN_NETWORK_ID,
+            "network_id": ROPSTEN_TESTNET_NETWORK_ID,
             "organization_address": &registry_contract_address,
             "organization_id": &org_id,
             "organization_refresh_token": &org_refresh_token,
@@ -917,7 +915,7 @@ async fn create_subject_account_fail_with_incorrect_subject_id() {
     let create_subject_account_params = json!({
         "id": &org_id,
         "metadata": {
-            "network_id": ROPSTEN_NETWORK_ID,
+            "network_id": ROPSTEN_TESTNET_NETWORK_ID,
             "organization_address": &registry_contract_address,
             "organization_id": &org_id,
             "organization_refresh_token": &org_refresh_token,
@@ -5882,7 +5880,7 @@ async fn create_workstep_participant() {
     let nchain: ApiClient = NChain::factory(&org_access_token);
 
     let create_account_params = json!({
-        "network_id": ROPSTEN_NETWORK_ID,
+        "network_id": ROPSTEN_TESTNET_NETWORK_ID,
     });
 
     let create_account_res = nchain
@@ -6001,7 +5999,7 @@ async fn create_workstep_participant_fail_on_deployed() {
     let nchain: ApiClient = NChain::factory(&org_access_token);
 
     let create_account_params = json!({
-        "network_id": ROPSTEN_NETWORK_ID,
+        "network_id": ROPSTEN_TESTNET_NETWORK_ID,
     });
 
     let create_account_res = nchain
@@ -6086,7 +6084,7 @@ async fn delete_workstep_participant() {
     let nchain: ApiClient = NChain::factory(&org_access_token);
 
     let create_account_params = json!({
-        "network_id": ROPSTEN_NETWORK_ID,
+        "network_id": ROPSTEN_TESTNET_NETWORK_ID,
     });
 
     let create_account_res = nchain
@@ -6221,7 +6219,7 @@ async fn delete_workstep_participant_fail_on_deployed() {
     let nchain: ApiClient = NChain::factory(&org_access_token);
 
     let create_account_params = json!({
-        "network_id": ROPSTEN_NETWORK_ID,
+        "network_id": ROPSTEN_TESTNET_NETWORK_ID,
     });
 
     let create_account_res = nchain

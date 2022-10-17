@@ -16,6 +16,7 @@
 
 use provide_rust::api::client::ApiClient;
 use provide_rust::api::ident::*;
+use provide_rust::api::nchain::ROPSTEN_TESTNET_NETWORK_ID;
 use provide_rust::api::vault::*;
 
 use fake::{
@@ -26,8 +27,6 @@ use fake::{
     Fake,
 };
 use serde_json::json;
-
-const ROPSTEN_NETWORK_ID: &str = "66d44f30-9092-4182-a3c4-bc02736d6ae5";
 
 async fn generate_new_user_and_token() -> AuthenticateResponse {
     let ident: ApiClient = Ident::factory("");
@@ -66,7 +65,7 @@ async fn generate_new_user_and_token() -> AuthenticateResponse {
 
 async fn generate_new_application(ident: &ApiClient, user_id: &str) -> Application {
     let application_data = json!({
-        "network_id": ROPSTEN_NETWORK_ID,
+        "network_id": ROPSTEN_TESTNET_NETWORK_ID,
         "user_id": user_id,
         "name": format!("{} application", Name().fake::<String>()),
         "description": "Some application description",
