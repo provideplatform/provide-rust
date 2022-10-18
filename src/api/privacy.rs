@@ -16,7 +16,7 @@
 
 use async_trait::async_trait;
 
-use crate::api::client::{ApiClient, Params, Response};
+use crate::api::client::{ApiClient, Params, Response, QueryParams};
 pub use crate::models::privacy::*;
 
 const DEFAULT_SCHEME: &str = "https";
@@ -32,17 +32,17 @@ pub const GROTH16_PROVING_SCHEME: &str = "groth16";
 pub trait Privacy {
     fn factory(token: &str) -> Self;
 
-    async fn list_provers(&self) -> Response;
+    async fn list_provers(&self, query_params: QueryParams) -> Response;
 
     async fn create_prover(&self, params: Params) -> Response;
 
-    async fn get_prover(&self, prover_id: &str) -> Response;
+    async fn get_prover(&self, prover_id: &str, query_params: QueryParams) -> Response;
 
     async fn generate_proof(&self, prover_id: &str, params: Params) -> Response;
 
     async fn verify_proof(&self, prover_id: &str, params: Params) -> Response;
 
-    async fn retrieve_store_value(&self, prover_id: &str, leaf_index: &str) -> Response;
+    async fn retrieve_store_value(&self, prover_id: &str, leaf_index: &str, query_params: QueryParams) -> Response;
 }
 
 #[async_trait]
@@ -55,31 +55,31 @@ impl Privacy for ApiClient {
         return ApiClient::new(&scheme, &host, &path, token);
     }
 
-    async fn list_provers(&self) -> Response {
-        return self.get("provers", None, None, None).await;
+    async fn list_provers(&self, query_params: QueryParams) -> Response {
+        return self.get("provers", query_params).await;
     }
 
     async fn create_prover(&self, params: Params) -> Response {
-        return self.post("provers", params, None).await;
+        return self.post("provers", params).await;
     }
 
-    async fn get_prover(&self, prover_id: &str) -> Response {
+    async fn get_prover(&self, prover_id: &str, query_params: QueryParams) -> Response {
         let uri = format!("provers/{}", prover_id);
-        return self.get(&uri, None, None, None).await;
+        return self.get(&uri, query_params).await;
     }
 
     async fn generate_proof(&self, prover_id: &str, params: Params) -> Response {
         let uri = format!("provers/{}/prove", prover_id);
-        return self.post(&uri, params, None).await;
+        return self.post(&uri, params).await;
     }
 
     async fn verify_proof(&self, prover_id: &str, params: Params) -> Response {
         let uri = format!("provers/{}/verify", prover_id);
-        return self.post(&uri, params, None).await;
+        return self.post(&uri, params).await;
     }
 
-    async fn retrieve_store_value(&self, prover_id: &str, leaf_index: &str) -> Response {
+    async fn retrieve_store_value(&self, prover_id: &str, leaf_index: &str, query_params: QueryParams) -> Response {
         let uri = format!("provers/{}/notes/{}", prover_id, leaf_index);
-        return self.get(&uri, None, None, None).await;
+        return self.get(&uri, query_params).await;
     }
 }

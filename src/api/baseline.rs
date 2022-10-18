@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-use crate::api::client::{ApiClient, Params, Response};
+use crate::api::client::{ApiClient, Params, Response, QueryParams};
 pub use crate::models::baseline::*;
 use async_trait::async_trait;
 
@@ -30,25 +30,25 @@ pub trait Baseline {
 
     async fn create_public_workgroup_invite(&self, params: Params) -> Response;
 
-    async fn get_bpi_accounts(&self) -> Response;
+    async fn list_bpi_accounts(&self, query_params: QueryParams) -> Response;
 
-    async fn get_bpi_account(&self, account_id: &str) -> Response;
+    async fn get_bpi_account(&self, account_id: &str, query_params: QueryParams) -> Response;
 
     async fn create_bpi_account(&self, params: Params) -> Response;
 
     async fn create_message(&self, params: Params) -> Response;
 
-    async fn get_subjects(&self) -> Response;
+    async fn list_subjects(&self, query_params: QueryParams) -> Response;
 
-    async fn get_subject(&self, subject_id: &str) -> Response;
+    async fn get_subject(&self, subject_id: &str, query_params: QueryParams) -> Response;
 
     async fn create_subject(&self, params: Params) -> Response;
 
     async fn update_subject(&self, subject_id: &str, params: Params) -> Response;
 
-    async fn get_subject_accounts(&self, subject_id: &str) -> Response;
+    async fn list_subject_accounts(&self, subject_id: &str, query_params: QueryParams) -> Response;
 
-    async fn get_subject_account(&self, subject_id: &str, account_id: &str) -> Response;
+    async fn get_subject_account(&self, subject_id: &str, account_id: &str, query_params: QueryParams) -> Response;
 
     async fn create_subject_account(&self, subject_id: &str, params: Params) -> Response;
 
@@ -59,7 +59,7 @@ pub trait Baseline {
         params: Params,
     ) -> Response;
 
-    async fn get_mappings(&self, query_params: Option<Vec<(String, String)>>) -> Response;
+    async fn list_mappings(&self, query_params: QueryParams) -> Response;
 
     async fn create_mapping(&self, params: Params) -> Response;
 
@@ -67,13 +67,13 @@ pub trait Baseline {
 
     async fn delete_mapping(&self, mapping_id: &str) -> Response;
 
-    async fn get_config(&self) -> Response;
+    async fn get_config(&self, query_params: QueryParams) -> Response;
 
     async fn update_config(&self, params: Params) -> Response;
 
-    async fn get_workflows(&self, query_params: Option<Vec<(String, String)>>) -> Response;
+    async fn list_workflows(&self, query_params: QueryParams) -> Response;
 
-    async fn get_workflow(&self, workflow_id: &str) -> Response;
+    async fn get_workflow(&self, workflow_id: &str, query_params: QueryParams) -> Response;
 
     async fn create_workflow(&self, params: Params) -> Response;
 
@@ -85,17 +85,17 @@ pub trait Baseline {
 
     async fn delete_workflow(&self, workflow_id: &str) -> Response;
 
-    async fn get_workgroups(&self) -> Response;
+    async fn list_workgroups(&self, query_params: QueryParams) -> Response;
 
-    async fn get_workgroup(&self, workgroup_id: &str) -> Response;
+    async fn get_workgroup(&self, workgroup_id: &str, query_params: QueryParams) -> Response;
 
     async fn create_workgroup(&self, params: Params) -> Response;
 
     async fn update_workgroup(&self, workgroup_id: &str, params: Params) -> Response;
 
-    async fn fetch_worksteps(&self, workflow_id: &str) -> Response;
+    async fn list_worksteps(&self, workflow_id: &str, query_params: QueryParams) -> Response;
 
-    async fn get_workstep(&self, workflow_id: &str, workstep_id: &str) -> Response;
+    async fn get_workstep(&self, workflow_id: &str, workstep_id: &str, query_params: QueryParams) -> Response;
 
     async fn create_workstep(&self, workflow_id: &str, params: Params) -> Response;
 
@@ -115,7 +115,7 @@ pub trait Baseline {
         params: Params,
     ) -> Response;
 
-    async fn fetch_workstep_participants(&self, workflow_id: &str, workstep_id: &str) -> Response;
+    async fn list_workstep_participants(&self, workflow_id: &str, workstep_id: &str, query_params: QueryParams) -> Response;
 
     async fn create_workstep_participant(
         &self,
@@ -164,61 +164,61 @@ impl Baseline for ApiClient {
     }
 
     async fn issue_verifiable_credential(&self, params: Params) -> Response {
-        return self.post("credentials", params, None).await;
+        return self.post("credentials", params).await;
     }
 
     async fn create_public_workgroup_invite(&self, params: Params) -> Response {
-        return self.post("pub/invite", params, None).await;
+        return self.post("pub/invite", params).await;
     }
 
-    async fn get_bpi_accounts(&self) -> Response {
-        return self.get("bpi_accounts", None, None, None).await;
+    async fn list_bpi_accounts(&self, query_params: QueryParams) -> Response {
+        return self.get("bpi_accounts", query_params).await;
     }
 
-    async fn get_bpi_account(&self, account_id: &str) -> Response {
+    async fn get_bpi_account(&self, account_id: &str, query_params: QueryParams) -> Response {
         let uri = format!("bpi_accounts/{}", account_id);
-        return self.get(&uri, None, None, None).await;
+        return self.get(&uri, query_params).await;
     }
 
     async fn create_bpi_account(&self, params: Params) -> Response {
-        return self.post("bpi_accounts", params, None).await;
+        return self.post("bpi_accounts", params).await;
     }
 
     async fn create_message(&self, params: Params) -> Response {
-        return self.post("protocol_messages", params, None).await;
+        return self.post("protocol_messages", params).await;
     }
 
-    async fn get_subjects(&self) -> Response {
-        return self.get("subjects", None, None, None).await;
+    async fn list_subjects(&self, query_params: QueryParams) -> Response {
+        return self.get("subjects", query_params).await;
     }
 
-    async fn get_subject(&self, subject_id: &str) -> Response {
+    async fn get_subject(&self, subject_id: &str, query_params: QueryParams) -> Response {
         let uri = format!("subjects/{}", subject_id);
-        return self.get(&uri, None, None, None).await;
+        return self.get(&uri, query_params).await;
     }
 
     async fn create_subject(&self, params: Params) -> Response {
-        return self.post("subjects", params, None).await;
+        return self.post("subjects", params).await;
     }
 
     async fn update_subject(&self, subject_id: &str, params: Params) -> Response {
         let uri = format!("subjects/{}", subject_id);
-        return self.put(&uri, params, None).await;
+        return self.put(&uri, params).await;
     }
 
-    async fn get_subject_accounts(&self, subject_id: &str) -> Response {
+    async fn list_subject_accounts(&self, subject_id: &str, query_params: QueryParams) -> Response {
         let uri = format!("subjects/{}/accounts", subject_id);
-        return self.get(&uri, None, None, None).await;
+        return self.get(&uri, query_params).await;
     }
 
-    async fn get_subject_account(&self, subject_id: &str, account_id: &str) -> Response {
+    async fn get_subject_account(&self, subject_id: &str, account_id: &str, query_params: QueryParams) -> Response {
         let uri = format!("subjects/{}/accounts/{}", subject_id, account_id);
-        return self.get(&uri, None, None, None).await;
+        return self.get(&uri, query_params).await;
     }
 
     async fn create_subject_account(&self, subject_id: &str, params: Params) -> Response {
         let uri = format!("subjects/{}/accounts", subject_id);
-        return self.post(&uri, params, None).await;
+        return self.post(&uri, params).await;
     }
 
     async fn update_subject_account(
@@ -228,99 +228,99 @@ impl Baseline for ApiClient {
         params: Params,
     ) -> Response {
         let uri = format!("subjects/{}/accounts/{}", subject_id, account_id);
-        return self.put(&uri, params, None).await;
+        return self.put(&uri, params).await;
     }
 
-    async fn get_mappings(&self, query_params: Option<Vec<(String, String)>>) -> Response {
-        return self.get("mappings", None, None, query_params).await;
+    async fn list_mappings(&self, query_params: QueryParams) -> Response {
+        return self.get("mappings", query_params).await;
     }
 
     async fn create_mapping(&self, params: Params) -> Response {
-        return self.post("mappings", params, None).await;
+        return self.post("mappings", params).await;
     }
 
     async fn update_mapping(&self, mapping_id: &str, params: Params) -> Response {
         let uri = format!("mappings/{}", mapping_id);
-        return self.put(&uri, params, None).await;
+        return self.put(&uri, params).await;
     }
 
     async fn delete_mapping(&self, mapping_id: &str) -> Response {
         let uri = format!("mappings/{}", mapping_id);
-        return self.delete(&uri, None, None).await;
+        return self.delete(&uri).await;
     }
 
-    async fn get_config(&self) -> Response {
-        return self.get("config", None, None, None).await;
+    async fn get_config(&self, query_params: QueryParams) -> Response {
+        return self.get("config", query_params).await;
     }
 
     async fn update_config(&self, params: Params) -> Response {
-        return self.put("config", params, None).await;
+        return self.put("config", params).await;
     }
 
-    async fn get_workflows(&self, query_params: Option<Vec<(String, String)>>) -> Response {
-        return self.get("workflows", None, None, query_params).await;
+    async fn list_workflows(&self, query_params: QueryParams) -> Response {
+        return self.get("workflows", query_params).await;
     }
 
-    async fn get_workflow(&self, workflow_id: &str) -> Response {
+    async fn get_workflow(&self, workflow_id: &str, query_params: QueryParams) -> Response {
         let uri = format!("workflows/{}", workflow_id);
-        return self.get(&uri, None, None, None).await;
+        return self.get(&uri, query_params).await;
     }
 
     async fn create_workflow(&self, params: Params) -> Response {
-        return self.post("workflows", params, None).await;
+        return self.post("workflows", params).await;
     }
 
     async fn update_workflow(&self, workflow_id: &str, params: Params) -> Response {
         let uri = format!("workflows/{}", workflow_id);
-        return self.put(&uri, params, None).await;
+        return self.put(&uri, params).await;
     }
 
     async fn deploy_workflow(&self, workflow_id: &str) -> Response {
         let uri = format!("workflows/{}/deploy", workflow_id);
-        return self.post(&uri, None, None).await;
+        return self.post(&uri, None).await;
     }
 
     async fn delete_workflow(&self, workflow_id: &str) -> Response {
         let uri = format!("workflows/{}", workflow_id);
-        return self.delete(&uri, None, None).await;
+        return self.delete(&uri).await;
     }
 
     async fn version_workflow(&self, workflow_id: &str, params: Params) -> Response {
         let uri = format!("workflows/{}/versions", workflow_id);
-        return self.post(&uri, params, None).await;
+        return self.post(&uri, params).await;
     }
 
-    async fn get_workgroups(&self) -> Response {
-        return self.get("workgroups", None, None, None).await;
+    async fn list_workgroups(&self, query_params: QueryParams) -> Response {
+        return self.get("workgroups", query_params).await;
     }
 
-    async fn get_workgroup(&self, workgroup_id: &str) -> Response {
+    async fn get_workgroup(&self, workgroup_id: &str, query_params: QueryParams) -> Response {
         let uri = format!("workgroups/{}", workgroup_id);
-        return self.get(&uri, None, None, None).await;
+        return self.get(&uri, query_params).await;
     }
 
     async fn create_workgroup(&self, params: Params) -> Response {
-        return self.post("workgroups", params, None).await;
+        return self.post("workgroups", params).await;
     }
 
     async fn update_workgroup(&self, workgroup_id: &str, params: Params) -> Response {
         let uri = format!("workgroups/{}", workgroup_id);
-        return self.put(&uri, params, None).await;
+        return self.put(&uri, params).await;
     }
 
-    async fn fetch_worksteps(&self, workflow_id: &str) -> Response {
+    async fn list_worksteps(&self, workflow_id: &str, query_params: QueryParams) -> Response {
         let uri = format!("workflows/{}/worksteps", workflow_id);
-        return self.get(&uri, None, None, None).await;
+        return self.get(&uri, query_params).await;
     }
 
-    async fn get_workstep(&self, workflow_id: &str, workstep_id: &str) -> Response {
+    async fn get_workstep(&self, workflow_id: &str, workstep_id: &str, query_params: QueryParams) -> Response {
         let uri = format!("workflows/{}/worksteps/{}", workflow_id, workstep_id);
-        return self.get(&uri, None, None, None).await;
+        return self.get(&uri, query_params).await;
     }
 
     async fn create_workstep(&self, workflow_id: &str, params: Params) -> Response {
         let uri = format!("workflows/{}/worksteps", workflow_id);
-        return self.post(&uri, params, None).await;
+        return self.post(&uri, params).await;
     }
 
     async fn update_workstep(
@@ -330,12 +330,12 @@ impl Baseline for ApiClient {
         params: Params,
     ) -> Response {
         let uri = format!("workflows/{}/worksteps/{}", workflow_id, workstep_id);
-        return self.put(&uri, params, None).await;
+        return self.put(&uri, params).await;
     }
 
     async fn delete_workstep(&self, workflow_id: &str, workstep_id: &str) -> Response {
         let uri = format!("workflows/{}/worksteps/{}", workflow_id, workstep_id);
-        return self.delete(&uri, None, None).await;
+        return self.delete(&uri).await;
     }
 
     async fn execute_workstep(
@@ -348,15 +348,15 @@ impl Baseline for ApiClient {
             "workflows/{}/worksteps/{}/execute",
             workflow_id, workstep_id
         );
-        return self.post(&uri, params, None).await;
+        return self.post(&uri, params).await;
     }
 
-    async fn fetch_workstep_participants(&self, workflow_id: &str, workstep_id: &str) -> Response {
+    async fn list_workstep_participants(&self, workflow_id: &str, workstep_id: &str, query_params: QueryParams) -> Response {
         let uri = format!(
             "workflows/{}/worksteps/{}/participants",
             workflow_id, workstep_id
         );
-        return self.get(&uri, None, None, None).await;
+        return self.get(&uri, query_params).await;
     }
 
     async fn create_workstep_participant(
@@ -369,7 +369,7 @@ impl Baseline for ApiClient {
             "workflows/{}/worksteps/{}/participants",
             workflow_id, workstep_id
         );
-        return self.post(&uri, params, None).await;
+        return self.post(&uri, params).await;
     }
 
     async fn delete_workstep_participant(
@@ -382,11 +382,11 @@ impl Baseline for ApiClient {
             "workflows/{}/worksteps/{}/participants/{}",
             workflow_id, workstep_id, participant_address
         );
-        return self.delete(&uri, None, None).await;
+        return self.delete(&uri).await;
     }
 
     async fn system_reachability(&self, params: Params) -> Response {
-        return self.post("systems/reachability", params, None).await;
+        return self.post("systems/reachability", params).await;
     }
 
     async fn list_systems(
@@ -395,7 +395,7 @@ impl Baseline for ApiClient {
         query_params: Option<Vec<(String, String)>>,
     ) -> Response {
         let uri = format!("workgroups/{}/systems", workgroup_id);
-        return self.get(&uri, None, None, query_params).await;
+        return self.get(&uri, query_params).await;
     }
 
     async fn get_system_details(
@@ -405,21 +405,21 @@ impl Baseline for ApiClient {
         query_params: Option<Vec<(String, String)>>,
     ) -> Response {
         let uri = format!("workgroups/{}/systems/{}", workgroup_id, system_id);
-        return self.get(&uri, None, None, query_params).await;
+        return self.get(&uri, query_params).await;
     }
 
     async fn create_system(&self, workgroup_id: &str, params: Params) -> Response {
         let uri = format!("workgroups/{}/systems", workgroup_id);
-        return self.post(&uri, params, None).await;
+        return self.post(&uri, params).await;
     }
 
     async fn update_system(&self, workgroup_id: &str, system_id: &str, params: Params) -> Response {
         let uri = format!("workgroups/{}/systems/{}", workgroup_id, system_id);
-        return self.put(&uri, params, None).await;
+        return self.put(&uri, params).await;
     }
 
     async fn delete_system(&self, workgroup_id: &str, system_id: &str) -> Response {
         let uri = format!("workgroups/{}/systems/{}", workgroup_id, system_id);
-        return self.delete(&uri, None, None).await;
+        return self.delete(&uri).await;
     }
 }

@@ -16,7 +16,7 @@
 
 use async_trait::async_trait;
 
-use crate::api::client::{ApiClient, Params, Response};
+use crate::api::client::{ApiClient, Params, Response, QueryParams};
 pub use crate::models::vault::*;
 
 const DEFAULT_SCHEME: &str = "https";
@@ -29,7 +29,7 @@ pub trait Vault {
 
     async fn create_vault(&self, params: Params) -> Response;
 
-    async fn list_vaults(&self) -> Response;
+    async fn list_vaults(&self, query_params: QueryParams) -> Response;
 
     async fn create_seal_unseal_key(&self) -> Response;
 
@@ -45,13 +45,13 @@ pub trait Vault {
 
     async fn decrypt(&self, vault_id: &str, key_id: &str, params: Params) -> Response;
 
-    async fn list_keys(&self, vault_id: &str) -> Response;
+    async fn list_keys(&self, vault_id: &str, query_params: QueryParams) -> Response;
 
-    async fn list_secrets(&self, vault_id: &str) -> Response;
+    async fn list_secrets(&self, vault_id: &str, query_params: QueryParams) -> Response;
 
     async fn store_secret(&self, vault_id: &str, params: Params) -> Response;
 
-    async fn retrieve_secret(&self, vault_id: &str, secret_id: &str) -> Response;
+    async fn retrieve_secret(&self, vault_id: &str, secret_id: &str, query_params: QueryParams) -> Response;
 
     async fn delete_secret(&self, vault_id: &str, secret_id: &str) -> Response;
 }
@@ -67,68 +67,68 @@ impl Vault for ApiClient {
     }
 
     async fn create_vault(&self, params: Params) -> Response {
-        return self.post("vaults", params, None).await;
+        return self.post("vaults", params).await;
     }
 
-    async fn list_vaults(&self) -> Response {
-        return self.get("vaults", None, None, None).await;
+    async fn list_vaults(&self, query_params: QueryParams) -> Response {
+        return self.get("vaults", query_params).await;
     }
 
     async fn create_seal_unseal_key(&self) -> Response {
-        return self.post("unsealerkey", None, None).await;
+        return self.post("unsealerkey", None).await;
     }
 
     async fn unseal_vault(&self, params: Params) -> Response {
-        return self.post("unseal", params, None).await;
+        return self.post("unseal", params).await;
     }
 
     async fn create_key(&self, vault_id: &str, params: Params) -> Response {
         let uri = format!("vaults/{}/keys", vault_id);
-        return self.post(&uri, params, None).await;
+        return self.post(&uri, params).await;
     }
 
     async fn delete_key(&self, vault_id: &str, key_id: &str) -> Response {
         let uri = format!("vaults/{}/keys/{}", vault_id, key_id);
-        return self.delete(&uri, None, None).await;
+        return self.delete(&uri).await;
     }
 
     async fn derive_key(&self, vault_id: &str, key_id: &str, params: Params) -> Response {
         let uri = format!("vaults/{}/keys/{}/derive", vault_id, key_id);
-        return self.post(&uri, params, None).await;
+        return self.post(&uri, params).await;
     }
 
     async fn encrypt(&self, vault_id: &str, key_id: &str, params: Params) -> Response {
         let uri = format!("vaults/{}/keys/{}/encrypt", vault_id, key_id);
-        return self.post(&uri, params, None).await;
+        return self.post(&uri, params).await;
     }
 
     async fn decrypt(&self, vault_id: &str, key_id: &str, params: Params) -> Response {
         let uri = format!("vaults/{}/keys/{}/encrypt", vault_id, key_id);
-        return self.post(&uri, params, None).await;
+        return self.post(&uri, params).await;
     }
 
-    async fn list_keys(&self, vault_id: &str) -> Response {
+    async fn list_keys(&self, vault_id: &str, query_params: QueryParams) -> Response {
         let uri = format!("vaults/{}/keys", vault_id);
-        return self.get(&uri, None, None, None).await;
+        return self.get(&uri, query_params).await;
     }
 
-    async fn list_secrets(&self, vault_id: &str) -> Response {
+    async fn list_secrets(&self, vault_id: &str, query_params: QueryParams) -> Response {
         let uri = format!("vaults/{}/secrets", vault_id);
-        return self.get(&uri, None, None, None).await;
+        return self.get(&uri, query_params).await;
     }
 
     async fn store_secret(&self, vault_id: &str, params: Params) -> Response {
         let uri = format!("vaults/{}/secrets", vault_id);
-        return self.post(&uri, params, None).await;
+        return self.post(&uri, params).await;
     }
 
-    async fn retrieve_secret(&self, vault_id: &str, secret_id: &str) -> Response {
+    async fn retrieve_secret(&self, vault_id: &str, secret_id: &str, query_params: QueryParams) -> Response {
         let uri = format!("vaults/{}/secrets/{}", vault_id, secret_id);
-        return self.get(&uri, None, None, None).await;
+        return self.get(&uri, query_params).await;
     }
 
     async fn delete_secret(&self, vault_id: &str, secret_id: &str) -> Response {
         let uri = format!("vaults/{}/secrets/{}", vault_id, secret_id);
-        return self.delete(&uri, None, None).await;
+        return self.delete(&uri).await;
     }
 }

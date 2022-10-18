@@ -118,7 +118,7 @@ async fn list_vaults() {
 
     let vault: ApiClient = Vault::factory(&access_token);
 
-    let list_vaults_response = vault.list_vaults().await.expect("list vaults response");
+    let list_vaults_response = vault.list_vaults(None).await.expect("list vaults response");
     assert_eq!(list_vaults_response.status(), 200);
 }
 
@@ -320,7 +320,7 @@ async fn list_users() {
     let create_vault_res = generate_vault(&vault).await;
 
     let list_keys_res = vault
-        .list_keys(&create_vault_res.id)
+        .list_keys(&create_vault_res.id, None)
         .await
         .expect("list keys response");
     assert_eq!(list_keys_res.status(), 200);
@@ -339,7 +339,7 @@ async fn list_secrets() {
     let create_vault_res = generate_vault(&vault).await;
 
     let list_secrets_res = vault
-        .list_keys(&create_vault_res.id)
+        .list_keys(&create_vault_res.id, None)
         .await
         .expect("list secrets response");
     assert_eq!(list_secrets_res.status(), 200);
@@ -402,7 +402,7 @@ async fn retrieve_secret() {
         .expect("store secret body");
 
     let retrieve_secret_res = vault
-        .retrieve_secret(&create_vault_res.id, &store_secret_body.id)
+        .retrieve_secret(&create_vault_res.id, &store_secret_body.id, None)
         .await
         .expect("retrieve secret response");
     assert_eq!(retrieve_secret_res.status(), 200);
