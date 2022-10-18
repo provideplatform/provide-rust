@@ -20,13 +20,102 @@ use fake::Fake;
 use provide_rust::api::baseline::*;
 use provide_rust::api::client::ApiClient;
 use provide_rust::api::ident::{AuthenticateResponse, Ident, Organization, Token};
-use provide_rust::api::nchain::{Account, Contract, NChain, Wallet, KOVAN_TESTNET_NETWORK_ID, POLYGON_MUMBAI_TESTNET_NETWORK_ID};
-use provide_rust::api::privacy::{BLS12_377_CURVE, PREIMAGE_HASH_IDENTIFIER, GNARK_PROVIDER, GROTH16_PROVING_SCHEME};
+use provide_rust::api::nchain::{
+    Account, Contract, NChain, Wallet, KOVAN_TESTNET_NETWORK_ID, POLYGON_MUMBAI_TESTNET_NETWORK_ID,
+};
+use provide_rust::api::privacy::{
+    BLS12_377_CURVE, GNARK_PROVIDER, GROTH16_PROVING_SCHEME, PREIMAGE_HASH_IDENTIFIER,
+};
 use provide_rust::api::vault::{Vault, VaultContainer, VaultKey};
 use serde_json::{json, Value};
 use std::io::Write;
 use std::process::Command;
 use tokio::time::{self, Duration};
+
+async fn _create_org_registry_contract(
+    nchain: &ApiClient,
+    network_id: &str,
+    wallet_id: &str,
+    address: &str,
+) {
+    // get shuttle registry contract
+    let registry_contracts_res = nchain.client.get("https://s3.amazonaws.com/static.provide.services/capabilities/provide-capabilities-manifest.json").send().await.expect("get registry contracts response");
+    let registry_contracts = registry_contracts_res
+        .json::<Value>()
+        .await
+        .expect("registry contracts body");
+    let compiled_artifact = &registry_contracts["baseline"]["contracts"][1];
+
+    let contract_params = json!({
+        "address": address,
+        "name": "OrgRegistry",
+        "network_id": network_id,
+        "params": {
+            "argv": [],
+            "compiled_artifact": compiled_artifact,
+            "wallet_id": wallet_id,
+        },
+        "type": "organization-registry",
+    });
+
+    let create_contract_res = nchain
+        .create_contract(Some(contract_params))
+        .await
+        .expect("create contract res");
+    assert_eq!(create_contract_res.status(), 201);
+}
+
+async fn _deploy_registry_contract(
+    nchain: &ApiClient,
+    network_id: &str,
+    wallet_id: &str,
+) -> String {
+    // get shuttle registry contract
+    let registry_contracts_res = nchain.client.get("https://s3.amazonaws.com/static.provide.services/capabilities/provide-capabilities-manifest.json").send().await.expect("get registry contracts response");
+    let registry_contracts = registry_contracts_res
+        .json::<Value>()
+        .await
+        .expect("registry contracts body");
+    let compiled_artifact = &registry_contracts["baseline"]["contracts"][2];
+
+    let contract_params = json!({
+        "address": "0x",
+        "name": "Shuttle",
+        "network_id": network_id,
+        "params": {
+            "argv": [],
+            "compiled_artifact": compiled_artifact,
+            "wallet_id": wallet_id,
+        },
+        "type": "registry",
+    });
+
+    let create_contract_res = nchain
+        .create_contract(Some(contract_params))
+        .await
+        .expect("create contract res");
+    assert_eq!(create_contract_res.status(), 201);
+
+    let mut registry_contract = create_contract_res
+        .json::<Contract>()
+        .await
+        .expect("create contract body");
+    let mut interval = time::interval(Duration::from_millis(500));
+    while registry_contract.address == "0x" {
+        interval.tick().await;
+        let get_contract_res = nchain
+            .get_contract(&registry_contract.id)
+            .await
+            .expect("get contract response");
+        assert_eq!(get_contract_res.status(), 200);
+        registry_contract = get_contract_res
+            .json::<Contract>()
+            .await
+            .expect("get contract body");
+    }
+
+    registry_contract.address
+}
 
 async fn _create_workflow(baseline: &ApiClient, params: Value, expected_status: u16) -> Workflow {
     let create_workflow_res = baseline
@@ -254,6 +343,39 @@ async fn baseline_setup() {
         None => panic!("organization refresh token not found"),
     };
 
+    let vault: ApiClient = Vault::factory(&org_access_token);
+
+    let create_vault_params = json!({
+         "name": "organization vault",
+    });
+
+    let create_organization_vault_res = vault
+        .create_vault(Some(create_vault_params))
+        .await
+        .expect("create organization vault res");
+    assert_eq!(create_organization_vault_res.status(), 201);
+
+    let create_organization_vault_res = create_organization_vault_res
+        .json::<VaultContainer>()
+        .await
+        .expect("create organization vault body");
+
+    let key_specs = vec!["secp256k1", "RSA-4096", "babyJubJub"];
+    for spec in key_specs {
+        let create_key_params = json!({
+            "name": format!("{} key", spec),
+            "spec": spec,
+            "type": "asymmetric",
+            "usage": "sign/verify",
+        });
+
+        let create_organization_key_res = vault
+            .create_key(&create_organization_vault_res.id, Some(create_key_params))
+            .await
+            .expect("create organization key res");
+        assert_eq!(create_organization_key_res.status(), 201);
+    }
+
     let baseline: ApiClient = Baseline::factory(&org_access_token);
 
     // create workgroup
@@ -305,44 +427,22 @@ async fn baseline_setup() {
         .await
         .expect("create account body");
 
-    let baseline_registry_contract_address =
+    let mut registry_contract_address =
         std::env::var("BASELINE_REGISTRY_CONTRACT_ADDRESS").unwrap_or(String::from("0x"));
 
-    let create_contract_params = json!({
-        "address": &baseline_registry_contract_address,
-        "name": "Shuttle",
-        "network_id": ROPSTEN_TESTNET_NETWORK_ID,
-        "params": {
-            "argv": [],
-            "compiled_artifact": compiled_artifact,
-            "wallet_id": &create_wallet_body.id,
-        },
-        "type": "registry",
-    });
-    let create_contract_res = nchain
-        .create_contract(Some(create_contract_params))
-        .await
-        .expect("create contract response");
-    assert_eq!(create_contract_res.status(), 201);
-
-    let mut registry_contract = create_contract_res
-        .json::<Contract>()
-        .await
-        .expect("create contract body");
-    let mut interval = time::interval(Duration::from_millis(500));
-    while registry_contract.address == "0x" {
-        interval.tick().await;
-        let get_contract_res = nchain
-            .get_contract(&registry_contract.id)
-            .await
-            .expect("get contract response");
-        assert_eq!(get_contract_res.status(), 200);
-        registry_contract = get_contract_res
-            .json::<Contract>()
-            .await
-            .expect("get contract body");
+    if registry_contract_address == "0x" {
+        registry_contract_address =
+            _deploy_registry_contract(&nchain, KOVAN_TESTNET_NETWORK_ID, &create_wallet_body.id)
+                .await;
+    } else {
+        _create_org_registry_contract(
+            &nchain,
+            KOVAN_TESTNET_NETWORK_ID,
+            &create_wallet_body.id,
+            &registry_contract_address,
+        )
+        .await;
     }
-    let registry_contract_address = registry_contract.address;
 
     let vault: ApiClient = Vault::factory(&app_access_token);
 
@@ -527,6 +627,8 @@ async fn baseline_setup() {
 
         let mut baseline_container_status = String::from("");
 
+        let mut interval = time::interval(Duration::from_millis(1000));
+
         while baseline_container_status == "" {
             baseline_container_status =
                 match baseline_status_client.get("status", None, None, None).await {
@@ -566,6 +668,41 @@ async fn baseline_setup() {
             )
             .unwrap()
         );
+
+        let update_organization_params = json!({
+            "metadata": {
+                "address": &registry_contract_address,
+                "workgroups": {
+                    &create_workgroup_body.id: {
+                        "operator_separation_degree": 0,
+                        "vault_id": &create_organization_vault_res.id,
+                    }
+                }
+            }
+        });
+
+        let update_organization_res = ident
+            .update_organization(
+                &create_organization_body.id,
+                Some(update_organization_params),
+            )
+            .await
+            .expect("update organization res");
+        assert_eq!(update_organization_res.status(), 204);
+
+        let update_workgroup_params = json!({
+            "network_id": KOVAN_TESTNET_NETWORK_ID,
+            "config": {
+                "vault_id": &create_organization_vault_res.id,
+                "l2_network_id": POLYGON_MUMBAI_TESTNET_NETWORK_ID,
+            }
+        });
+
+        let update_workgroup_res = baseline
+            .update_workgroup(&create_workgroup_body.id, Some(update_workgroup_params))
+            .await
+            .expect("update workgroup res");
+        assert_eq!(update_workgroup_res.status(), 204);
     }
 }
 
