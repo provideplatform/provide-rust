@@ -16,7 +16,7 @@
 
 use provide_rust::api::client::ApiClient;
 use provide_rust::api::ident::*;
-use provide_rust::api::nchain::ROPSTEN_TESTNET_NETWORK_ID;
+use provide_rust::api::nchain::KOVAN_TESTNET_NETWORK_ID;
 use provide_rust::api::vault::*;
 
 use fake::{
@@ -65,7 +65,7 @@ async fn generate_new_user_and_token() -> AuthenticateResponse {
 
 async fn generate_new_application(ident: &ApiClient, user_id: &str) -> Application {
     let application_data = json!({
-        "network_id": ROPSTEN_TESTNET_NETWORK_ID,
+        "network_id": KOVAN_TESTNET_NETWORK_ID,
         "user_id": user_id,
         "name": format!("{} application", Name().fake::<String>()),
         "description": "Some application description",
