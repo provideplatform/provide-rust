@@ -4318,10 +4318,16 @@ async fn update_workstep() {
 
     let workstep_metadata = get_updated_workstep_body.metadata.unwrap();
 
-    assert_eq!(&workstep_metadata["prover"]["identifier"], PREIMAGE_HASH_IDENTIFIER);
+    assert_eq!(
+        &workstep_metadata["prover"]["identifier"],
+        PREIMAGE_HASH_IDENTIFIER
+    );
     assert_eq!(&workstep_metadata["prover"]["name"], "General Consistency");
     assert_eq!(&workstep_metadata["prover"]["provider"], GNARK_PROVIDER);
-    assert_eq!(&workstep_metadata["prover"]["proving_scheme"], GROTH16_PROVING_SCHEME);
+    assert_eq!(
+        &workstep_metadata["prover"]["proving_scheme"],
+        GROTH16_PROVING_SCHEME
+    );
     assert_eq!(&workstep_metadata["prover"]["curve"], BLS12_377_CURVE);
 }
 
@@ -5350,24 +5356,56 @@ async fn workflow_instance_init_status() {
 
     let create_workflow_body = _create_workflow(&baseline, create_workflow_params, 201).await;
 
-    let create_workstep_params_1 = json!({
-        "name": format!("{} workstep", Name().fake::<String>()),
-        "require_finality": true,
-        "metadata": {
-            "prover": {
-                "identifier": PREIMAGE_HASH_IDENTIFIER,
-                "name": "General Consistency",
-                "provider": GNARK_PROVIDER,
-                "proving_scheme": GROTH16_PROVING_SCHEME,
-                "curve": BLS12_377_CURVE,
-            },
+    let create_mapping_params = json!({
+      "name": format!("{} Mapping", Name().fake::<String>()),
+      "type": "mapping_type",
+      "workgroup_id": &app_id,
+      "models": [
+        {
+          "description": "test model",
+          "primary_key": "id",
+          "type": "test",
+          "fields": [
+            {
+              "is_primary_key": true,
+              "name": "id",
+              "type": "string"
+            }
+          ]
+        }
+      ]
+    });
+
+    let create_mapping_res = baseline
+        .create_mapping(Some(create_mapping_params))
+        .await
+        .expect("create mapping response");
+
+    let create_mapping_body = create_mapping_res
+        .json::<Mapping>()
+        .await
+        .expect("create mapping body");
+    let mapping_model = &create_mapping_body.models[0];
+
+    let create_workstep_params = json!({
+      "name": format!("{} workstep", Name().fake::<String>()),
+      "require_finality": true,
+      "metadata": {
+          "prover": {
+              "identifier": PREIMAGE_HASH_IDENTIFIER,
+              "name": "General Consistency",
+              "provider": GNARK_PROVIDER,
+              "proving_scheme": GROTH16_PROVING_SCHEME,
+              "curve": BLS12_377_CURVE,
+          },
+            "mapping_model_id": mapping_model.id
         },
     });
 
     let _ = _create_workstep(
         &baseline,
         &create_workflow_body.id,
-        create_workstep_params_1,
+        create_workstep_params,
         201,
     )
     .await;
@@ -5408,9 +5446,40 @@ async fn workflow_instance_running_status() {
 
     let create_workflow_body = _create_workflow(&baseline, create_workflow_params, 201).await;
 
+    let create_mapping_params = json!({
+      "name": format!("{} Mapping", Name().fake::<String>()),
+      "type": "mapping_type",
+      "workgroup_id": &app_id,
+      "models": [
+        {
+          "description": "test model",
+          "primary_key": "id",
+          "type": "test",
+          "fields": [
+            {
+              "is_primary_key": true,
+              "name": "id",
+              "type": "string"
+            }
+          ]
+        }
+      ]
+    });
+
+    let create_mapping_res = baseline
+        .create_mapping(Some(create_mapping_params))
+        .await
+        .expect("create mapping response");
+
+    let create_mapping_body = create_mapping_res
+        .json::<Mapping>()
+        .await
+        .expect("create mapping body");
+    let mapping_model = &create_mapping_body.models[0];
+
     let create_workstep_params_1 = json!({
         "name": format!("{} workstep", Name().fake::<String>()),
-        "require_finality": true,
+        "require_finality": false,
         "metadata": {
             "prover": {
                 "identifier": PREIMAGE_HASH_IDENTIFIER,
@@ -5419,6 +5488,7 @@ async fn workflow_instance_running_status() {
                 "proving_scheme": GROTH16_PROVING_SCHEME,
                 "curve": BLS12_377_CURVE,
             },
+            "mapping_model_id": mapping_model.id
         },
     });
 
@@ -5441,6 +5511,7 @@ async fn workflow_instance_running_status() {
                 "proving_scheme": GROTH16_PROVING_SCHEME,
                 "curve": BLS12_377_CURVE,
             },
+            "mapping_model_id": mapping_model.id
         },
     });
 
@@ -5530,6 +5601,37 @@ async fn workflow_instance_completed_status() {
 
     let create_workflow_body = _create_workflow(&baseline, create_workflow_params, 201).await;
 
+    let create_mapping_params = json!({
+      "name": format!("{} Mapping", Name().fake::<String>()),
+      "type": "mapping_type",
+      "workgroup_id": &app_id,
+      "models": [
+        {
+          "description": "test model",
+          "primary_key": "id",
+          "type": "test",
+          "fields": [
+            {
+              "is_primary_key": true,
+              "name": "id",
+              "type": "string"
+            }
+          ]
+        }
+      ]
+    });
+
+    let create_mapping_res = baseline
+        .create_mapping(Some(create_mapping_params))
+        .await
+        .expect("create mapping response");
+
+    let create_mapping_body = create_mapping_res
+        .json::<Mapping>()
+        .await
+        .expect("create mapping body");
+    let mapping_model = &create_mapping_body.models[0];
+
     let create_workstep_params = json!({
         "name": format!("{} workstep", Name().fake::<String>()),
         "require_finality": true,
@@ -5541,6 +5643,7 @@ async fn workflow_instance_completed_status() {
                 "proving_scheme": GROTH16_PROVING_SCHEME,
                 "curve": BLS12_377_CURVE,
             },
+            "mapping_model_id": mapping_model.id
         },
     });
 
@@ -5609,7 +5712,7 @@ async fn workflow_instance_completed_status() {
 }
 
 #[tokio::test]
-async fn execute_workstep_fail_without_valid_witness() {
+async fn execute_workstep_with_arbitrary_data() {
     let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
     let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
 
@@ -5721,7 +5824,7 @@ async fn execute_workstep_fail_without_valid_witness() {
         .expect("execute workstep response");
     assert_eq!(
         execute_workstep_res.status(),
-        422,
+        201,
         "execute workstep response {:?}",
         execute_workstep_res.json::<Value>().await.unwrap()
     );
