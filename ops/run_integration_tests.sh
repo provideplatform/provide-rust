@@ -203,7 +203,7 @@ fi
 
 BASELINE_REGISTRY_CONTRACT_ADDRESS=0x
 if [[ $* == *--with-registry-contract-address* ]]; then
-    BASELINE_REGISTRY_CONTRACT_ADDRESS=0xCecCb4eA6B06F8990A305cafd1a9B43a9eF9c689
+    BASELINE_REGISTRY_CONTRACT_ADDRESS=0x525d68bb355edb112c5833759478e77c9dd6c382
 fi
 
 if [[ $* != *--skip-startup* ]]; then
@@ -213,6 +213,7 @@ if [[ $* != *--skip-startup* ]]; then
     if [[ $* != *--skip-baseline-startup* ]]; then
         sleep 20
         docker-compose --profile bpi-1 -f ./ops/docker-compose.yml up --build -d
+        docker-compose --profile bpi-2 -f ./ops/docker-compose.yml up --build -d
     fi
 
     wait_for_ident_container &

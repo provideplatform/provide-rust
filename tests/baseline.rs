@@ -20,14 +20,102 @@ use fake::Fake;
 use provide_rust::api::baseline::*;
 use provide_rust::api::client::ApiClient;
 use provide_rust::api::ident::{AuthenticateResponse, Ident, Organization, Token};
-use provide_rust::api::nchain::{Account, Contract, NChain, Wallet};
+use provide_rust::api::nchain::{
+    Account, Contract, NChain, Wallet, KOVAN_TESTNET_NETWORK_ID, POLYGON_MUMBAI_TESTNET_NETWORK_ID,
+};
+use provide_rust::api::privacy::{
+    BLS12_377_CURVE, GNARK_PROVIDER, GROTH16_PROVING_SCHEME, PREIMAGE_HASH_IDENTIFIER,
+};
 use provide_rust::api::vault::{Vault, VaultContainer, VaultKey};
 use serde_json::{json, Value};
 use std::io::Write;
 use std::process::Command;
 use tokio::time::{self, Duration};
 
-const ROPSTEN_NETWORK_ID: &str = "66d44f30-9092-4182-a3c4-bc02736d6ae5";
+async fn _create_org_registry_contract(
+    nchain: &ApiClient,
+    network_id: &str,
+    wallet_id: &str,
+    address: &str,
+) {
+    // get shuttle registry contract
+    let registry_contracts_res = nchain.client.get("https://s3.amazonaws.com/static.provide.services/capabilities/provide-capabilities-manifest.json").send().await.expect("get registry contracts response");
+    let registry_contracts = registry_contracts_res
+        .json::<Value>()
+        .await
+        .expect("registry contracts body");
+    let compiled_artifact = &registry_contracts["baseline"]["contracts"][1];
+
+    let contract_params = json!({
+        "address": address,
+        "name": "OrgRegistry",
+        "network_id": network_id,
+        "params": {
+            "argv": [],
+            "compiled_artifact": compiled_artifact,
+            "wallet_id": wallet_id,
+        },
+        "type": "organization-registry",
+    });
+
+    let create_contract_res = nchain
+        .create_contract(Some(contract_params))
+        .await
+        .expect("create contract res");
+    assert_eq!(create_contract_res.status(), 201);
+}
+
+async fn _deploy_registry_contract(
+    nchain: &ApiClient,
+    network_id: &str,
+    wallet_id: &str,
+) -> String {
+    // get shuttle registry contract
+    let registry_contracts_res = nchain.client.get("https://s3.amazonaws.com/static.provide.services/capabilities/provide-capabilities-manifest.json").send().await.expect("get registry contracts response");
+    let registry_contracts = registry_contracts_res
+        .json::<Value>()
+        .await
+        .expect("registry contracts body");
+    let compiled_artifact = &registry_contracts["baseline"]["contracts"][2];
+
+    let contract_params = json!({
+        "address": "0x",
+        "name": "Shuttle",
+        "network_id": network_id,
+        "params": {
+            "argv": [],
+            "compiled_artifact": compiled_artifact,
+            "wallet_id": wallet_id,
+        },
+        "type": "registry",
+    });
+
+    let create_contract_res = nchain
+        .create_contract(Some(contract_params))
+        .await
+        .expect("create contract res");
+    assert_eq!(create_contract_res.status(), 201);
+
+    let mut registry_contract = create_contract_res
+        .json::<Contract>()
+        .await
+        .expect("create contract body");
+    let mut interval = time::interval(Duration::from_millis(500));
+    while registry_contract.address == "0x" {
+        interval.tick().await;
+        let get_contract_res = nchain
+            .get_contract(&registry_contract.id)
+            .await
+            .expect("get contract response");
+        assert_eq!(get_contract_res.status(), 200);
+        registry_contract = get_contract_res
+            .json::<Contract>()
+            .await
+            .expect("get contract body");
+    }
+
+    registry_contract.address
+}
 
 async fn _create_workflow(baseline: &ApiClient, params: Value, expected_status: u16) -> Workflow {
     let create_workflow_res = baseline
@@ -146,7 +234,7 @@ async fn _deploy_workflow(baseline: &ApiClient, workflow_id: &str, expected_stat
 
 async fn generate_workgroup(baseline: &ApiClient) -> Workgroup {
     let workgroup_params = json!({
-        "network_id": ROPSTEN_NETWORK_ID,
+        "network_id": KOVAN_TESTNET_NETWORK_ID,
         "name": format!("{} application", Name().fake::<String>()),
         "type": "baseline",
     });
@@ -255,6 +343,39 @@ async fn baseline_setup() {
         None => panic!("organization refresh token not found"),
     };
 
+    let vault: ApiClient = Vault::factory(&org_access_token);
+
+    let create_vault_params = json!({
+         "name": "organization vault",
+    });
+
+    let create_organization_vault_res = vault
+        .create_vault(Some(create_vault_params))
+        .await
+        .expect("create organization vault res");
+    assert_eq!(create_organization_vault_res.status(), 201);
+
+    let create_organization_vault_res = create_organization_vault_res
+        .json::<VaultContainer>()
+        .await
+        .expect("create organization vault body");
+
+    let key_specs = vec!["secp256k1", "RSA-4096", "babyJubJub"];
+    for spec in key_specs {
+        let create_key_params = json!({
+            "name": format!("{} key", spec),
+            "spec": spec,
+            "type": "asymmetric",
+            "usage": "sign/verify",
+        });
+
+        let create_organization_key_res = vault
+            .create_key(&create_organization_vault_res.id, Some(create_key_params))
+            .await
+            .expect("create organization key res");
+        assert_eq!(create_organization_key_res.status(), 201);
+    }
+
     let baseline: ApiClient = Baseline::factory(&org_access_token);
 
     // create workgroup
@@ -306,44 +427,22 @@ async fn baseline_setup() {
         .await
         .expect("create account body");
 
-    let baseline_registry_contract_address =
+    let mut registry_contract_address =
         std::env::var("BASELINE_REGISTRY_CONTRACT_ADDRESS").unwrap_or(String::from("0x"));
 
-    let create_contract_params = json!({
-        "address": &baseline_registry_contract_address,
-        "name": "Shuttle",
-        "network_id": ROPSTEN_NETWORK_ID,
-        "params": {
-            "argv": [],
-            "compiled_artifact": compiled_artifact,
-            "wallet_id": &create_wallet_body.id,
-        },
-        "type": "registry",
-    });
-    let create_contract_res = nchain
-        .create_contract(Some(create_contract_params))
-        .await
-        .expect("create contract response");
-    assert_eq!(create_contract_res.status(), 201);
-
-    let mut registry_contract = create_contract_res
-        .json::<Contract>()
-        .await
-        .expect("create contract body");
-    let mut interval = time::interval(Duration::from_millis(500));
-    while registry_contract.address == "0x" {
-        interval.tick().await;
-        let get_contract_res = nchain
-            .get_contract(&registry_contract.id)
-            .await
-            .expect("get contract response");
-        assert_eq!(get_contract_res.status(), 200);
-        registry_contract = get_contract_res
-            .json::<Contract>()
-            .await
-            .expect("get contract body");
+    if registry_contract_address == "0x" {
+        registry_contract_address =
+            _deploy_registry_contract(&nchain, KOVAN_TESTNET_NETWORK_ID, &create_wallet_body.id)
+                .await;
+    } else {
+        _create_org_registry_contract(
+            &nchain,
+            KOVAN_TESTNET_NETWORK_ID,
+            &create_wallet_body.id,
+            &registry_contract_address,
+        )
+        .await;
     }
-    let registry_contract_address = registry_contract.address;
 
     let vault: ApiClient = Vault::factory(&app_access_token);
 
@@ -467,7 +566,7 @@ async fn baseline_setup() {
             " --nchain-scheme={}",
             std::env::var("NCHAIN_API_SCHEME").unwrap_or(String::from("http"))
         );
-        run_cmd += &format!(" --nchain-network-id={}", ROPSTEN_NETWORK_ID);
+        run_cmd += &format!(" --nchain-network-id={}", KOVAN_TESTNET_NETWORK_ID);
         run_cmd += &format!(" --organization={}", &create_organization_body.id);
         run_cmd += &format!(" --organization-address={}", &org_address);
         run_cmd += &format!(" --organization-refresh-token={}", &org_refresh_token);
@@ -528,6 +627,8 @@ async fn baseline_setup() {
 
         let mut baseline_container_status = String::from("");
 
+        let mut interval = time::interval(Duration::from_millis(1000));
+
         while baseline_container_status == "" {
             baseline_container_status =
                 match baseline_status_client.get("status", None, None, None).await {
@@ -542,7 +643,7 @@ async fn baseline_setup() {
     } else {
         let create_subject_account_params = json!({
             "metadata": {
-                "network_id": ROPSTEN_NETWORK_ID,
+                "network_id": KOVAN_TESTNET_NETWORK_ID,
                 "organization_address": &registry_contract_address,
                 "organization_id": &create_organization_body.id,
                 "organization_refresh_token": &org_refresh_token,
@@ -567,6 +668,41 @@ async fn baseline_setup() {
             )
             .unwrap()
         );
+
+        let update_organization_params = json!({
+            "metadata": {
+                "address": &registry_contract_address,
+                "workgroups": {
+                    &create_workgroup_body.id: {
+                        "operator_separation_degree": 0,
+                        "vault_id": &create_organization_vault_res.id,
+                    }
+                }
+            }
+        });
+
+        let update_organization_res = ident
+            .update_organization(
+                &create_organization_body.id,
+                Some(update_organization_params),
+            )
+            .await
+            .expect("update organization res");
+        assert_eq!(update_organization_res.status(), 204);
+
+        let update_workgroup_params = json!({
+            "network_id": KOVAN_TESTNET_NETWORK_ID,
+            "config": {
+                "vault_id": &create_organization_vault_res.id,
+                "l2_network_id": POLYGON_MUMBAI_TESTNET_NETWORK_ID,
+            }
+        });
+
+        let update_workgroup_res = baseline
+            .update_workgroup(&create_workgroup_body.id, Some(update_workgroup_params))
+            .await
+            .expect("update workgroup res");
+        assert_eq!(update_workgroup_res.status(), 204);
     }
 }
 
@@ -597,7 +733,7 @@ async fn create_subject_account_fail_with_existing_account() {
 
     let create_subject_account_params = json!({
         "metadata": {
-            "network_id": ROPSTEN_NETWORK_ID,
+            "network_id": KOVAN_TESTNET_NETWORK_ID,
             "organization_address": &registry_contract_address,
             "organization_id": &org_id,
             "organization_refresh_token": &org_refresh_token,
@@ -643,7 +779,7 @@ async fn create_subject_account_fail_without_workgroup_id() {
 
     let create_subject_account_params = json!({
         "metadata": {
-            "network_id": ROPSTEN_NETWORK_ID,
+            "network_id": KOVAN_TESTNET_NETWORK_ID,
             "organization_address": &registry_contract_address,
             "organization_id": &org_id,
             "organization_refresh_token": &org_refresh_token,
@@ -723,7 +859,7 @@ async fn create_subject_account_fail_without_organization_refresh_token() {
 
     let create_subject_account_params = json!({
         "metadata": {
-            "network_id": ROPSTEN_NETWORK_ID,
+            "network_id": KOVAN_TESTNET_NETWORK_ID,
             "organization_address": &registry_contract_address,
             "organization_id": &org_id,
             "registry_contract_address": &registry_contract_address,
@@ -765,7 +901,7 @@ async fn create_subject_account_fail_without_registry_contract_address() {
 
     let create_subject_account_params = json!({
         "metadata": {
-            "network_id": ROPSTEN_NETWORK_ID,
+            "network_id": KOVAN_TESTNET_NETWORK_ID,
             "organization_address": &registry_contract_address,
             "organization_id": &org_id,
             "organization_refresh_token": &org_refresh_token,
@@ -807,7 +943,7 @@ async fn create_subject_account_fail_without_organization_address() {
 
     let create_subject_account_params = json!({
         "metadata": {
-            "network_id": ROPSTEN_NETWORK_ID,
+            "network_id": KOVAN_TESTNET_NETWORK_ID,
             "organization_id": &org_id,
             "organization_refresh_token": &org_refresh_token,
             "registry_contract_address": &registry_contract_address,
@@ -873,7 +1009,7 @@ async fn create_subject_account_fail_with_id() {
     let create_subject_account_params = json!({
         "id": &org_id,
         "metadata": {
-            "network_id": ROPSTEN_NETWORK_ID,
+            "network_id": KOVAN_TESTNET_NETWORK_ID,
             "organization_address": &registry_contract_address,
             "organization_id": &org_id,
             "organization_refresh_token": &org_refresh_token,
@@ -917,7 +1053,7 @@ async fn create_subject_account_fail_with_incorrect_subject_id() {
     let create_subject_account_params = json!({
         "id": &org_id,
         "metadata": {
-            "network_id": ROPSTEN_NETWORK_ID,
+            "network_id": KOVAN_TESTNET_NETWORK_ID,
             "organization_address": &registry_contract_address,
             "organization_id": &org_id,
             "organization_refresh_token": &org_refresh_token,
@@ -1665,11 +1801,11 @@ async fn get_workflow_prototypes() {
         "require_finality": true,
         "metadata": {
             "prover": {
-                "identifier": "cubic",
+                "identifier": PREIMAGE_HASH_IDENTIFIER,
                 "name": "General Consistency",
-                "provider": "gnark",
-                "proving_scheme": "groth16",
-                "curve": "BN254",
+                "provider": GNARK_PROVIDER,
+                "proving_scheme": GROTH16_PROVING_SCHEME,
+                "curve": BLS12_377_CURVE,
             },
             "mapping_model_id": mapping_model.id
         },
@@ -1780,11 +1916,11 @@ async fn get_workflow_instances() {
         "require_finality": true,
         "metadata": {
             "prover": {
-                "identifier": "cubic",
+                "identifier": PREIMAGE_HASH_IDENTIFIER,
                 "name": "General Consistency",
-                "provider": "gnark",
-                "proving_scheme": "groth16",
-                "curve": "BN254",
+                "provider": GNARK_PROVIDER,
+                "proving_scheme": GROTH16_PROVING_SCHEME,
+                "curve": BLS12_377_CURVE,
             },
             "mapping_model_id": mapping_model.id
         },
@@ -1894,11 +2030,11 @@ async fn get_workflows_by_workgroup_id() {
         "require_finality": true,
         "metadata": {
             "prover": {
-                "identifier": "cubic",
+                "identifier": PREIMAGE_HASH_IDENTIFIER,
                 "name": "General Consistency",
-                "provider": "gnark",
-                "proving_scheme": "groth16",
-                "curve": "BN254",
+                "provider": GNARK_PROVIDER,
+                "proving_scheme": GROTH16_PROVING_SCHEME,
+                "curve": BLS12_377_CURVE,
             },
             "mapping_model_id": mapping_model.id
         },
@@ -1996,11 +2132,11 @@ async fn get_workflow_prototypes_by_workgroup_id() {
         "require_finality": true,
         "metadata": {
             "prover": {
-                "identifier": "cubic",
+                "identifier": PREIMAGE_HASH_IDENTIFIER,
                 "name": "General Consistency",
-                "provider": "gnark",
-                "proving_scheme": "groth16",
-                "curve": "BN254",
+                "provider": GNARK_PROVIDER,
+                "proving_scheme": GROTH16_PROVING_SCHEME,
+                "curve": BLS12_377_CURVE,
             },
             "mapping_model_id": mapping_model.id
         },
@@ -2113,11 +2249,11 @@ async fn get_workflow_instances_by_workgroup_id() {
         "require_finality": true,
         "metadata": {
             "prover": {
-                "identifier": "cubic",
+                "identifier": PREIMAGE_HASH_IDENTIFIER,
                 "name": "General Consistency",
-                "provider": "gnark",
-                "proving_scheme": "groth16",
-                "curve": "BN254",
+                "provider": GNARK_PROVIDER,
+                "proving_scheme": GROTH16_PROVING_SCHEME,
+                "curve": BLS12_377_CURVE,
             },
             "mapping_model_id": mapping_model.id
         },
@@ -2280,11 +2416,11 @@ async fn create_workflow_instance() {
         "require_finality": true,
         "metadata": {
             "prover": {
-                "identifier": "cubic",
+                "identifier": PREIMAGE_HASH_IDENTIFIER,
                 "name": "General Consistency",
-                "provider": "gnark",
-                "proving_scheme": "groth16",
-                "curve": "BN254",
+                "provider": GNARK_PROVIDER,
+                "proving_scheme": GROTH16_PROVING_SCHEME,
+                "curve": BLS12_377_CURVE,
             },
             "mapping_model_id": mapping_model.id
         },
@@ -2380,11 +2516,11 @@ async fn create_workflow_instance_without_version_has_version() {
         "require_finality": true,
         "metadata": {
             "prover": {
-                "identifier": "cubic",
+                "identifier": PREIMAGE_HASH_IDENTIFIER,
                 "name": "General Consistency",
-                "provider": "gnark",
-                "proving_scheme": "groth16",
-                "curve": "BN254",
+                "provider": GNARK_PROVIDER,
+                "proving_scheme": GROTH16_PROVING_SCHEME,
+                "curve": BLS12_377_CURVE,
             },
             "mapping_model_id": mapping_model.id
         },
@@ -2479,11 +2615,11 @@ async fn create_workflow_instance_fail_with_new_instance_version() {
         "require_finality": true,
         "metadata": {
             "prover": {
-                "identifier": "cubic",
+                "identifier": PREIMAGE_HASH_IDENTIFIER,
                 "name": "General Consistency",
-                "provider": "gnark",
-                "proving_scheme": "groth16",
-                "curve": "BN254",
+                "provider": GNARK_PROVIDER,
+                "proving_scheme": GROTH16_PROVING_SCHEME,
+                "curve": BLS12_377_CURVE,
             },
             "mapping_model_id": mapping_model.id
         },
@@ -2567,11 +2703,11 @@ async fn create_workflow_instance_worksteps() {
         "require_finality": true,
         "metadata": {
             "prover": {
-                "identifier": "cubic",
+                "identifier": PREIMAGE_HASH_IDENTIFIER,
                 "name": "General Consistency",
-                "provider": "gnark",
-                "proving_scheme": "groth16",
-                "curve": "BN254",
+                "provider": GNARK_PROVIDER,
+                "proving_scheme": GROTH16_PROVING_SCHEME,
+                "curve": BLS12_377_CURVE,
             },
             "mapping_model_id": mapping_model.id
         },
@@ -2677,11 +2813,11 @@ async fn create_workflow_instance_fail_on_draft_workflow() {
         "require_finality": true,
         "metadata": {
             "prover": {
-                "identifier": "cubic",
+                "identifier": PREIMAGE_HASH_IDENTIFIER,
                 "name": "General Consistency",
-                "provider": "gnark",
-                "proving_scheme": "groth16",
-                "curve": "BN254",
+                "provider": GNARK_PROVIDER,
+                "proving_scheme": GROTH16_PROVING_SCHEME,
+                "curve": BLS12_377_CURVE,
             },
             "mapping_model_id": mapping_model.id
         },
@@ -2824,11 +2960,11 @@ async fn update_workflow_fail_on_deployed() {
         "require_finality": true,
         "metadata": {
             "prover": {
-                "identifier": "cubic",
+                "identifier": PREIMAGE_HASH_IDENTIFIER,
                 "name": "General Consistency",
-                "provider": "gnark",
-                "proving_scheme": "groth16",
-                "curve": "BN254",
+                "provider": GNARK_PROVIDER,
+                "proving_scheme": GROTH16_PROVING_SCHEME,
+                "curve": BLS12_377_CURVE,
             },
             "mapping_model_id": mapping_model.id
         },
@@ -2921,11 +3057,11 @@ async fn deploy_workflow() {
         "require_finality": true,
         "metadata": {
             "prover": {
-                "identifier": "cubic",
+                "identifier": PREIMAGE_HASH_IDENTIFIER,
                 "name": "General Consistency",
-                "provider": "gnark",
-                "proving_scheme": "groth16",
-                "curve": "BN254",
+                "provider": GNARK_PROVIDER,
+                "proving_scheme": GROTH16_PROVING_SCHEME,
+                "curve": BLS12_377_CURVE,
             },
             "mapping_model_id": mapping_model.id
         },
@@ -3032,11 +3168,11 @@ async fn deploy_workflow_fail_without_model_on_all_worksteps() {
         "require_finality": true,
         "metadata": {
             "prover": {
-                "identifier": "cubic",
+                "identifier": PREIMAGE_HASH_IDENTIFIER,
                 "name": "General Consistency",
-                "provider": "gnark",
-                "proving_scheme": "groth16",
-                "curve": "BN254",
+                "provider": GNARK_PROVIDER,
+                "proving_scheme": GROTH16_PROVING_SCHEME,
+                "curve": BLS12_377_CURVE,
             },
         }
     });
@@ -3115,11 +3251,11 @@ async fn deploy_workflow_fail_without_version_on_workflow() {
         "require_finality": true,
         "metadata": {
             "prover": {
-                "identifier": "cubic",
+                "identifier": PREIMAGE_HASH_IDENTIFIER,
                 "name": "General Consistency",
-                "provider": "gnark",
-                "proving_scheme": "groth16",
-                "curve": "BN254",
+                "provider": GNARK_PROVIDER,
+                "proving_scheme": GROTH16_PROVING_SCHEME,
+                "curve": BLS12_377_CURVE,
             },
         }
     });
@@ -3193,11 +3329,11 @@ async fn update_workflow_deployed_to_deprecated() {
         "require_finality": true,
         "metadata": {
             "prover": {
-                "identifier": "cubic",
+                "identifier": PREIMAGE_HASH_IDENTIFIER,
                 "name": "General Consistency",
-                "provider": "gnark",
-                "proving_scheme": "groth16",
-                "curve": "BN254",
+                "provider": GNARK_PROVIDER,
+                "proving_scheme": GROTH16_PROVING_SCHEME,
+                "curve": BLS12_377_CURVE,
             },
             "mapping_model_id": mapping_model.id
         },
@@ -3329,11 +3465,11 @@ async fn delete_workflow_fail_on_deployed() {
         "require_finality": true,
         "metadata": {
             "prover": {
-                "identifier": "cubic",
+                "identifier": PREIMAGE_HASH_IDENTIFIER,
                 "name": "General Consistency",
-                "provider": "gnark",
-                "proving_scheme": "groth16",
-                "curve": "BN254",
+                "provider": GNARK_PROVIDER,
+                "proving_scheme": GROTH16_PROVING_SCHEME,
+                "curve": BLS12_377_CURVE,
             },
             "mapping_model_id": mapping_model.id
         },
@@ -3426,11 +3562,11 @@ async fn version_workflow() {
             "require_finality": finality,
             "metadata": {
                 "prover": {
-                    "identifier": "cubic",
+                    "identifier": PREIMAGE_HASH_IDENTIFIER,
                     "name": "General Consistency",
-                    "provider": "gnark",
-                    "proving_scheme": "groth16",
-                    "curve": "BN254",
+                    "provider": GNARK_PROVIDER,
+                    "proving_scheme": GROTH16_PROVING_SCHEME,
+                    "curve": BLS12_377_CURVE,
                 },
                 "mapping_model_id": mapping_model.id
             },
@@ -3556,11 +3692,11 @@ async fn version_workflow_updates_name_and_description() {
             "require_finality": finality,
             "metadata": {
                 "prover": {
-                    "identifier": "cubic",
+                    "identifier": PREIMAGE_HASH_IDENTIFIER,
                     "name": "General Consistency",
-                    "provider": "gnark",
-                    "proving_scheme": "groth16",
-                    "curve": "BN254",
+                    "provider": GNARK_PROVIDER,
+                    "proving_scheme": GROTH16_PROVING_SCHEME,
+                    "curve": BLS12_377_CURVE,
                 },
                 "mapping_model_id": mapping_model.id
             },
@@ -3695,11 +3831,11 @@ async fn version_workflow_fail_on_prototype() {
             "require_finality": finality,
             "metadata": {
                 "prover": {
-                    "identifier": "cubic",
+                    "identifier": PREIMAGE_HASH_IDENTIFIER,
                     "name": "General Consistency",
-                    "provider": "gnark",
-                    "proving_scheme": "groth16",
-                    "curve": "BN254",
+                    "provider": GNARK_PROVIDER,
+                    "proving_scheme": GROTH16_PROVING_SCHEME,
+                    "curve": BLS12_377_CURVE,
                 },
                 "mapping_model_id": mapping_model.id
             },
@@ -3795,11 +3931,11 @@ async fn version_workflow_fail_on_versioning_with_same_version() {
             "require_finality": finality,
             "metadata": {
                 "prover": {
-                    "identifier": "cubic",
+                    "identifier": PREIMAGE_HASH_IDENTIFIER,
                     "name": "General Consistency",
-                    "provider": "gnark",
-                    "proving_scheme": "groth16",
-                    "curve": "BN254",
+                    "provider": GNARK_PROVIDER,
+                    "proving_scheme": GROTH16_PROVING_SCHEME,
+                    "curve": BLS12_377_CURVE,
                 },
                 "mapping_model_id": mapping_model.id
             },
@@ -3897,11 +4033,11 @@ async fn version_workflow_fail_on_versioning_with_older_version() {
             "require_finality": finality,
             "metadata": {
                 "prover": {
-                    "identifier": "cubic",
+                    "identifier": PREIMAGE_HASH_IDENTIFIER,
                     "name": "General Consistency",
-                    "provider": "gnark",
-                    "proving_scheme": "groth16",
-                    "curve": "BN254",
+                    "provider": GNARK_PROVIDER,
+                    "proving_scheme": GROTH16_PROVING_SCHEME,
+                    "curve": BLS12_377_CURVE,
                 },
                 "mapping_model_id": mapping_model.id
             },
@@ -4213,11 +4349,11 @@ async fn create_workstep() {
         "require_finality": true,
         "metadata": {
             "prover": {
-                "identifier": "cubic",
+                "identifier": PREIMAGE_HASH_IDENTIFIER,
                 "name": "General Consistency",
-                "provider": "gnark",
-                "proving_scheme": "groth16",
-                "curve": "BN254",
+                "provider": GNARK_PROVIDER,
+                "proving_scheme": GROTH16_PROVING_SCHEME,
+                "curve": BLS12_377_CURVE,
             },
             "mapping_model_id": null,
         },
@@ -4273,11 +4409,11 @@ async fn update_workstep() {
         "require_finality": true,
         "metadata": {
             "prover": {
-                "identifier": "cubic",
+                "identifier": PREIMAGE_HASH_IDENTIFIER,
                 "name": "General Consistency",
-                "provider": "gnark",
-                "proving_scheme": "groth16",
-                "curve": "BN254",
+                "provider": GNARK_PROVIDER,
+                "proving_scheme": GROTH16_PROVING_SCHEME,
+                "curve": BLS12_377_CURVE,
             },
         }
     });
@@ -4319,11 +4455,17 @@ async fn update_workstep() {
 
     let workstep_metadata = get_updated_workstep_body.metadata.unwrap();
 
-    assert_eq!(&workstep_metadata["prover"]["identifier"], "cubic");
+    assert_eq!(
+        &workstep_metadata["prover"]["identifier"],
+        PREIMAGE_HASH_IDENTIFIER
+    );
     assert_eq!(&workstep_metadata["prover"]["name"], "General Consistency");
-    assert_eq!(&workstep_metadata["prover"]["provider"], "gnark");
-    assert_eq!(&workstep_metadata["prover"]["proving_scheme"], "groth16");
-    assert_eq!(&workstep_metadata["prover"]["curve"], "BN254");
+    assert_eq!(&workstep_metadata["prover"]["provider"], GNARK_PROVIDER);
+    assert_eq!(
+        &workstep_metadata["prover"]["proving_scheme"],
+        GROTH16_PROVING_SCHEME
+    );
+    assert_eq!(&workstep_metadata["prover"]["curve"], BLS12_377_CURVE);
 }
 
 #[tokio::test]
@@ -4367,11 +4509,11 @@ async fn update_workstep_cardinality_zero_fail() {
         "require_finality": true,
         "metadata": {
             "prover": {
-                "identifier": "cubic",
+                "identifier": PREIMAGE_HASH_IDENTIFIER,
                 "name": "General Consistency",
-                "provider": "gnark",
-                "proving_scheme": "groth16",
-                "curve": "BN254",
+                "provider": GNARK_PROVIDER,
+                "proving_scheme": GROTH16_PROVING_SCHEME,
+                "curve": BLS12_377_CURVE,
             },
         },
         "cardinality": 0,
@@ -4451,11 +4593,11 @@ async fn update_workstep_fail_on_deployed() {
         "require_finality": true,
         "metadata": {
             "prover": {
-                "identifier": "cubic",
+                "identifier": PREIMAGE_HASH_IDENTIFIER,
                 "name": "General Consistency",
-                "provider": "gnark",
-                "proving_scheme": "groth16",
-                "curve": "BN254",
+                "provider": GNARK_PROVIDER,
+                "proving_scheme": GROTH16_PROVING_SCHEME,
+                "curve": BLS12_377_CURVE,
             },
             "mapping_model_id": mapping_model.id
         },
@@ -4876,11 +5018,11 @@ async fn update_workstep_fail_cardinality_out_of_bounds() {
         "require_finality": true,
         "metadata": {
             "prover": {
-                "identifier": "cubic",
+                "identifier": PREIMAGE_HASH_IDENTIFIER,
                 "name": "General Consistency",
-                "provider": "gnark",
-                "proving_scheme": "groth16",
-                "curve": "BN254",
+                "provider": GNARK_PROVIDER,
+                "proving_scheme": GROTH16_PROVING_SCHEME,
+                "curve": BLS12_377_CURVE,
             },
         },
         "cardinality": -1,
@@ -4911,11 +5053,11 @@ async fn update_workstep_fail_cardinality_out_of_bounds() {
         "require_finality": true,
         "metadata": {
             "prover": {
-                "identifier": "cubic",
+                "identifier": PREIMAGE_HASH_IDENTIFIER,
                 "name": "General Consistency",
-                "provider": "gnark",
-                "proving_scheme": "groth16",
-                "curve": "BN254",
+                "provider": GNARK_PROVIDER,
+                "proving_scheme": GROTH16_PROVING_SCHEME,
+                "curve": BLS12_377_CURVE,
             },
         },
         "cardinality": 100,
@@ -5167,11 +5309,11 @@ async fn create_workstep_fail_on_deployed() {
         "require_finality": true,
         "metadata": {
             "prover": {
-                "identifier": "cubic",
+                "identifier": PREIMAGE_HASH_IDENTIFIER,
                 "name": "General Consistency",
-                "provider": "gnark",
-                "proving_scheme": "groth16",
-                "curve": "BN254",
+                "provider": GNARK_PROVIDER,
+                "proving_scheme": GROTH16_PROVING_SCHEME,
+                "curve": BLS12_377_CURVE,
             },
             "mapping_model_id": mapping_model.id
         },
@@ -5192,11 +5334,11 @@ async fn create_workstep_fail_on_deployed() {
         "require_finality": true,
         "metadata": {
             "prover": {
-                "identifier": "cubic",
+                "identifier": PREIMAGE_HASH_IDENTIFIER,
                 "name": "General Consistency",
-                "provider": "gnark",
-                "proving_scheme": "groth16",
-                "curve": "BN254",
+                "provider": GNARK_PROVIDER,
+                "proving_scheme": GROTH16_PROVING_SCHEME,
+                "curve": BLS12_377_CURVE,
             },
         }
     });
@@ -5268,11 +5410,11 @@ async fn execute_workstep() {
         "require_finality": true,
         "metadata": {
             "prover": {
-                "identifier": "cubic",
+                "identifier": PREIMAGE_HASH_IDENTIFIER,
                 "name": "General Consistency",
-                "provider": "gnark",
-                "proving_scheme": "groth16",
-                "curve": "BN254",
+                "provider": GNARK_PROVIDER,
+                "proving_scheme": GROTH16_PROVING_SCHEME,
+                "curve": BLS12_377_CURVE,
             },
             "mapping_model_id": mapping_model.id
         },
@@ -5351,24 +5493,56 @@ async fn workflow_instance_init_status() {
 
     let create_workflow_body = _create_workflow(&baseline, create_workflow_params, 201).await;
 
-    let create_workstep_params_1 = json!({
-        "name": format!("{} workstep", Name().fake::<String>()),
-        "require_finality": true,
-        "metadata": {
-            "prover": {
-                "identifier": "cubic",
-                "name": "General Consistency",
-                "provider": "gnark",
-                "proving_scheme": "groth16",
-                "curve": "BN254",
-            },
+    let create_mapping_params = json!({
+      "name": format!("{} Mapping", Name().fake::<String>()),
+      "type": "mapping_type",
+      "workgroup_id": &app_id,
+      "models": [
+        {
+          "description": "test model",
+          "primary_key": "id",
+          "type": "test",
+          "fields": [
+            {
+              "is_primary_key": true,
+              "name": "id",
+              "type": "string"
+            }
+          ]
+        }
+      ]
+    });
+
+    let create_mapping_res = baseline
+        .create_mapping(Some(create_mapping_params))
+        .await
+        .expect("create mapping response");
+
+    let create_mapping_body = create_mapping_res
+        .json::<Mapping>()
+        .await
+        .expect("create mapping body");
+    let mapping_model = &create_mapping_body.models[0];
+
+    let create_workstep_params = json!({
+      "name": format!("{} workstep", Name().fake::<String>()),
+      "require_finality": true,
+      "metadata": {
+          "prover": {
+              "identifier": PREIMAGE_HASH_IDENTIFIER,
+              "name": "General Consistency",
+              "provider": GNARK_PROVIDER,
+              "proving_scheme": GROTH16_PROVING_SCHEME,
+              "curve": BLS12_377_CURVE,
+          },
+            "mapping_model_id": mapping_model.id
         },
     });
 
     let _ = _create_workstep(
         &baseline,
         &create_workflow_body.id,
-        create_workstep_params_1,
+        create_workstep_params,
         201,
     )
     .await;
@@ -5409,17 +5583,49 @@ async fn workflow_instance_running_status() {
 
     let create_workflow_body = _create_workflow(&baseline, create_workflow_params, 201).await;
 
+    let create_mapping_params = json!({
+      "name": format!("{} Mapping", Name().fake::<String>()),
+      "type": "mapping_type",
+      "workgroup_id": &app_id,
+      "models": [
+        {
+          "description": "test model",
+          "primary_key": "id",
+          "type": "test",
+          "fields": [
+            {
+              "is_primary_key": true,
+              "name": "id",
+              "type": "string"
+            }
+          ]
+        }
+      ]
+    });
+
+    let create_mapping_res = baseline
+        .create_mapping(Some(create_mapping_params))
+        .await
+        .expect("create mapping response");
+
+    let create_mapping_body = create_mapping_res
+        .json::<Mapping>()
+        .await
+        .expect("create mapping body");
+    let mapping_model = &create_mapping_body.models[0];
+
     let create_workstep_params_1 = json!({
         "name": format!("{} workstep", Name().fake::<String>()),
-        "require_finality": true,
+        "require_finality": false,
         "metadata": {
             "prover": {
-                "identifier": "cubic",
+                "identifier": PREIMAGE_HASH_IDENTIFIER,
                 "name": "General Consistency",
-                "provider": "gnark",
-                "proving_scheme": "groth16",
-                "curve": "BN254",
+                "provider": GNARK_PROVIDER,
+                "proving_scheme": GROTH16_PROVING_SCHEME,
+                "curve": BLS12_377_CURVE,
             },
+            "mapping_model_id": mapping_model.id
         },
     });
 
@@ -5436,12 +5642,13 @@ async fn workflow_instance_running_status() {
         "require_finality": true,
         "metadata": {
             "prover": {
-                "identifier": "cubic",
+                "identifier": PREIMAGE_HASH_IDENTIFIER,
                 "name": "General Consistency",
-                "provider": "gnark",
-                "proving_scheme": "groth16",
-                "curve": "BN254",
+                "provider": GNARK_PROVIDER,
+                "proving_scheme": GROTH16_PROVING_SCHEME,
+                "curve": BLS12_377_CURVE,
             },
+            "mapping_model_id": mapping_model.id
         },
     });
 
@@ -5531,17 +5738,49 @@ async fn workflow_instance_completed_status() {
 
     let create_workflow_body = _create_workflow(&baseline, create_workflow_params, 201).await;
 
+    let create_mapping_params = json!({
+      "name": format!("{} Mapping", Name().fake::<String>()),
+      "type": "mapping_type",
+      "workgroup_id": &app_id,
+      "models": [
+        {
+          "description": "test model",
+          "primary_key": "id",
+          "type": "test",
+          "fields": [
+            {
+              "is_primary_key": true,
+              "name": "id",
+              "type": "string"
+            }
+          ]
+        }
+      ]
+    });
+
+    let create_mapping_res = baseline
+        .create_mapping(Some(create_mapping_params))
+        .await
+        .expect("create mapping response");
+
+    let create_mapping_body = create_mapping_res
+        .json::<Mapping>()
+        .await
+        .expect("create mapping body");
+    let mapping_model = &create_mapping_body.models[0];
+
     let create_workstep_params = json!({
         "name": format!("{} workstep", Name().fake::<String>()),
         "require_finality": true,
         "metadata": {
             "prover": {
-                "identifier": "cubic",
+                "identifier": PREIMAGE_HASH_IDENTIFIER,
                 "name": "General Consistency",
-                "provider": "gnark",
-                "proving_scheme": "groth16",
-                "curve": "BN254",
+                "provider": GNARK_PROVIDER,
+                "proving_scheme": GROTH16_PROVING_SCHEME,
+                "curve": BLS12_377_CURVE,
             },
+            "mapping_model_id": mapping_model.id
         },
     });
 
@@ -5610,7 +5849,7 @@ async fn workflow_instance_completed_status() {
 }
 
 #[tokio::test]
-async fn execute_workstep_fail_without_valid_witness() {
+async fn execute_workstep_with_arbitrary_data() {
     let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
     let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
 
@@ -5667,11 +5906,11 @@ async fn execute_workstep_fail_without_valid_witness() {
         "require_finality": true,
         "metadata": {
             "prover": {
-                "identifier": "cubic",
+                "identifier": PREIMAGE_HASH_IDENTIFIER,
                 "name": "General Consistency",
-                "provider": "gnark",
-                "proving_scheme": "groth16",
-                "curve": "BN254",
+                "provider": GNARK_PROVIDER,
+                "proving_scheme": GROTH16_PROVING_SCHEME,
+                "curve": BLS12_377_CURVE,
             },
             "mapping_model_id": mapping_model.id
         },
@@ -5722,7 +5961,7 @@ async fn execute_workstep_fail_without_valid_witness() {
         .expect("execute workstep response");
     assert_eq!(
         execute_workstep_res.status(),
-        422,
+        201,
         "execute workstep response {:?}",
         execute_workstep_res.json::<Value>().await.unwrap()
     );
@@ -5755,11 +5994,11 @@ async fn execute_workstep_fail_on_draft() {
         "require_finality": true,
         "metadata": {
             "prover": {
-                "identifier": "cubic",
+                "identifier": PREIMAGE_HASH_IDENTIFIER,
                 "name": "General Consistency",
-                "provider": "gnark",
-                "proving_scheme": "groth16",
-                "curve": "BN254",
+                "provider": GNARK_PROVIDER,
+                "proving_scheme": GROTH16_PROVING_SCHEME,
+                "curve": BLS12_377_CURVE,
             },
         },
     });
@@ -5811,11 +6050,11 @@ async fn fetch_workstep_participants() {
         "require_finality": true,
         "metadata": {
             "prover": {
-                "identifier": "cubic",
+                "identifier": PREIMAGE_HASH_IDENTIFIER,
                 "name": "General Consistency",
-                "provider": "gnark",
-                "proving_scheme": "groth16",
-                "curve": "BN254",
+                "provider": GNARK_PROVIDER,
+                "proving_scheme": GROTH16_PROVING_SCHEME,
+                "curve": BLS12_377_CURVE,
             },
         },
     });
@@ -5862,11 +6101,11 @@ async fn create_workstep_participant() {
         "require_finality": true,
         "metadata": {
             "prover": {
-                "identifier": "cubic",
+                "identifier": PREIMAGE_HASH_IDENTIFIER,
                 "name": "General Consistency",
-                "provider": "gnark",
-                "proving_scheme": "groth16",
-                "curve": "BN254",
+                "provider": GNARK_PROVIDER,
+                "proving_scheme": GROTH16_PROVING_SCHEME,
+                "curve": BLS12_377_CURVE,
             },
         },
     });
@@ -5882,7 +6121,7 @@ async fn create_workstep_participant() {
     let nchain: ApiClient = NChain::factory(&org_access_token);
 
     let create_account_params = json!({
-        "network_id": ROPSTEN_NETWORK_ID,
+        "network_id": KOVAN_TESTNET_NETWORK_ID,
     });
 
     let create_account_res = nchain
@@ -5978,11 +6217,11 @@ async fn create_workstep_participant_fail_on_deployed() {
         "require_finality": true,
         "metadata": {
             "prover": {
-                "identifier": "cubic",
+                "identifier": PREIMAGE_HASH_IDENTIFIER,
                 "name": "General Consistency",
-                "provider": "gnark",
-                "proving_scheme": "groth16",
-                "curve": "BN254",
+                "provider": GNARK_PROVIDER,
+                "proving_scheme": GROTH16_PROVING_SCHEME,
+                "curve": BLS12_377_CURVE,
             },
             "mapping_model_id": mapping_model.id
         },
@@ -6001,7 +6240,7 @@ async fn create_workstep_participant_fail_on_deployed() {
     let nchain: ApiClient = NChain::factory(&org_access_token);
 
     let create_account_params = json!({
-        "network_id": ROPSTEN_NETWORK_ID,
+        "network_id": KOVAN_TESTNET_NETWORK_ID,
     });
 
     let create_account_res = nchain
@@ -6066,11 +6305,11 @@ async fn delete_workstep_participant() {
         "require_finality": true,
         "metadata": {
             "prover": {
-                "identifier": "cubic",
+                "identifier": PREIMAGE_HASH_IDENTIFIER,
                 "name": "General Consistency",
-                "provider": "gnark",
-                "proving_scheme": "groth16",
-                "curve": "BN254",
+                "provider": GNARK_PROVIDER,
+                "proving_scheme": GROTH16_PROVING_SCHEME,
+                "curve": BLS12_377_CURVE,
             },
         },
     });
@@ -6086,7 +6325,7 @@ async fn delete_workstep_participant() {
     let nchain: ApiClient = NChain::factory(&org_access_token);
 
     let create_account_params = json!({
-        "network_id": ROPSTEN_NETWORK_ID,
+        "network_id": KOVAN_TESTNET_NETWORK_ID,
     });
 
     let create_account_res = nchain
@@ -6200,11 +6439,11 @@ async fn delete_workstep_participant_fail_on_deployed() {
         "require_finality": true,
         "metadata": {
             "prover": {
-                "identifier": "cubic",
+                "identifier": PREIMAGE_HASH_IDENTIFIER,
                 "name": "General Consistency",
-                "provider": "gnark",
-                "proving_scheme": "groth16",
-                "curve": "BN254",
+                "provider": GNARK_PROVIDER,
+                "proving_scheme": GROTH16_PROVING_SCHEME,
+                "curve": BLS12_377_CURVE,
             },
             "mapping_model_id": mapping_model.id
         },
@@ -6221,7 +6460,7 @@ async fn delete_workstep_participant_fail_on_deployed() {
     let nchain: ApiClient = NChain::factory(&org_access_token);
 
     let create_account_params = json!({
-        "network_id": ROPSTEN_NETWORK_ID,
+        "network_id": KOVAN_TESTNET_NETWORK_ID,
     });
 
     let create_account_res = nchain

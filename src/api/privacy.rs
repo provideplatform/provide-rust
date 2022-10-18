@@ -23,6 +23,11 @@ const DEFAULT_SCHEME: &str = "https";
 const DEFAULT_HOST: &str = "privacy.provide.services";
 const DEFAULT_PATH: &str = "api/v1";
 
+pub const PREIMAGE_HASH_IDENTIFIER: &str = "preimage_hash";
+pub const BLS12_377_CURVE: &str = "BLS12_377";
+pub const GNARK_PROVIDER: &str = "gnark";
+pub const GROTH16_PROVING_SCHEME: &str = "groth16";
+
 #[async_trait]
 pub trait Privacy {
     fn factory(token: &str) -> Self;

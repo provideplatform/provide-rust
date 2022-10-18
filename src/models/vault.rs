@@ -16,12 +16,13 @@
 
 use serde::{Deserialize, Serialize};
 
+// change to VaultService so that i can rename VaultContainer to Vault ?
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
 pub struct VaultContainer {
     pub id: String,
     created_at: String,
     name: String,
-    description: String,
+    description: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]

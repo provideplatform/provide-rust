@@ -19,11 +19,10 @@ use fake::faker::name::en::{FirstName, LastName, Name};
 use fake::Fake;
 use provide_rust::api::client::ApiClient;
 use provide_rust::api::ident::{Application, AuthenticateResponse, Ident, Token};
+use provide_rust::api::nchain::KOVAN_TESTNET_NETWORK_ID;
 use provide_rust::api::privacy::*;
 use serde_json::json;
 use tokio::time::{self, Duration};
-
-const ROPSTEN_NETWORK_ID: &str = "66d44f30-9092-4182-a3c4-bc02736d6ae5";
 
 async fn generate_new_user_and_token() -> AuthenticateResponse {
     let ident: ApiClient = Ident::factory("");
@@ -63,10 +62,10 @@ async fn generate_new_user_and_token() -> AuthenticateResponse {
 async fn deploy_prover(privacy: &ApiClient) -> Prover {
     let create_prover_params = Some(json!({
         "name": Name().fake::<String>(),
-        "identifier": "cubic",
-        "provider": "gnark",
-        "proving_scheme": "groth16",
-        "curve": "BN254",
+        "identifier": PREIMAGE_HASH_IDENTIFIER,
+        "provider": GNARK_PROVIDER,
+        "proving_scheme": GROTH16_PROVING_SCHEME,
+        "curve": BLS12_377_CURVE,
     }));
 
     let create_prover_res = privacy
@@ -136,7 +135,7 @@ async fn generate_proof() {
     let ident: ApiClient = Ident::factory(&access_token);
 
     let application_data = Some(json!({
-        "network_id": ROPSTEN_NETWORK_ID,
+        "network_id": KOVAN_TESTNET_NETWORK_ID,
         "user_id": authentication_res_body.user.id,
         "name": format!("{} {}", Name().fake::<String>(), "Application"),
         "description": "Some application description",
@@ -204,9 +203,9 @@ async fn generate_proof() {
 
     let generate_proof_param = Some(json!({
         "identifier": deploy_prover_body.identifier,
-        "proving_scheme": "groth16",
-        "curve": "BN254",
-        "provider": "gnark",
+        "proving_scheme": GROTH16_PROVING_SCHEME,
+        "curve": BLS12_377_CURVE,
+        "provider": GNARK_PROVIDER,
         "name": deploy_prover_body.name,
         "store_id": deploy_prover_body.note_store_id,
         "witness": {
@@ -233,7 +232,7 @@ async fn verify_proof() {
     let ident: ApiClient = Ident::factory(&access_token);
 
     let application_data = Some(json!({
-        "network_id": ROPSTEN_NETWORK_ID,
+        "network_id": KOVAN_TESTNET_NETWORK_ID,
         "user_id": authentication_res_body.user.id,
         "name": format!("{} {}", Name().fake::<String>(), "Application"),
         "description": "Some application description",
@@ -301,9 +300,9 @@ async fn verify_proof() {
 
     let generate_proof_param = Some(json!({
         "identifier": deploy_prover_body.identifier,
-        "proving_scheme": "groth16",
-        "curve": "BN254",
-        "provider": "gnark",
+        "proving_scheme": GROTH16_PROVING_SCHEME,
+        "curve": BLS12_377_CURVE,
+        "provider": GNARK_PROVIDER,
         "name": deploy_prover_body.name,
         "store_id": deploy_prover_body.note_store_id,
         "witness": {
@@ -349,7 +348,7 @@ async fn retrieve_store_value() {
     let ident: ApiClient = Ident::factory(&access_token);
 
     let application_data = Some(json!({
-        "network_id": ROPSTEN_NETWORK_ID,
+        "network_id": KOVAN_TESTNET_NETWORK_ID,
         "user_id": authentication_res_body.user.id,
         "name": format!("{} {}", Name().fake::<String>(), "Application"),
         "description": "Some application description",
@@ -417,9 +416,9 @@ async fn retrieve_store_value() {
 
     let generate_proof_param = Some(json!({
         "identifier": deploy_prover_body.identifier,
-        "proving_scheme": "groth16",
-        "curve": "BN254",
-        "provider": "gnark",
+        "proving_scheme": GROTH16_PROVING_SCHEME,
+        "curve": BLS12_377_CURVE,
+        "provider": GNARK_PROVIDER,
         "name": deploy_prover_body.name,
         "store_id": deploy_prover_body.note_store_id,
         "witness": {

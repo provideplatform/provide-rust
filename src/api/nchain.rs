@@ -23,6 +23,15 @@ const DEFAULT_SCHEME: &str = "https";
 const DEFAULT_HOST: &str = "nchain.provide.services";
 const DEFAULT_PATH: &str = "api/v1";
 
+pub const ETHEREUM_MAINNET_NETWORK_ID: &str = "deca2436-21ba-4ff5-b225-ad1b0b2f5c59";
+pub const RINKEBY_TESTNET_NETWORK_ID: &str = "07102258-5e49-480e-86af-6d0c3260827d"; // deprecated
+pub const ROPSTEN_TESTNET_NETWORK_ID: &str = "66d44f30-9092-4182-a3c4-bc02736d6ae5"; // deprecated
+pub const KOVAN_TESTNET_NETWORK_ID: &str = "8d31bf48-df6b-4a71-9d7c-3cb291111e27"; // deprecated
+pub const GOERLI_TESTNET_NETWORK_ID: &str = "1b16996e-3595-4985-816c-043345d22f8c";
+
+pub const POLYGON_MAINNET_NETWORK_ID: &str = "2fd61fde-5031-41f1-86b8-8a72e2945ead";
+pub const POLYGON_MUMBAI_TESTNET_NETWORK_ID: &str = "4251b6fd-c98d-4017-87a3-d691a77a52a7";
+
 #[async_trait]
 pub trait NChain {
     fn factory(token: &str) -> Self;
