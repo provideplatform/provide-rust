@@ -213,7 +213,7 @@ if [[ $* != *--skip-startup* ]]; then
     if [[ $* != *--skip-baseline-startup* ]]; then
         sleep 20
         docker-compose --profile bpi-1 -f ./ops/docker-compose.yml up --build -d
-        docker-compose --profile bpi-2 -f ./ops/docker-compose.yml up --build -d
+        # docker-compose --profile bpi-2 -f ./ops/docker-compose.yml up --build -d
     fi
 
     wait_for_ident_container &
