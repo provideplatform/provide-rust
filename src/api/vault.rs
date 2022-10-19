@@ -16,7 +16,7 @@
 
 use async_trait::async_trait;
 
-use crate::api::client::{ApiClient, Params, Response, QueryParams};
+use crate::api::client::{ApiClient, Params, QueryParams, Response};
 pub use crate::models::vault::*;
 
 const DEFAULT_SCHEME: &str = "https";
@@ -51,7 +51,12 @@ pub trait Vault {
 
     async fn store_secret(&self, vault_id: &str, params: Params) -> Response;
 
-    async fn retrieve_secret(&self, vault_id: &str, secret_id: &str, query_params: QueryParams) -> Response;
+    async fn retrieve_secret(
+        &self,
+        vault_id: &str,
+        secret_id: &str,
+        query_params: QueryParams,
+    ) -> Response;
 
     async fn delete_secret(&self, vault_id: &str, secret_id: &str) -> Response;
 }
@@ -122,7 +127,12 @@ impl Vault for ApiClient {
         return self.post(&uri, params).await;
     }
 
-    async fn retrieve_secret(&self, vault_id: &str, secret_id: &str, query_params: QueryParams) -> Response {
+    async fn retrieve_secret(
+        &self,
+        vault_id: &str,
+        secret_id: &str,
+        query_params: QueryParams,
+    ) -> Response {
         let uri = format!("vaults/{}/secrets/{}", vault_id, secret_id);
         return self.get(&uri, query_params).await;
     }

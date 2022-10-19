@@ -603,7 +603,10 @@ async fn get_wallets() {
 
     let nchain: ApiClient = NChain::factory(&access_token);
 
-    let get_wallets_res = nchain.list_wallets(None).await.expect("get wallets response");
+    let get_wallets_res = nchain
+        .list_wallets(None)
+        .await
+        .expect("get wallets response");
     assert_eq!(get_wallets_res.status(), 200);
 }
 
@@ -687,7 +690,10 @@ async fn get_networks() {
 
     let nchain: ApiClient = NChain::factory(&organization_access_token);
 
-    let get_networks_res = nchain.list_networks(None).await.expect("get networks response");
+    let get_networks_res = nchain
+        .list_networks(None)
+        .await
+        .expect("get networks response");
     assert_eq!(get_networks_res.status(), 200);
 
     let get_networks_body = get_networks_res

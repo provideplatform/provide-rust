@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-use crate::api::client::{ApiClient, Params, Response, QueryParams};
+use crate::api::client::{ApiClient, Params, QueryParams, Response};
 pub use crate::models::baseline::*;
 use async_trait::async_trait;
 
@@ -48,7 +48,12 @@ pub trait Baseline {
 
     async fn list_subject_accounts(&self, subject_id: &str, query_params: QueryParams) -> Response;
 
-    async fn get_subject_account(&self, subject_id: &str, account_id: &str, query_params: QueryParams) -> Response;
+    async fn get_subject_account(
+        &self,
+        subject_id: &str,
+        account_id: &str,
+        query_params: QueryParams,
+    ) -> Response;
 
     async fn create_subject_account(&self, subject_id: &str, params: Params) -> Response;
 
@@ -95,7 +100,12 @@ pub trait Baseline {
 
     async fn list_worksteps(&self, workflow_id: &str, query_params: QueryParams) -> Response;
 
-    async fn get_workstep(&self, workflow_id: &str, workstep_id: &str, query_params: QueryParams) -> Response;
+    async fn get_workstep(
+        &self,
+        workflow_id: &str,
+        workstep_id: &str,
+        query_params: QueryParams,
+    ) -> Response;
 
     async fn create_workstep(&self, workflow_id: &str, params: Params) -> Response;
 
@@ -115,7 +125,12 @@ pub trait Baseline {
         params: Params,
     ) -> Response;
 
-    async fn list_workstep_participants(&self, workflow_id: &str, workstep_id: &str, query_params: QueryParams) -> Response;
+    async fn list_workstep_participants(
+        &self,
+        workflow_id: &str,
+        workstep_id: &str,
+        query_params: QueryParams,
+    ) -> Response;
 
     async fn create_workstep_participant(
         &self,
@@ -151,6 +166,8 @@ pub trait Baseline {
     async fn update_system(&self, workgroup_id: &str, system_id: &str, params: Params) -> Response;
 
     async fn delete_system(&self, workgroup_id: &str, system_id: &str) -> Response;
+
+    async fn send_protocol_message(&self, params: Params) -> Response;
 }
 
 #[async_trait]
@@ -211,7 +228,12 @@ impl Baseline for ApiClient {
         return self.get(&uri, query_params).await;
     }
 
-    async fn get_subject_account(&self, subject_id: &str, account_id: &str, query_params: QueryParams) -> Response {
+    async fn get_subject_account(
+        &self,
+        subject_id: &str,
+        account_id: &str,
+        query_params: QueryParams,
+    ) -> Response {
         let uri = format!("subjects/{}/accounts/{}", subject_id, account_id);
         return self.get(&uri, query_params).await;
     }
@@ -313,7 +335,12 @@ impl Baseline for ApiClient {
         return self.get(&uri, query_params).await;
     }
 
-    async fn get_workstep(&self, workflow_id: &str, workstep_id: &str, query_params: QueryParams) -> Response {
+    async fn get_workstep(
+        &self,
+        workflow_id: &str,
+        workstep_id: &str,
+        query_params: QueryParams,
+    ) -> Response {
         let uri = format!("workflows/{}/worksteps/{}", workflow_id, workstep_id);
         return self.get(&uri, query_params).await;
     }
@@ -351,7 +378,12 @@ impl Baseline for ApiClient {
         return self.post(&uri, params).await;
     }
 
-    async fn list_workstep_participants(&self, workflow_id: &str, workstep_id: &str, query_params: QueryParams) -> Response {
+    async fn list_workstep_participants(
+        &self,
+        workflow_id: &str,
+        workstep_id: &str,
+        query_params: QueryParams,
+    ) -> Response {
         let uri = format!(
             "workflows/{}/worksteps/{}/participants",
             workflow_id, workstep_id
@@ -421,5 +453,9 @@ impl Baseline for ApiClient {
     async fn delete_system(&self, workgroup_id: &str, system_id: &str) -> Response {
         let uri = format!("workgroups/{}/systems/{}", workgroup_id, system_id);
         return self.delete(&uri).await;
+    }
+
+    async fn send_protocol_message(&self, params: Params) -> Response {
+        return self.post("protocol_messages", params).await;
     }
 }

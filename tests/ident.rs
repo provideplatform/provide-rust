@@ -142,10 +142,7 @@ async fn get_user() {
     let ident: ApiClient = Ident::factory(&access_token);
 
     let get_user_res = ident
-        .get_user(
-            &authentication_res_body.user.id,
-            None
-        )
+        .get_user(&authentication_res_body.user.id, None)
         .await
         .expect("get user response");
     assert_eq!(get_user_res.status(), 200);
@@ -179,11 +176,7 @@ async fn update_user() {
         "name": Name().fake::<String>(),
     });
     let update_user_res = ident
-        .update_user(
-            &authentication_res_body.user.id,
-            
-            Some(update_params),
-        )
+        .update_user(&authentication_res_body.user.id, Some(update_params))
         .await
         .expect("update user response");
     assert_eq!(update_user_res.status(), 204);
@@ -357,10 +350,7 @@ async fn list_tokens() {
     // let list_tokens_params = json!({
     //     "refresh_token": organization_authorization_body.refresh_token
     // });
-    let list_tokens_res = ident
-        .list_tokens(None)
-        .await
-        .expect("list tokens res");
+    let list_tokens_res = ident.list_tokens(None).await.expect("list tokens res");
     assert_eq!(list_tokens_res.status(), 200);
 }
 
@@ -1355,7 +1345,7 @@ async fn fetch_organization_vault_keys() {
         .list_organization_vault_keys(
             &create_organization_body.id,
             &create_organization_vault_body.id,
-            None
+            None,
         )
         .await
         .expect("fetch organization vault keys response");
@@ -1497,7 +1487,7 @@ async fn fetch_organization_vault_secrets() {
         .list_organization_vault_secrets(
             &create_organization_body.id,
             &create_organization_vault_body.id,
-            None
+            None,
         )
         .await
         .expect("fetch organization vault secrets response");

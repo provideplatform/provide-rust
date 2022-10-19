@@ -16,7 +16,7 @@
 
 use async_trait::async_trait;
 
-use crate::api::client::{ApiClient, Params, Response, QueryParams};
+use crate::api::client::{ApiClient, Params, QueryParams, Response};
 pub use crate::models::nchain::*;
 
 const DEFAULT_SCHEME: &str = "https";

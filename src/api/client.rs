@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-pub use crate::models::client::{ApiClient, Params, Response, QueryParams};
+pub use crate::models::client::{ApiClient, Params, QueryParams, Response};
 use reqwest::{
     header::{HeaderMap, HeaderValue, AUTHORIZATION, CONTENT_TYPE, USER_AGENT},
     Client,
@@ -42,58 +42,43 @@ impl ApiClient {
         let url = format!("{}/{}", self.base_url, uri);
         self.client
             .get(url)
-            .headers(self.construct_headers( "GET"))
+            .headers(self.construct_headers("GET"))
             .query(&query_params.unwrap_or(vec![]))
             .send()
     }
 
-    pub fn patch(
-        &self,
-        uri: &str,
-        params: Params,
-    ) -> impl std::future::Future<Output = Response> {
+    pub fn patch(&self, uri: &str, params: Params) -> impl std::future::Future<Output = Response> {
         let url = format!("{}/{}", self.base_url, uri);
         self.client
             .patch(url)
-            .headers(self.construct_headers( "PATCH"))
+            .headers(self.construct_headers("PATCH"))
             .json(&params)
             .send()
     }
 
-    pub fn put(
-        &self,
-        uri: &str,
-        params: Params,
-    ) -> impl std::future::Future<Output = Response> {
+    pub fn put(&self, uri: &str, params: Params) -> impl std::future::Future<Output = Response> {
         let url = format!("{}/{}", self.base_url, uri);
         self.client
             .put(url)
-            .headers(self.construct_headers( "PUT"))
+            .headers(self.construct_headers("PUT"))
             .json(&params)
             .send()
     }
 
-    pub fn post(
-        &self,
-        uri: &str,
-        params: Params,
-    ) -> impl std::future::Future<Output = Response> {
+    pub fn post(&self, uri: &str, params: Params) -> impl std::future::Future<Output = Response> {
         let url = format!("{}/{}", self.base_url, uri);
         self.client
             .post(url)
-            .headers(self.construct_headers( "POST"))
+            .headers(self.construct_headers("POST"))
             .json(&params)
             .send()
     }
 
-    pub fn delete(
-        &self,
-        uri: &str,
-    ) -> impl std::future::Future<Output = Response> {
+    pub fn delete(&self, uri: &str) -> impl std::future::Future<Output = Response> {
         let url = format!("{}/{}", self.base_url, uri);
         self.client
             .delete(url)
-            .headers(self.construct_headers( "DELETE"))
+            .headers(self.construct_headers("DELETE"))
             .send()
     }
 
@@ -107,10 +92,7 @@ impl ApiClient {
         self.base_url = base_url.to_string();
     }
 
-    fn construct_headers(
-        &self,
-        method: &str,
-    ) -> HeaderMap {
+    fn construct_headers(&self, method: &str) -> HeaderMap {
         let mut headers = HeaderMap::new();
 
         if method == "POST" || method == "PUT" || method == "PATCH" {
@@ -133,4 +115,3 @@ impl ApiClient {
         headers
     }
 }
-

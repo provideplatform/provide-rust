@@ -27,10 +27,14 @@ use provide_rust::api::privacy::{
     BLS12_377_CURVE, GNARK_PROVIDER, GROTH16_PROVING_SCHEME, PREIMAGE_HASH_IDENTIFIER,
 };
 use provide_rust::api::vault::{Vault, VaultContainer, VaultKey};
+use provide_rust::models::ident::Application;
 use serde_json::{json, Value};
 use std::io::Write;
 use std::process::Command;
 use tokio::time::{self, Duration};
+
+const DEFAULT_DEPLOY_REGISTRY_CONTRACT_TIMEOUT: Duration = Duration::new(5 * 60, 0);
+const DEFAULT_DEPLOY_WORKFLOW_TIMEOUT: Duration = Duration::new(3 * 60, 0);
 
 async fn _create_org_registry_contract(
     nchain: &ApiClient,
@@ -100,14 +104,23 @@ async fn _deploy_registry_contract(
         .json::<Contract>()
         .await
         .expect("create contract body");
+
     let mut interval = time::interval(Duration::from_millis(500));
+    let now = std::time::Instant::now();
+
     while registry_contract.address == "0x" {
         interval.tick().await;
+
+        if now.elapsed() >= DEFAULT_DEPLOY_REGISTRY_CONTRACT_TIMEOUT {
+            panic!("failed to deploy registry contract; deploying registry contract timed out");
+        }
+
         let get_contract_res = nchain
             .get_contract(&registry_contract.id, None)
             .await
             .expect("get contract response");
         assert_eq!(get_contract_res.status(), 200);
+
         registry_contract = get_contract_res
             .json::<Contract>()
             .await
@@ -180,7 +193,8 @@ async fn _deploy_workflow(baseline: &ApiClient, workflow_id: &str, expected_stat
     );
 
     if expected_status == 202 {
-        let mut interval = time::interval(Duration::from_secs(10));
+        let mut interval = time::interval(Duration::from_secs(5));
+        let now = std::time::Instant::now();
 
         let mut deployed_worksteps_status = false;
 
@@ -206,6 +220,10 @@ async fn _deploy_workflow(baseline: &ApiClient, workflow_id: &str, expected_stat
                 deployed_worksteps_status = true
             } else {
                 interval.tick().await;
+
+                if now.elapsed() >= DEFAULT_DEPLOY_WORKFLOW_TIMEOUT {
+                    panic!("failed to deploy workflow; deploying workflow worksteps timed out");
+                }
             }
         }
         assert!(deployed_worksteps_status);
@@ -226,6 +244,13 @@ async fn _deploy_workflow(baseline: &ApiClient, workflow_id: &str, expected_stat
                 deployed_workflow_status = true;
             } else {
                 interval.tick().await;
+
+                if now.elapsed() >= DEFAULT_DEPLOY_WORKFLOW_TIMEOUT {
+                    assert!(
+                        false,
+                        "failed to deploy workflow; deploying workflow timed out"
+                    );
+                }
             }
         }
         assert!(deployed_workflow_status);
@@ -361,6 +386,7 @@ async fn baseline_setup() {
         .expect("create organization vault body");
 
     let key_specs = vec!["secp256k1", "RSA-4096", "babyJubJub"];
+    let mut org_address = String::default();
     for spec in key_specs {
         let create_key_params = json!({
             "name": format!("{} key", spec),
@@ -374,29 +400,15 @@ async fn baseline_setup() {
             .await
             .expect("create organization key res");
         assert_eq!(create_organization_key_res.status(), 201);
+
+        if spec == "secp256k1" {
+            let create_organization_key_body = create_organization_key_res
+                .json::<VaultKey>()
+                .await
+                .expect("create organization key body");
+            org_address = create_organization_key_body.address.unwrap();
+        }
     }
-
-    let baseline: ApiClient = Baseline::factory(&org_access_token);
-
-    // create workgroup
-    let create_workgroup_body = generate_workgroup(&baseline).await;
-    let application_authorization_params = json!({
-        "application_id": &create_workgroup_body.id,
-        "scope": "offline_access",
-    });
-    let application_authorization_res = ident
-        .authenticate_application(Some(application_authorization_params))
-        .await
-        .expect("application authorization response");
-    assert_eq!(application_authorization_res.status(), 201);
-    let application_auth_body = application_authorization_res
-        .json::<Token>()
-        .await
-        .expect("application authorization body");
-    let app_access_token = match application_auth_body.access_token {
-        Some(tkn) => tkn,
-        None => panic!("application access toke not found"),
-    };
 
     let nchain: ApiClient = NChain::factory(&org_access_token);
 
@@ -436,65 +448,10 @@ async fn baseline_setup() {
         .await;
     }
 
-    let vault: ApiClient = Vault::factory(&app_access_token);
+    let baseline: ApiClient = Baseline::factory(&org_access_token);
 
-    // organization address
-    let create_vault_params = json!({
-        "name": format!("{} vault", Name().fake::<String>()),
-        "description": "Some vault description",
-    });
-    let create_vault_res = vault
-        .create_vault(Some(create_vault_params))
-        .await
-        .expect("create vault response");
-    assert_eq!(create_vault_res.status(), 201);
-    let create_vault_body = create_vault_res
-        .json::<VaultContainer>()
-        .await
-        .expect("create vault body");
-    let create_key_params = json!({
-        "type": "symmetric",
-        "usage": "encrypt/decrypt",
-        "spec": "secp256k1",
-        "name": format!("{} key", Name().fake::<String>()),
-        "description": "Some key description",
-    });
-    let create_key_res = vault
-        .create_key(&create_vault_body.id, Some(create_key_params))
-        .await
-        .expect("create key response");
-    assert_eq!(create_key_res.status(), 201);
-    let create_key_body = create_key_res
-        .json::<VaultKey>()
-        .await
-        .expect("create key body");
-    let org_address = match create_key_body.address {
-        Some(string) => string,
-        None => panic!("address from organization key not found"),
-    };
-
-    // json config file
-    // TODO: refactor to use memory
-    let json_config_params = json!({
-        "user_email": &user_email,
-        "user_password": &user_password,
-        "user_id": &authentication_res_body.user.id,
-        "user_access_token": &user_access_token,
-        "user_refresh_token": &user_refresh_token,
-        "org_access_token": &org_access_token,
-        "org_refresh_token": &org_refresh_token,
-        "registry_contract_address": &registry_contract_address,
-        "org_id": &create_organization_body.id,
-        "org_name": &create_organization_body.name,
-        "app_access_token": &app_access_token,
-        "app_id": &create_workgroup_body.id,
-    });
-    serde_json::to_writer_pretty(
-        std::fs::File::create(".test-config.tmp.json")
-            .expect("baseline integration suite setup json config"),
-        &json_config_params,
-    )
-    .expect("write json");
+    let workgroup_id: String;
+    let workgroup_access_token: String;
 
     let invoke_prvd_cli = std::env::var("INVOKE_PRVD_CLI")
         .unwrap_or(String::from("true"))
@@ -514,10 +471,48 @@ async fn baseline_setup() {
 
         std::thread::sleep(std::time::Duration::from_secs(10));
 
+        let create_app_params = json!({
+            "network_id": KOVAN_TESTNET_NETWORK_ID,
+            "name": format!("{} application", Name().fake::<String>()),
+            "type": "baseline",
+        });
+
+        ident.token = org_access_token.clone();
+
+        let create_app_res = ident
+            .create_application(Some(create_app_params))
+            .await
+            .expect("create app res");
+        assert_eq!(create_app_res.status(), 201);
+
+        let create_app_body = create_app_res
+            .json::<Application>()
+            .await
+            .expect("create app body");
+
+        let application_authorization_params = json!({
+            "application_id": &create_app_body.id,
+            "scope": "offline_access",
+        });
+        let application_authorization_res = ident
+            .authenticate_application(Some(application_authorization_params))
+            .await
+            .expect("application authorization response");
+        assert_eq!(application_authorization_res.status(), 201);
+        let application_auth_body = application_authorization_res
+            .json::<Token>()
+            .await
+            .expect("application authorization body");
+        let app_access_token = match application_auth_body.access_token {
+            Some(tkn) => tkn,
+            None => panic!("application access toke not found"),
+        };
+        workgroup_access_token = app_access_token;
+
         // yaml config file
         let config_file_contents = format!(
             "access-token: {}\nrefresh-token: {}\n{}:\n  api-token: {}\n",
-            &user_access_token, &user_refresh_token, &create_workgroup_body.id, &app_access_token
+            &user_access_token, &user_refresh_token, &create_app_body.id, &workgroup_access_token
         );
         let cwd = match std::env::current_dir() {
             Ok(path) => path
@@ -587,7 +582,7 @@ async fn baseline_setup() {
             " --vault-scheme={}",
             std::env::var("VAULT_API_SCHEME").unwrap_or(String::from("http"))
         );
-        run_cmd += &format!(" --workgroup={}", &create_workgroup_body.id);
+        run_cmd += &format!(" --workgroup={}", &create_app_body.id);
         run_cmd += &format!(
             " --postgres-hostname={}-postgres",
             &create_organization_body.name
@@ -596,6 +591,7 @@ async fn baseline_setup() {
 
         let key_str = r"\n-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAqU/GXp8MqmugQyRk5FUF\nBvlJt1/h7L3Crzlzejz/OxriZdq/lBNQW9S1kzGc7qjXprZ1Kg3zP6irr6wmvP0W\nYBGltWs2cWUAmxh0PSxuKdT/OyL9w+rjKLh4yo3ex6DX3Ij0iP01Ej2POe5WrPDS\n8j6LT0s4HZ1FprL5h7RUQWV3cO4pF+1kl6HlBpNzEQzocW9ig4DNdSeUENARHWoC\nixE1gFYo9RXm7acqgqCk3ihdJRIbO4e/m1aZq2mvAFK+yHTIWBL0p5PF0Fe8zcWd\nNeEATYB+eRdNJ3jjS8447YrcbQcBQmhFjk8hbCnc3Rv3HvAapk8xDFhImdVF1ffD\nFwIDAQAB\n-----END PUBLIC KEY-----";
         run_cmd += &format!(" --jwt-signer-public-key='{}'", &key_str);
+        run_cmd += " --elasticsearch-ssl-insecure";
 
         let localhost_regex = regex::Regex::new(r"localhost").expect("localhost regex expression");
         run_cmd = localhost_regex
@@ -622,17 +618,39 @@ async fn baseline_setup() {
         let mut interval = time::interval(Duration::from_millis(1000));
 
         while baseline_container_status == "" {
-            baseline_container_status =
-                match baseline_status_client.get("status", None).await {
-                    Ok(res) => res.status().to_string(),
-                    Err(_) => String::from(""),
-                };
+            baseline_container_status = match baseline_status_client.get("status", None).await {
+                Ok(res) => res.status().to_string(),
+                Err(_) => String::from(""),
+            };
 
             interval.tick().await;
         }
 
         assert_eq!(baseline_container_status, "204 No Content");
+
+        workgroup_id = create_app_body.id;
     } else {
+        // create workgroup
+        let create_workgroup_body = generate_workgroup(&baseline).await;
+        let application_authorization_params = json!({
+            "application_id": &create_workgroup_body.id,
+            "scope": "offline_access",
+        });
+        let application_authorization_res = ident
+            .authenticate_application(Some(application_authorization_params))
+            .await
+            .expect("application authorization response");
+        assert_eq!(application_authorization_res.status(), 201);
+        let application_auth_body = application_authorization_res
+            .json::<Token>()
+            .await
+            .expect("application authorization body");
+        let app_access_token = match application_auth_body.access_token {
+            Some(tkn) => tkn,
+            None => panic!("application access toke not found"),
+        };
+        workgroup_access_token = app_access_token;
+
         let create_subject_account_params = json!({
             "metadata": {
                 "network_id": KOVAN_TESTNET_NETWORK_ID,
@@ -663,7 +681,7 @@ async fn baseline_setup() {
 
         let update_organization_params = json!({
             "metadata": {
-                "address": &registry_contract_address,
+                "address": &org_address,
                 "workgroups": {
                     &create_workgroup_body.id: {
                         "operator_separation_degree": 0,
@@ -682,20 +700,45 @@ async fn baseline_setup() {
             .expect("update organization res");
         assert_eq!(update_organization_res.status(), 204);
 
-        let update_workgroup_params = json!({
-            "network_id": KOVAN_TESTNET_NETWORK_ID,
-            "config": {
-                "vault_id": &create_organization_vault_res.id,
-                "l2_network_id": POLYGON_MUMBAI_TESTNET_NETWORK_ID,
-            }
-        });
-
-        let update_workgroup_res = baseline
-            .update_workgroup(&create_workgroup_body.id, Some(update_workgroup_params))
-            .await
-            .expect("update workgroup res");
-        assert_eq!(update_workgroup_res.status(), 204);
+        workgroup_id = create_workgroup_body.id;
     }
+
+    let update_workgroup_params = json!({
+        "network_id": KOVAN_TESTNET_NETWORK_ID,
+        "config": {
+            "vault_id": &create_organization_vault_res.id,
+            "l2_network_id": POLYGON_MUMBAI_TESTNET_NETWORK_ID,
+        }
+    });
+
+    let update_workgroup_res = baseline
+        .update_workgroup(&workgroup_id, Some(update_workgroup_params))
+        .await
+        .expect("update workgroup res");
+    assert_eq!(update_workgroup_res.status(), 204);
+
+    // json config file
+    // TODO: refactor to use memory
+    let json_config_params = json!({
+        "user_email": &user_email,
+        "user_password": &user_password,
+        "user_id": &authentication_res_body.user.id,
+        "user_access_token": &user_access_token,
+        "user_refresh_token": &user_refresh_token,
+        "org_access_token": &org_access_token,
+        "org_refresh_token": &org_refresh_token,
+        "registry_contract_address": &registry_contract_address,
+        "org_id": &create_organization_body.id,
+        "org_name": &create_organization_body.name,
+        "app_access_token": &workgroup_access_token,
+        "app_id": &workgroup_id,
+    });
+    serde_json::to_writer_pretty(
+        std::fs::File::create(".test-config.tmp.json")
+            .expect("baseline integration suite setup json config"),
+        &json_config_params,
+    )
+    .expect("write json");
 }
 
 #[tokio::test]
@@ -1709,7 +1752,10 @@ async fn list_workflows() {
         .await
         .expect("get workflows body");
 
-    let get_workgroups_res = baseline.list_workgroups(None).await.expect("get workflows res");
+    let get_workgroups_res = baseline
+        .list_workgroups(None)
+        .await
+        .expect("get workflows res");
     let workgroups = get_workgroups_res
         .json::<Vec<Workgroup>>()
         .await
@@ -5230,7 +5276,11 @@ async fn delete_workstep_updates_cardinality() {
     assert_eq!(delete_workstep_res.status(), 204);
 
     let get_workstep_res = baseline
-        .get_workstep(&create_workflow_body.id, &create_second_workstep_body.id, None)
+        .get_workstep(
+            &create_workflow_body.id,
+            &create_second_workstep_body.id,
+            None,
+        )
         .await
         .expect("get workstep response");
     assert_eq!(get_workstep_res.status(), 200);
@@ -6665,7 +6715,12 @@ async fn create_system() {
         .create_system(&app_id, Some(create_system_params))
         .await
         .expect("create system res");
-    assert_eq!(create_system_res.status(), 201);
+    assert_eq!(
+        create_system_res.status(),
+        201,
+        "create system res: {}",
+        create_system_res.json::<Value>().await.unwrap()
+    );
 }
 
 #[tokio::test]
@@ -6813,5 +6868,45 @@ async fn delete_system() {
         .delete_system(&app_id, &create_system_body.id)
         .await
         .expect("delete system res");
-    assert_eq!(delete_system_res.status(), 204);
+    assert_eq!(
+        delete_system_res.status(),
+        204,
+        "delete system res: {}",
+        delete_system_res.json::<Value>().await.unwrap()
+    );
 }
+
+// #[tokio::test]
+// async fn send_protocol_message() {
+//     let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
+//     let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
+
+//     let org_access_token_json = config_vals["org_access_token"].to_string();
+//     let org_access_token =
+//         serde_json::from_str::<String>(&org_access_token_json).expect("organzation access token");
+
+//     let app_id_json = config_vals["app_id"].to_string();
+//     let app_id = serde_json::from_str::<String>(&app_id_json).expect("workgroup id");
+
+//     let baseline: ApiClient = Baseline::factory(&org_access_token);
+
+//     let protocol_message_params = json!({
+//         "id": "TK421",
+//         "type": "Incident2",
+//         "workgroup_id": &app_id,
+//         "payload": {
+//             "id": "TK421"
+//         }
+//     });
+
+//     let send_protocol_message_res = baseline
+//         .send_protocol_message(Some(protocol_message_params))
+//         .await
+//         .expect("send protocol message res");
+//     assert_eq!(
+//         send_protocol_message_res.status(),
+//         201,
+//         "send protocol message res: {:?}",
+//         send_protocol_message_res.json::<Value>().await.unwrap()
+//     );
+// }
