@@ -16,7 +16,7 @@
 
 use async_trait::async_trait;
 
-use crate::api::client::{ApiClient, Params, Response, QueryParams};
+use crate::api::client::{ApiClient, Params, QueryParams, Response};
 pub use crate::models::privacy::*;
 
 const DEFAULT_SCHEME: &str = "https";
@@ -42,7 +42,12 @@ pub trait Privacy {
 
     async fn verify_proof(&self, prover_id: &str, params: Params) -> Response;
 
-    async fn retrieve_store_value(&self, prover_id: &str, leaf_index: &str, query_params: QueryParams) -> Response;
+    async fn retrieve_store_value(
+        &self,
+        prover_id: &str,
+        leaf_index: &str,
+        query_params: QueryParams,
+    ) -> Response;
 }
 
 #[async_trait]
@@ -78,7 +83,12 @@ impl Privacy for ApiClient {
         return self.post(&uri, params).await;
     }
 
-    async fn retrieve_store_value(&self, prover_id: &str, leaf_index: &str, query_params: QueryParams) -> Response {
+    async fn retrieve_store_value(
+        &self,
+        prover_id: &str,
+        leaf_index: &str,
+        query_params: QueryParams,
+    ) -> Response {
         let uri = format!("provers/{}/notes/{}", prover_id, leaf_index);
         return self.get(&uri, query_params).await;
     }

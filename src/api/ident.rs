@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use serde_json::json;
 
-use crate::api::client::{ApiClient, Params, Response, QueryParams};
+use crate::api::client::{ApiClient, Params, QueryParams, Response};
 pub use crate::models::ident::*;
 
 const DEFAULT_SCHEME: &str = "https";
@@ -15,7 +15,7 @@ pub trait Ident {
     async fn list_users(&self, query_params: QueryParams) -> Response;
 
     async fn get_user(&self, user_id: &str, query_params: QueryParams) -> Response;
-    
+
     async fn create_user(&self, params: Params) -> Response;
 
     async fn update_user(&self, user_id: &str, params: Params) -> Response;
@@ -35,7 +35,7 @@ pub trait Ident {
     async fn create_organization(&self, params: Params) -> Response;
 
     async fn list_organizations(&self, query_params: QueryParams) -> Response;
-    
+
     async fn get_organization(&self, organization_id: &str, query_params: QueryParams) -> Response;
 
     async fn update_organization(&self, organization_id: &str, params: Params) -> Response;
@@ -50,7 +50,11 @@ pub trait Ident {
 
     async fn delete_application(&self, application_id: &str) -> Response;
 
-    async fn list_application_users(&self, application_id: &str, query_params: QueryParams) -> Response;
+    async fn list_application_users(
+        &self,
+        application_id: &str,
+        query_params: QueryParams,
+    ) -> Response;
 
     async fn create_application_user(&self, application_id: &str, params: Params) -> Response;
 
@@ -68,7 +72,11 @@ pub trait Ident {
 
     async fn reset_password(&self, token: &str, params: Params) -> Response;
 
-    async fn list_application_organizations(&self, application_id: &str, query_params: QueryParams) -> Response;
+    async fn list_application_organizations(
+        &self,
+        application_id: &str,
+        query_params: QueryParams,
+    ) -> Response;
 
     async fn update_application_organization(
         &self,
@@ -83,9 +91,17 @@ pub trait Ident {
         organization_id: &str,
     ) -> Response;
 
-    async fn list_application_invitations(&self, application_id: &str, query_params: QueryParams) -> Response;
+    async fn list_application_invitations(
+        &self,
+        application_id: &str,
+        query_params: QueryParams,
+    ) -> Response;
 
-    async fn list_application_tokens(&self, application_id: &str, query_params: QueryParams) -> Response;
+    async fn list_application_tokens(
+        &self,
+        application_id: &str,
+        query_params: QueryParams,
+    ) -> Response;
 
     async fn authenticate_application_user(&self, email: &str) -> Response;
 
@@ -98,9 +114,17 @@ pub trait Ident {
 
     async fn delete_application_user(&self, application_id: &str, user_id: &str) -> Response;
 
-    async fn list_organization_invitations(&self, organization_id: &str, query_params: QueryParams) -> Response;
+    async fn list_organization_invitations(
+        &self,
+        organization_id: &str,
+        query_params: QueryParams,
+    ) -> Response;
 
-    async fn list_organization_users(&self, organization_id: &str, query_params: QueryParams) -> Response;
+    async fn list_organization_users(
+        &self,
+        organization_id: &str,
+        query_params: QueryParams,
+    ) -> Response;
 
     async fn create_organization_user(&self, organization_id: &str, params: Params) -> Response;
 
@@ -113,13 +137,17 @@ pub trait Ident {
 
     async fn delete_organization_user(&self, organization_id: &str, user_id: &str) -> Response;
 
-    async fn list_organization_vaults(&self, organization_id: &str, query_params: QueryParams) -> Response;
+    async fn list_organization_vaults(
+        &self,
+        organization_id: &str,
+        query_params: QueryParams,
+    ) -> Response;
 
     async fn list_organization_vault_keys(
         &self,
         organization_id: &str,
         vault_id: &str,
-        query_params: QueryParams
+        query_params: QueryParams,
     ) -> Response;
 
     async fn create_organization_vault_key(
@@ -157,7 +185,7 @@ pub trait Ident {
         &self,
         organization_id: &str,
         vault_id: &str,
-        query_params: QueryParams
+        query_params: QueryParams,
     ) -> Response;
 
     async fn create_organization_vault_secret(
@@ -266,7 +294,11 @@ impl Ident for ApiClient {
         return self.put(&uri, params).await;
     }
 
-    async fn list_application_users(&self, application_id: &str, query_params: QueryParams) -> Response {
+    async fn list_application_users(
+        &self,
+        application_id: &str,
+        query_params: QueryParams,
+    ) -> Response {
         let uri = format!("applications/{}/users", application_id);
         return self.get(&uri, query_params).await;
     }
@@ -313,7 +345,11 @@ impl Ident for ApiClient {
         return self.post(&uri, params).await;
     }
 
-    async fn list_application_organizations(&self, application_id: &str, query_params: QueryParams) -> Response {
+    async fn list_application_organizations(
+        &self,
+        application_id: &str,
+        query_params: QueryParams,
+    ) -> Response {
         let uri = format!("applications/{}/organizations", application_id);
         return self.get(&uri, query_params).await;
     }
@@ -343,12 +379,20 @@ impl Ident for ApiClient {
         return self.delete(&uri).await;
     }
 
-    async fn list_application_invitations(&self, application_id: &str, query_params: QueryParams) -> Response {
+    async fn list_application_invitations(
+        &self,
+        application_id: &str,
+        query_params: QueryParams,
+    ) -> Response {
         let uri = format!("applications/{}/invitations", application_id);
         return self.get(&uri, query_params).await;
     }
 
-    async fn list_application_tokens(&self, application_id: &str, query_params: QueryParams) -> Response {
+    async fn list_application_tokens(
+        &self,
+        application_id: &str,
+        query_params: QueryParams,
+    ) -> Response {
         let uri = format!("applications/{}/tokens", application_id);
         return self.get(&uri, query_params).await;
     }
@@ -373,12 +417,20 @@ impl Ident for ApiClient {
         return self.delete(&uri).await;
     }
 
-    async fn list_organization_invitations(&self, organization_id: &str, query_params: QueryParams) -> Response {
+    async fn list_organization_invitations(
+        &self,
+        organization_id: &str,
+        query_params: QueryParams,
+    ) -> Response {
         let uri = format!("organizations/{}/invitations", organization_id);
         return self.get(&uri, query_params).await;
     }
 
-    async fn list_organization_users(&self, organization_id: &str, query_params: QueryParams) -> Response {
+    async fn list_organization_users(
+        &self,
+        organization_id: &str,
+        query_params: QueryParams,
+    ) -> Response {
         let uri = format!("organizations/{}/users", organization_id);
         return self.get(&uri, query_params).await;
     }
@@ -403,7 +455,11 @@ impl Ident for ApiClient {
         return self.delete(&uri).await;
     }
 
-    async fn list_organization_vaults(&self, organization_id: &str, query_params: QueryParams) -> Response {
+    async fn list_organization_vaults(
+        &self,
+        organization_id: &str,
+        query_params: QueryParams,
+    ) -> Response {
         let uri = format!("organizations/{}/vaults", organization_id);
         return self.get(&uri, query_params).await;
     }
@@ -412,7 +468,7 @@ impl Ident for ApiClient {
         &self,
         organization_id: &str,
         vault_id: &str,
-        query_params: QueryParams
+        query_params: QueryParams,
     ) -> Response {
         let uri = format!("organizations/{}/vaults/{}/keys", organization_id, vault_id);
         return self.get(&uri, query_params).await;
@@ -476,7 +532,7 @@ impl Ident for ApiClient {
         &self,
         organization_id: &str,
         vault_id: &str,
-        query_params: QueryParams
+        query_params: QueryParams,
     ) -> Response {
         let uri = format!(
             "organizations/{}/vaults/{}/secrets",

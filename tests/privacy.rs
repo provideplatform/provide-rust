@@ -19,7 +19,7 @@ use fake::faker::name::en::{FirstName, LastName, Name};
 use fake::Fake;
 use provide_rust::api::client::ApiClient;
 use provide_rust::api::ident::{Application, AuthenticateResponse, Ident, Token};
-use provide_rust::api::nchain::KOVAN_TESTNET_NETWORK_ID;
+use provide_rust::api::nchain::GOERLI_TESTNET_NETWORK_ID;
 use provide_rust::api::privacy::*;
 use serde_json::json;
 use tokio::time::{self, Duration};
@@ -90,7 +90,10 @@ async fn list_provers() {
 
     let privacy: ApiClient = Privacy::factory(&access_token);
 
-    let list_provers_res = privacy.list_provers(None).await.expect("list provers response");
+    let list_provers_res = privacy
+        .list_provers(None)
+        .await
+        .expect("list provers response");
     assert_eq!(list_provers_res.status(), 200);
 }
 
@@ -135,7 +138,7 @@ async fn generate_proof() {
     let ident: ApiClient = Ident::factory(&access_token);
 
     let application_data = Some(json!({
-        "network_id": KOVAN_TESTNET_NETWORK_ID,
+        "network_id": GOERLI_TESTNET_NETWORK_ID,
         "user_id": authentication_res_body.user.id,
         "name": format!("{} {}", Name().fake::<String>(), "Application"),
         "description": "Some application description",
@@ -232,7 +235,7 @@ async fn verify_proof() {
     let ident: ApiClient = Ident::factory(&access_token);
 
     let application_data = Some(json!({
-        "network_id": KOVAN_TESTNET_NETWORK_ID,
+        "network_id": GOERLI_TESTNET_NETWORK_ID,
         "user_id": authentication_res_body.user.id,
         "name": format!("{} {}", Name().fake::<String>(), "Application"),
         "description": "Some application description",
@@ -348,7 +351,7 @@ async fn retrieve_store_value() {
     let ident: ApiClient = Ident::factory(&access_token);
 
     let application_data = Some(json!({
-        "network_id": KOVAN_TESTNET_NETWORK_ID,
+        "network_id": GOERLI_TESTNET_NETWORK_ID,
         "user_id": authentication_res_body.user.id,
         "name": format!("{} {}", Name().fake::<String>(), "Application"),
         "description": "Some application description",

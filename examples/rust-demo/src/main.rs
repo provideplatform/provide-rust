@@ -49,11 +49,11 @@ async fn main() {
         "require_finality": true,
         "metadata": {
             "prover": {
-                "identifier": "cubic",
+                "identifier": PREIMAGE_HASH_IDENTIFIER,
                 "name": "cubic groth16",
-                "provider": "gnark",
-                "proving_scheme": "groth16",
-                "curve": "BN254",
+                "provider": GNARK_PROVIDER,
+                "proving_scheme": GROTH16_PROVING_SCHEME,
+                "curve": BLS12_377_CURVE,
             },
         },
     });

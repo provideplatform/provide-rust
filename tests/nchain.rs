@@ -59,7 +59,7 @@ async fn generate_new_user_and_token() -> AuthenticateResponse {
 
 async fn generate_new_application(ident: &ApiClient, user_id: &str) -> Application {
     let application_data = Some(json!({
-        "network_id": KOVAN_TESTNET_NETWORK_ID,
+        "network_id": GOERLI_TESTNET_NETWORK_ID,
         "user_id": user_id,
         "name": format!("{} Application", Name().fake::<String>()),
         "description": "Some application description",
@@ -99,7 +99,7 @@ async fn generate_application_auth(ident: &ApiClient, application_id: &str) -> T
 
 async fn generate_new_organization(ident: &ApiClient, user_id: &str) -> Organization {
     let organization_data = Some(json!({
-        "network_id": KOVAN_TESTNET_NETWORK_ID,
+        "network_id": GOERLI_TESTNET_NETWORK_ID,
         "user_id": user_id,
         "name": format!("{} organization", Name().fake::<String>()),
         "description": "Some organization description",
@@ -170,7 +170,7 @@ async fn create_account() {
     let nchain: ApiClient = NChain::factory(&access_token);
 
     let create_account_params = Some(json!({
-        "network_id": KOVAN_TESTNET_NETWORK_ID,
+        "network_id": GOERLI_TESTNET_NETWORK_ID,
     }));
 
     let create_account_res = nchain
@@ -196,7 +196,7 @@ async fn get_account() {
     let nchain: ApiClient = NChain::factory(&access_token);
 
     let create_account_params = Some(json!({
-        "network_id": KOVAN_TESTNET_NETWORK_ID,
+        "network_id": GOERLI_TESTNET_NETWORK_ID,
     }));
 
     let create_account_res = nchain
@@ -272,7 +272,7 @@ async fn create_connector() {
 
     let create_connector_params = Some(json!({
         "application_id": create_application_body.id,
-        "network_id": KOVAN_TESTNET_NETWORK_ID,
+        "network_id": GOERLI_TESTNET_NETWORK_ID,
         "name": format!("{} {}", Name().fake::<String>(), "Connector"),
         "type": "provide",
         "config": {
@@ -319,7 +319,7 @@ async fn get_connector() {
 
     let create_connector_params = Some(json!({
         "application_id": create_application_body.id,
-        "network_id": KOVAN_TESTNET_NETWORK_ID,
+        "network_id": GOERLI_TESTNET_NETWORK_ID,
         "name": format!("{} {}", Name().fake::<String>(), "Connector"),
         "type": "provide",
         "config": {
@@ -377,7 +377,7 @@ async fn delete_connector() {
 
     let create_connector_params = Some(json!({
         "application_id": create_application_body.id,
-        "network_id": KOVAN_TESTNET_NETWORK_ID,
+        "network_id": GOERLI_TESTNET_NETWORK_ID,
         "name": format!("{} {}", Name().fake::<String>(), "Connector"),
         "type": "provide",
         "config": {
@@ -465,7 +465,7 @@ async fn create_contract() {
 
     let create_contract_params = Some(json!({
         "application_id": &create_application_body.id,
-        "network_id": KOVAN_TESTNET_NETWORK_ID,
+        "network_id": GOERLI_TESTNET_NETWORK_ID,
         "name": format!("{} {}", Name().fake::<String>(), "Contract"),
         "address": "0x"
     }));
@@ -502,7 +502,7 @@ async fn get_contract() {
 
     let create_contract_params = Some(json!({
         "application_id": &create_application_body.id,
-        "network_id": KOVAN_TESTNET_NETWORK_ID,
+        "network_id": GOERLI_TESTNET_NETWORK_ID,
         "name": format!("{} {}", Name().fake::<String>(), "Contract"),
         "address": "0x"
     }));
@@ -550,7 +550,7 @@ async fn execute_contract() {
 
     let create_contract_params = Some(json!({
         "application_id": &create_application_body.id,
-        "network_id": KOVAN_TESTNET_NETWORK_ID,
+        "network_id": GOERLI_TESTNET_NETWORK_ID,
         "name": format!("{} {}", Name().fake::<String>(), "Contract"),
         "address": "0x"
     }));
@@ -603,7 +603,10 @@ async fn get_wallets() {
 
     let nchain: ApiClient = NChain::factory(&access_token);
 
-    let get_wallets_res = nchain.list_wallets(None).await.expect("get wallets response");
+    let get_wallets_res = nchain
+        .list_wallets(None)
+        .await
+        .expect("get wallets response");
     assert_eq!(get_wallets_res.status(), 200);
 }
 
@@ -687,7 +690,10 @@ async fn get_networks() {
 
     let nchain: ApiClient = NChain::factory(&organization_access_token);
 
-    let get_networks_res = nchain.list_networks(None).await.expect("get networks response");
+    let get_networks_res = nchain
+        .list_networks(None)
+        .await
+        .expect("get networks response");
     assert_eq!(get_networks_res.status(), 200);
 
     let get_networks_body = get_networks_res
@@ -991,7 +997,7 @@ async fn create_transaction() {
         .expect("create wallet body");
 
     let create_transaction_params = Some(json!({
-        "network_id": KOVAN_TESTNET_NETWORK_ID,
+        "network_id": GOERLI_TESTNET_NETWORK_ID,
         "user_id": &authentication_res_body.user.id,
         "wallet_id": &create_wallet_body.id,
         "hd_derivation_path": "m/44'/60'/0'/0/0",
@@ -1032,7 +1038,7 @@ async fn get_transaction() {
         .expect("create wallet body");
 
     let create_transaction_params = Some(json!({
-        "network_id": KOVAN_TESTNET_NETWORK_ID,
+        "network_id": GOERLI_TESTNET_NETWORK_ID,
         "user_id": &authentication_res_body.user.id,
         "wallet_id": &create_wallet_body.id,
         "hd_derivation_path": "m/44'/60'/0'/0/0",

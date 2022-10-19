@@ -21,7 +21,7 @@ use provide_rust::api::baseline::*;
 use provide_rust::api::client::ApiClient;
 use provide_rust::api::ident::{AuthenticateResponse, Ident, Organization, Token};
 use provide_rust::api::nchain::{
-    Account, Contract, NChain, Wallet, KOVAN_TESTNET_NETWORK_ID, POLYGON_MUMBAI_TESTNET_NETWORK_ID,
+    Account, Contract, NChain, Wallet, GOERLI_TESTNET_NETWORK_ID, POLYGON_MUMBAI_TESTNET_NETWORK_ID,
 };
 use provide_rust::api::privacy::{
     BLS12_377_CURVE, GNARK_PROVIDER, GROTH16_PROVING_SCHEME, PREIMAGE_HASH_IDENTIFIER,
@@ -31,6 +31,9 @@ use serde_json::{json, Value};
 use std::io::Write;
 use std::process::Command;
 use tokio::time::{self, Duration};
+
+const DEFAULT_DEPLOY_REGISTRY_CONTRACT_TIMEOUT: Duration = Duration::new(5 * 60, 0);
+const DEFAULT_DEPLOY_WORKFLOW_TIMEOUT: Duration = Duration::new(3 * 60, 0);
 
 async fn _create_org_registry_contract(
     nchain: &ApiClient,
@@ -100,14 +103,26 @@ async fn _deploy_registry_contract(
         .json::<Contract>()
         .await
         .expect("create contract body");
+
     let mut interval = time::interval(Duration::from_millis(500));
+    let now = std::time::Instant::now();
+
     while registry_contract.address == "0x" {
         interval.tick().await;
+
+        if now.elapsed() >= DEFAULT_DEPLOY_REGISTRY_CONTRACT_TIMEOUT {
+            assert!(
+                false,
+                "failed to deploy registry contract; deploying registry contract timed out"
+            );
+        }
+
         let get_contract_res = nchain
             .get_contract(&registry_contract.id, None)
             .await
             .expect("get contract response");
         assert_eq!(get_contract_res.status(), 200);
+
         registry_contract = get_contract_res
             .json::<Contract>()
             .await
@@ -180,7 +195,8 @@ async fn _deploy_workflow(baseline: &ApiClient, workflow_id: &str, expected_stat
     );
 
     if expected_status == 202 {
-        let mut interval = time::interval(Duration::from_secs(10));
+        let mut interval = time::interval(Duration::from_secs(5));
+        let now = std::time::Instant::now();
 
         let mut deployed_worksteps_status = false;
 
@@ -206,6 +222,13 @@ async fn _deploy_workflow(baseline: &ApiClient, workflow_id: &str, expected_stat
                 deployed_worksteps_status = true
             } else {
                 interval.tick().await;
+
+                if now.elapsed() >= DEFAULT_DEPLOY_WORKFLOW_TIMEOUT {
+                    assert!(
+                        false,
+                        "failed to deploy workflow; deploying workflow worksteps timed out"
+                    );
+                }
             }
         }
         assert!(deployed_worksteps_status);
@@ -226,6 +249,13 @@ async fn _deploy_workflow(baseline: &ApiClient, workflow_id: &str, expected_stat
                 deployed_workflow_status = true;
             } else {
                 interval.tick().await;
+
+                if now.elapsed() >= DEFAULT_DEPLOY_WORKFLOW_TIMEOUT {
+                    assert!(
+                        false,
+                        "failed to deploy workflow; deploying workflow timed out"
+                    );
+                }
             }
         }
         assert!(deployed_workflow_status);
@@ -234,7 +264,7 @@ async fn _deploy_workflow(baseline: &ApiClient, workflow_id: &str, expected_stat
 
 async fn generate_workgroup(baseline: &ApiClient) -> Workgroup {
     let workgroup_params = json!({
-        "network_id": KOVAN_TESTNET_NETWORK_ID,
+        "network_id": GOERLI_TESTNET_NETWORK_ID,
         "name": format!("{} application", Name().fake::<String>()),
         "type": "baseline",
     });
@@ -424,12 +454,12 @@ async fn baseline_setup() {
 
     if registry_contract_address == "0x" {
         registry_contract_address =
-            _deploy_registry_contract(&nchain, KOVAN_TESTNET_NETWORK_ID, &create_wallet_body.id)
+            _deploy_registry_contract(&nchain, GOERLI_TESTNET_NETWORK_ID, &create_wallet_body.id)
                 .await;
     } else {
         _create_org_registry_contract(
             &nchain,
-            KOVAN_TESTNET_NETWORK_ID,
+            GOERLI_TESTNET_NETWORK_ID,
             &create_wallet_body.id,
             &registry_contract_address,
         )
@@ -558,7 +588,7 @@ async fn baseline_setup() {
             " --nchain-scheme={}",
             std::env::var("NCHAIN_API_SCHEME").unwrap_or(String::from("http"))
         );
-        run_cmd += &format!(" --nchain-network-id={}", KOVAN_TESTNET_NETWORK_ID);
+        run_cmd += &format!(" --nchain-network-id={}", GOERLI_TESTNET_NETWORK_ID);
         run_cmd += &format!(" --organization={}", &create_organization_body.id);
         run_cmd += &format!(" --organization-address={}", &org_address);
         run_cmd += &format!(" --organization-refresh-token={}", &org_refresh_token);
@@ -622,11 +652,10 @@ async fn baseline_setup() {
         let mut interval = time::interval(Duration::from_millis(1000));
 
         while baseline_container_status == "" {
-            baseline_container_status =
-                match baseline_status_client.get("status", None).await {
-                    Ok(res) => res.status().to_string(),
-                    Err(_) => String::from(""),
-                };
+            baseline_container_status = match baseline_status_client.get("status", None).await {
+                Ok(res) => res.status().to_string(),
+                Err(_) => String::from(""),
+            };
 
             interval.tick().await;
         }
@@ -635,7 +664,7 @@ async fn baseline_setup() {
     } else {
         let create_subject_account_params = json!({
             "metadata": {
-                "network_id": KOVAN_TESTNET_NETWORK_ID,
+                "network_id": GOERLI_TESTNET_NETWORK_ID,
                 "organization_address": &registry_contract_address,
                 "organization_id": &create_organization_body.id,
                 "organization_refresh_token": &org_refresh_token,
@@ -683,7 +712,7 @@ async fn baseline_setup() {
         assert_eq!(update_organization_res.status(), 204);
 
         let update_workgroup_params = json!({
-            "network_id": KOVAN_TESTNET_NETWORK_ID,
+            "network_id": GOERLI_TESTNET_NETWORK_ID,
             "config": {
                 "vault_id": &create_organization_vault_res.id,
                 "l2_network_id": POLYGON_MUMBAI_TESTNET_NETWORK_ID,
@@ -725,7 +754,7 @@ async fn create_subject_account_fail_with_existing_account() {
 
     let create_subject_account_params = json!({
         "metadata": {
-            "network_id": KOVAN_TESTNET_NETWORK_ID,
+            "network_id": GOERLI_TESTNET_NETWORK_ID,
             "organization_address": &registry_contract_address,
             "organization_id": &org_id,
             "organization_refresh_token": &org_refresh_token,
@@ -771,7 +800,7 @@ async fn create_subject_account_fail_without_workgroup_id() {
 
     let create_subject_account_params = json!({
         "metadata": {
-            "network_id": KOVAN_TESTNET_NETWORK_ID,
+            "network_id": GOERLI_TESTNET_NETWORK_ID,
             "organization_address": &registry_contract_address,
             "organization_id": &org_id,
             "organization_refresh_token": &org_refresh_token,
@@ -851,7 +880,7 @@ async fn create_subject_account_fail_without_organization_refresh_token() {
 
     let create_subject_account_params = json!({
         "metadata": {
-            "network_id": KOVAN_TESTNET_NETWORK_ID,
+            "network_id": GOERLI_TESTNET_NETWORK_ID,
             "organization_address": &registry_contract_address,
             "organization_id": &org_id,
             "registry_contract_address": &registry_contract_address,
@@ -893,7 +922,7 @@ async fn create_subject_account_fail_without_registry_contract_address() {
 
     let create_subject_account_params = json!({
         "metadata": {
-            "network_id": KOVAN_TESTNET_NETWORK_ID,
+            "network_id": GOERLI_TESTNET_NETWORK_ID,
             "organization_address": &registry_contract_address,
             "organization_id": &org_id,
             "organization_refresh_token": &org_refresh_token,
@@ -935,7 +964,7 @@ async fn create_subject_account_fail_without_organization_address() {
 
     let create_subject_account_params = json!({
         "metadata": {
-            "network_id": KOVAN_TESTNET_NETWORK_ID,
+            "network_id": GOERLI_TESTNET_NETWORK_ID,
             "organization_id": &org_id,
             "organization_refresh_token": &org_refresh_token,
             "registry_contract_address": &registry_contract_address,
@@ -1001,7 +1030,7 @@ async fn create_subject_account_fail_with_id() {
     let create_subject_account_params = json!({
         "id": &org_id,
         "metadata": {
-            "network_id": KOVAN_TESTNET_NETWORK_ID,
+            "network_id": GOERLI_TESTNET_NETWORK_ID,
             "organization_address": &registry_contract_address,
             "organization_id": &org_id,
             "organization_refresh_token": &org_refresh_token,
@@ -1045,7 +1074,7 @@ async fn create_subject_account_fail_with_incorrect_subject_id() {
     let create_subject_account_params = json!({
         "id": &org_id,
         "metadata": {
-            "network_id": KOVAN_TESTNET_NETWORK_ID,
+            "network_id": GOERLI_TESTNET_NETWORK_ID,
             "organization_address": &registry_contract_address,
             "organization_id": &org_id,
             "organization_refresh_token": &org_refresh_token,
@@ -1709,7 +1738,10 @@ async fn list_workflows() {
         .await
         .expect("get workflows body");
 
-    let get_workgroups_res = baseline.list_workgroups(None).await.expect("get workflows res");
+    let get_workgroups_res = baseline
+        .list_workgroups(None)
+        .await
+        .expect("get workflows res");
     let workgroups = get_workgroups_res
         .json::<Vec<Workgroup>>()
         .await
@@ -5230,7 +5262,11 @@ async fn delete_workstep_updates_cardinality() {
     assert_eq!(delete_workstep_res.status(), 204);
 
     let get_workstep_res = baseline
-        .get_workstep(&create_workflow_body.id, &create_second_workstep_body.id, None)
+        .get_workstep(
+            &create_workflow_body.id,
+            &create_second_workstep_body.id,
+            None,
+        )
         .await
         .expect("get workstep response");
     assert_eq!(get_workstep_res.status(), 200);
@@ -6113,7 +6149,7 @@ async fn create_workstep_participant() {
     let nchain: ApiClient = NChain::factory(&org_access_token);
 
     let create_account_params = json!({
-        "network_id": KOVAN_TESTNET_NETWORK_ID,
+        "network_id": GOERLI_TESTNET_NETWORK_ID,
     });
 
     let create_account_res = nchain
@@ -6232,7 +6268,7 @@ async fn create_workstep_participant_fail_on_deployed() {
     let nchain: ApiClient = NChain::factory(&org_access_token);
 
     let create_account_params = json!({
-        "network_id": KOVAN_TESTNET_NETWORK_ID,
+        "network_id": GOERLI_TESTNET_NETWORK_ID,
     });
 
     let create_account_res = nchain
@@ -6317,7 +6353,7 @@ async fn delete_workstep_participant() {
     let nchain: ApiClient = NChain::factory(&org_access_token);
 
     let create_account_params = json!({
-        "network_id": KOVAN_TESTNET_NETWORK_ID,
+        "network_id": GOERLI_TESTNET_NETWORK_ID,
     });
 
     let create_account_res = nchain
@@ -6452,7 +6488,7 @@ async fn delete_workstep_participant_fail_on_deployed() {
     let nchain: ApiClient = NChain::factory(&org_access_token);
 
     let create_account_params = json!({
-        "network_id": KOVAN_TESTNET_NETWORK_ID,
+        "network_id": GOERLI_TESTNET_NETWORK_ID,
     });
 
     let create_account_res = nchain
@@ -6814,4 +6850,39 @@ async fn delete_system() {
         .await
         .expect("delete system res");
     assert_eq!(delete_system_res.status(), 204);
+}
+
+#[tokio::test]
+async fn send_protocol_message() {
+    let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
+    let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
+
+    let org_access_token_json = config_vals["org_access_token"].to_string();
+    let org_access_token =
+        serde_json::from_str::<String>(&org_access_token_json).expect("organzation access token");
+
+    let app_id_json = config_vals["app_id"].to_string();
+    let app_id = serde_json::from_str::<String>(&app_id_json).expect("workgroup id");
+
+    let baseline: ApiClient = Baseline::factory(&org_access_token);
+
+    let protocol_message_params = json!({
+        "id": "TK421",
+        "type": "Incident2",
+        "workgroup_id": &app_id,
+        "payload": {
+            "id": "TK421"
+        }
+    });
+
+    let send_protocol_message_res = baseline
+        .send_protocol_message(Some(protocol_message_params))
+        .await
+        .expect("send protocol message res");
+    assert_eq!(
+        send_protocol_message_res.status(),
+        201,
+        "send protocol message res: {:?}",
+        send_protocol_message_res.json::<Value>().await.unwrap()
+    );
 }
