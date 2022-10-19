@@ -99,7 +99,7 @@ handle_shutdown() {
     docker volume rm ops_provide-db
     docker volume rm ops_prvd-bpi-1-db
 
-    if [[ "$INVOKE_PRVD_CLI" == "true" && ("$SUITE" == "*" || "$SUITE" == "baseline") ]]; then
+    if [[ "$INVOKE_PRVD_CLI" == "true" ]]; then
         if [[ -f ".test-config.tmp.json" ]]; then
             prvd baseline stack stop --name $(jq '.org_name' .test-config.tmp.json | xargs)
             rm .local-baseline-test-config.tmp.yaml
@@ -210,7 +210,7 @@ if [[ $* != *--skip-startup* ]]; then
     # docker-compose -f ./ops/docker-compose.yml build --no-cache
     docker-compose --profile core -f ./ops/docker-compose.yml up --build -d
 
-    if [[ $* != *--skip-baseline-startup* ]]; then
+    if [[ $* != *--skip-baseline-startup* && $* == *--without-prvd-invocation* ]]; then
         sleep 20
         docker-compose --profile bpi-1 -f ./ops/docker-compose.yml up --build -d
         # docker-compose --profile bpi-2 -f ./ops/docker-compose.yml up --build -d
@@ -221,7 +221,7 @@ if [[ $* != *--skip-startup* ]]; then
     wait_for_privacy_container &
     wait_for_nchain_container &
 
-    if [[ $* != *--skip-baseline-startup* ]]; then
+    if [[ $* != *--skip-baseline-startup* && $* == *--without-prvd-invocation* ]]; then
         wait_for_baseline_container &
     fi
     
