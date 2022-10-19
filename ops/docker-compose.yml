@@ -44,7 +44,7 @@ services:
       - core
 
   nats:
-    image: provide/nats-server:2.5.0-PRVD
+    image: provide/nats-server:2.7.2-PRVD
     container_name: provide-nats
     command:
       [
@@ -480,7 +480,7 @@ services:
       - bpi-1
 
   baseline-nats-1:
-    image: provide/nats-server:2.5.0-PRVD
+    image: provide/nats-server:2.7.2-PRVD
     container_name: baseline-nats-1
     command:
       [
@@ -707,7 +707,7 @@ services:
       - bpi-2
 
   baseline-nats-2:
-    image: provide/nats-server:2.5.0-PRVD
+    image: provide/nats-server:2.7.2-PRVD
     container_name: baseline-nats-2
     command:
       [
