@@ -695,7 +695,7 @@ async fn get_networks() {
         .await
         .expect("get networks body");
     assert!(
-        get_networks_body.len() > 2,
+        get_networks_body.len() == 0,
         "get networks body length: {}",
         get_networks_body.len()
     );
