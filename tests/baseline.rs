@@ -605,6 +605,8 @@ async fn baseline_setup() {
             .spawn()
             .expect("baseline tests init process"); // attach to some sort of log level?
 
+        std::thread::sleep(Duration::from_secs(20));
+
         // FIXME-- refactor ApiClient::new to not default to scheme://host/path but instead scheme::/hostpath
         let mut baseline_status_client = ApiClient::new("", "", "", "");
         baseline_status_client.set_base_url(&format!(
