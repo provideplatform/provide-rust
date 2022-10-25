@@ -325,8 +325,8 @@ services:
       - REQUEST_TIMEOUT=20
       - RPC_TIMEOUT=10
       - EVM_SYNC_TIMEOUT=10
-      - ENABLED_L1_NETWORK_IDS=
-      - ENABLED_L2_NETWORK_IDS=
+      - ENABLED_L1_NETWORK_IDS=ffc9a168-1327-4ddc-8af9-2301da82cccb
+      - ENABLED_L2_NETWORK_IDS=4251b6fd-c98d-4017-87a3-d691a77a52a7
     healthcheck:
       test: ['CMD', 'curl', '-f', 'http://nchain:8080/status']
       interval: 1m
@@ -375,8 +375,8 @@ services:
       - REQUEST_TIMEOUT=20
       - RPC_TIMEOUT=10
       - EVM_SYNC_TIMEOUT=10
-      - ENABLED_L1_NETWORK_IDS=
-      - ENABLED_L2_NETWORK_IDS=
+      - ENABLED_L1_NETWORK_IDS=ffc9a168-1327-4ddc-8af9-2301da82cccb
+      - ENABLED_L2_NETWORK_IDS=4251b6fd-c98d-4017-87a3-d691a77a52a7
     healthcheck:
       test: ['CMD', 'curl', '-f', 'http://nchain-consumer:8080/status'] # FIXME
       interval: 1m
@@ -422,8 +422,8 @@ services:
       - REQUEST_TIMEOUT=20
       - RPC_TIMEOUT=10
       - EVM_SYNC_TIMEOUT=10
-      - ENABLED_L1_NETWORK_IDS=
-      - ENABLED_L2_NETWORK_IDS=
+      - ENABLED_L1_NETWORK_IDS=ffc9a168-1327-4ddc-8af9-2301da82cccb
+      - ENABLED_L2_NETWORK_IDS=4251b6fd-c98d-4017-87a3-d691a77a52a7
     healthcheck:
       test: ['CMD', 'curl', '-f', 'http://statsdaemon:8080/status']
       interval: 1m
@@ -591,6 +591,9 @@ services:
       - ELASTICSEARCH_API_SCHEME=https
       - ELASTICSEARCH_USERNAME=elastic
       - ELASTICSEARCH_PASSWORD=3l4s71c
+      - SERVICENOW_LIST_SCHEMAS_API_PATH=api/x_prot9_provide/setup_configuration/ListSchemas
+      - SERVICENOW_SCHEMA_DETAILS_API_PATH=api/x_prot9_provide/setup_configuration/GetSchemaDetails
+      - SERVICENOW_HEALTHCHECK_API_PATH=api/now/branding
     healthcheck:
       test: ['CMD', 'curl', '-f', 'http://prvd-bpi-1:8080/status']
       interval: 1m
@@ -651,6 +654,9 @@ services:
       - ELASTICSEARCH_API_SCHEME=https
       - ELASTICSEARCH_USERNAME=elastic
       - ELASTICSEARCH_PASSWORD=3l4s71c
+      - SERVICENOW_LIST_SCHEMAS_API_PATH=api/x_prot9_provide/setup_configuration/ListSchemas
+      - SERVICENOW_SCHEMA_DETAILS_API_PATH=api/x_prot9_provide/setup_configuration/GetSchemaDetails
+      - SERVICENOW_HEALTHCHECK_API_PATH=api/now/branding
     healthcheck:
       test: ['CMD', 'curl', '-f', 'http://prvd-bpi-1:8080/status']
       interval: 1m

@@ -21,7 +21,7 @@ use provide_rust::api::baseline::*;
 use provide_rust::api::client::ApiClient;
 use provide_rust::api::ident::{AuthenticateResponse, Ident, Organization, Token};
 use provide_rust::api::nchain::{
-    Account, Contract, NChain, Wallet, KOVAN_TESTNET_NETWORK_ID, POLYGON_MUMBAI_TESTNET_NETWORK_ID,
+    Account, Contract, NChain, Wallet, SEPOLIA_TESTNET_NETWORK_ID, POLYGON_MUMBAI_TESTNET_NETWORK_ID,
 };
 use provide_rust::api::privacy::{
     BLS12_377_CURVE, GNARK_PROVIDER, GROTH16_PROVING_SCHEME, PREIMAGE_HASH_IDENTIFIER,
@@ -259,7 +259,7 @@ async fn _deploy_workflow(baseline: &ApiClient, workflow_id: &str, expected_stat
 
 async fn generate_workgroup(baseline: &ApiClient) -> Workgroup {
     let workgroup_params = json!({
-        "network_id": KOVAN_TESTNET_NETWORK_ID,
+        "network_id": SEPOLIA_TESTNET_NETWORK_ID,
         "name": format!("{} application", Name().fake::<String>()),
         "type": "baseline",
     });
@@ -436,12 +436,12 @@ async fn baseline_setup() {
 
     if registry_contract_address == "0x" {
         registry_contract_address =
-            _deploy_registry_contract(&nchain, KOVAN_TESTNET_NETWORK_ID, &create_wallet_body.id)
+            _deploy_registry_contract(&nchain, SEPOLIA_TESTNET_NETWORK_ID, &create_wallet_body.id)
                 .await;
     } else {
         _create_org_registry_contract(
             &nchain,
-            KOVAN_TESTNET_NETWORK_ID,
+            SEPOLIA_TESTNET_NETWORK_ID,
             &create_wallet_body.id,
             &registry_contract_address,
         )
@@ -472,7 +472,7 @@ async fn baseline_setup() {
         std::thread::sleep(std::time::Duration::from_secs(10));
 
         let create_app_params = json!({
-            "network_id": KOVAN_TESTNET_NETWORK_ID,
+            "network_id": SEPOLIA_TESTNET_NETWORK_ID,
             "name": format!("{} application", Name().fake::<String>()),
             "type": "baseline",
         });
@@ -553,7 +553,7 @@ async fn baseline_setup() {
             " --nchain-scheme={}",
             std::env::var("NCHAIN_API_SCHEME").unwrap_or(String::from("http"))
         );
-        run_cmd += &format!(" --nchain-network-id={}", KOVAN_TESTNET_NETWORK_ID);
+        run_cmd += &format!(" --nchain-network-id={}", SEPOLIA_TESTNET_NETWORK_ID);
         run_cmd += &format!(" --organization={}", &create_organization_body.id);
         run_cmd += &format!(" --organization-address={}", &org_address);
         run_cmd += &format!(" --organization-refresh-token={}", &org_refresh_token);
@@ -655,12 +655,13 @@ async fn baseline_setup() {
 
         let create_subject_account_params = json!({
             "metadata": {
-                "network_id": KOVAN_TESTNET_NETWORK_ID,
+                "network_id": SEPOLIA_TESTNET_NETWORK_ID,
                 "organization_address": &registry_contract_address,
                 "organization_id": &create_organization_body.id,
                 "organization_refresh_token": &org_refresh_token,
                 "registry_contract_address": &registry_contract_address,
                 "workgroup_id": &create_workgroup_body.id,
+                "organization_domain": "baseline.local",
             }
         });
 
@@ -706,7 +707,7 @@ async fn baseline_setup() {
     }
 
     let update_workgroup_params = json!({
-        "network_id": KOVAN_TESTNET_NETWORK_ID,
+        "network_id": SEPOLIA_TESTNET_NETWORK_ID,
         "config": {
             "vault_id": &create_organization_vault_res.id,
             "l2_network_id": POLYGON_MUMBAI_TESTNET_NETWORK_ID,
@@ -770,7 +771,7 @@ async fn create_subject_account_fail_with_existing_account() {
 
     let create_subject_account_params = json!({
         "metadata": {
-            "network_id": KOVAN_TESTNET_NETWORK_ID,
+            "network_id": SEPOLIA_TESTNET_NETWORK_ID,
             "organization_address": &registry_contract_address,
             "organization_id": &org_id,
             "organization_refresh_token": &org_refresh_token,
@@ -816,7 +817,7 @@ async fn create_subject_account_fail_without_workgroup_id() {
 
     let create_subject_account_params = json!({
         "metadata": {
-            "network_id": KOVAN_TESTNET_NETWORK_ID,
+            "network_id": SEPOLIA_TESTNET_NETWORK_ID,
             "organization_address": &registry_contract_address,
             "organization_id": &org_id,
             "organization_refresh_token": &org_refresh_token,
@@ -896,7 +897,7 @@ async fn create_subject_account_fail_without_organization_refresh_token() {
 
     let create_subject_account_params = json!({
         "metadata": {
-            "network_id": KOVAN_TESTNET_NETWORK_ID,
+            "network_id": SEPOLIA_TESTNET_NETWORK_ID,
             "organization_address": &registry_contract_address,
             "organization_id": &org_id,
             "registry_contract_address": &registry_contract_address,
@@ -938,7 +939,7 @@ async fn create_subject_account_fail_without_registry_contract_address() {
 
     let create_subject_account_params = json!({
         "metadata": {
-            "network_id": KOVAN_TESTNET_NETWORK_ID,
+            "network_id": SEPOLIA_TESTNET_NETWORK_ID,
             "organization_address": &registry_contract_address,
             "organization_id": &org_id,
             "organization_refresh_token": &org_refresh_token,
@@ -980,7 +981,7 @@ async fn create_subject_account_fail_without_organization_address() {
 
     let create_subject_account_params = json!({
         "metadata": {
-            "network_id": KOVAN_TESTNET_NETWORK_ID,
+            "network_id": SEPOLIA_TESTNET_NETWORK_ID,
             "organization_id": &org_id,
             "organization_refresh_token": &org_refresh_token,
             "registry_contract_address": &registry_contract_address,
@@ -1046,7 +1047,7 @@ async fn create_subject_account_fail_with_id() {
     let create_subject_account_params = json!({
         "id": &org_id,
         "metadata": {
-            "network_id": KOVAN_TESTNET_NETWORK_ID,
+            "network_id": SEPOLIA_TESTNET_NETWORK_ID,
             "organization_address": &registry_contract_address,
             "organization_id": &org_id,
             "organization_refresh_token": &org_refresh_token,
@@ -1090,7 +1091,7 @@ async fn create_subject_account_fail_with_incorrect_subject_id() {
     let create_subject_account_params = json!({
         "id": &org_id,
         "metadata": {
-            "network_id": KOVAN_TESTNET_NETWORK_ID,
+            "network_id": SEPOLIA_TESTNET_NETWORK_ID,
             "organization_address": &registry_contract_address,
             "organization_id": &org_id,
             "organization_refresh_token": &org_refresh_token,
@@ -6165,7 +6166,7 @@ async fn create_workstep_participant() {
     let nchain: ApiClient = NChain::factory(&org_access_token);
 
     let create_account_params = json!({
-        "network_id": KOVAN_TESTNET_NETWORK_ID,
+        "network_id": SEPOLIA_TESTNET_NETWORK_ID,
     });
 
     let create_account_res = nchain
@@ -6284,7 +6285,7 @@ async fn create_workstep_participant_fail_on_deployed() {
     let nchain: ApiClient = NChain::factory(&org_access_token);
 
     let create_account_params = json!({
-        "network_id": KOVAN_TESTNET_NETWORK_ID,
+        "network_id": SEPOLIA_TESTNET_NETWORK_ID,
     });
 
     let create_account_res = nchain
@@ -6369,7 +6370,7 @@ async fn delete_workstep_participant() {
     let nchain: ApiClient = NChain::factory(&org_access_token);
 
     let create_account_params = json!({
-        "network_id": KOVAN_TESTNET_NETWORK_ID,
+        "network_id": SEPOLIA_TESTNET_NETWORK_ID,
     });
 
     let create_account_res = nchain
@@ -6504,7 +6505,7 @@ async fn delete_workstep_participant_fail_on_deployed() {
     let nchain: ApiClient = NChain::factory(&org_access_token);
 
     let create_account_params = json!({
-        "network_id": KOVAN_TESTNET_NETWORK_ID,
+        "network_id": SEPOLIA_TESTNET_NETWORK_ID,
     });
 
     let create_account_res = nchain
