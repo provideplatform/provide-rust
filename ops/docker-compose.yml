@@ -337,7 +337,7 @@ services:
     networks:
       - provide
     ports:
-      - 8084:8080
+      - 8085:8080
     restart: always
     profiles:
       - core
@@ -570,7 +570,7 @@ services:
       - NATS_CLIENT_PREFIX=baseline
       - NATS_URL=nats://baseline-nats-1:4224
       - NATS_JETSTREAM_URL=nats://baseline-nats-1:4224
-      - NCHAIN_API_HOST=host.docker.internal:8084
+      - NCHAIN_API_HOST=host.docker.internal:8085
       - NCHAIN_API_SCHEME=http
       - NCHAIN_BASELINE_NETWORK_ID=
       - PRIVACY_API_HOST=host.docker.internal:8083
@@ -604,7 +604,7 @@ services:
     networks:
       - prvd-bpi-1
     ports:
-      - 8085:8080
+      - 8086:8080
     restart: always
     profiles:
       - bpi-1
@@ -630,7 +630,7 @@ services:
       - NATS_CLIENT_PREFIX=baseline
       - NATS_URL=nats://baseline-nats-1:4224
       - NATS_JETSTREAM_URL=nats://baseline-nats-1:4224
-      - NCHAIN_API_HOST=host.docker.internal:8084
+      - NCHAIN_API_HOST=host.docker.internal:8085
       - NCHAIN_API_SCHEME=http
       - NCHAIN_BASELINE_NETWORK_ID=
       - PRIVACY_API_HOST=host.docker.internal:8083
@@ -805,7 +805,7 @@ services:
       - NATS_CLIENT_PREFIX=baseline
       - NATS_URL=nats://baseline-nats-2:4226
       - NATS_JETSTREAM_URL=nats://baseline-nats-2:4226
-      - NCHAIN_API_HOST=host.docker.internal:8084
+      - NCHAIN_API_HOST=host.docker.internal:8085
       - NCHAIN_API_SCHEME=http
       - NCHAIN_BASELINE_NETWORK_ID=
       - PRIVACY_API_HOST=host.docker.internal:8083
@@ -836,7 +836,7 @@ services:
     networks:
       - prvd-bpi-2
     ports:
-      - 8086:8080
+      - 8087:8080
     restart: always
     profiles:
       - bpi-2
@@ -862,7 +862,7 @@ services:
       - NATS_CLIENT_PREFIX=baseline
       - NATS_URL=nats://baseline-nats-2:4226
       - NATS_JETSTREAM_URL=nats://baseline-nats-2:4226
-      - NCHAIN_API_HOST=host.docker.internal:8084
+      - NCHAIN_API_HOST=host.docker.internal:8085
       - NCHAIN_API_SCHEME=http
       - NCHAIN_BASELINE_NETWORK_ID=
       - PRIVACY_API_HOST=host.docker.internal:8083

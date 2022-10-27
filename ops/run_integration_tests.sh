@@ -150,7 +150,7 @@ wait_for_nchain_container() {
     nchain_status=false
 
     while [[ "$nchain_status" == "false" ]]; do
-        nchain_status_code=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8084/status)
+        nchain_status_code=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8085/status)
         [[ "$nchain_status_code" == "204" ]] && nchain_status=true
 
         sleep 1
@@ -162,7 +162,7 @@ wait_for_baseline_container() {
     baseline_status=false
 
     while [[ "$baseline_status" == "false" ]]; do
-        baseline_status_code=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8085/status)
+        baseline_status_code=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8086/status)
         [[ "$baseline_status_code" == "204" ]] && baseline_status=true
 
         sleep 1
@@ -238,9 +238,9 @@ if [[ $* != *--skip-setup* && "$RUN_MANY" == "true" ]]; then
     VAULT_API_SCHEME=http \
     PRIVACY_API_HOST=localhost:8083 \
     PRIVACY_API_SCHEME=http \
-    NCHAIN_API_HOST=localhost:8084 \
+    NCHAIN_API_HOST=localhost:8085 \
     NCHAIN_API_SCHEME=http \
-    BASELINE_API_HOST=localhost:8085 \
+    BASELINE_API_HOST=localhost:8086 \
     BASELINE_API_SCHEME=http \
     cargo nextest run --retries 3 --run-ignored ignored-only --status-level all --success-output final --failure-output final &> $SETUP_OUTPUT
 
@@ -253,9 +253,9 @@ elif [[ $* != *--skip-setup* ]]; then
     VAULT_API_SCHEME=http \
     PRIVACY_API_HOST=localhost:8083 \
     PRIVACY_API_SCHEME=http \
-    NCHAIN_API_HOST=localhost:8084 \
+    NCHAIN_API_HOST=localhost:8085 \
     NCHAIN_API_SCHEME=http \
-    BASELINE_API_HOST=localhost:8085 \
+    BASELINE_API_HOST=localhost:8086 \
     BASELINE_API_SCHEME=http \
     cargo nextest run --retries 3 --run-ignored ignored-only
 
@@ -270,9 +270,9 @@ if [[ "$RUN_MANY" == "true" ]]; then
         VAULT_API_SCHEME=http \
         PRIVACY_API_HOST=localhost:8083 \
         PRIVACY_API_SCHEME=http \
-        NCHAIN_API_HOST=localhost:8084 \
+        NCHAIN_API_HOST=localhost:8085 \
         NCHAIN_API_SCHEME=http \
-        BASELINE_API_HOST=localhost:8085 \
+        BASELINE_API_HOST=localhost:8086 \
         BASELINE_API_SCHEME=http \
         cargo nextest run --status-level all --no-fail-fast --success-output final --failure-output final &> $TEST_OUTPUT
     else
@@ -282,9 +282,9 @@ if [[ "$RUN_MANY" == "true" ]]; then
         VAULT_API_SCHEME=http \
         PRIVACY_API_HOST=localhost:8083 \
         PRIVACY_API_SCHEME=http \
-        NCHAIN_API_HOST=localhost:8084 \
+        NCHAIN_API_HOST=localhost:8085 \
         NCHAIN_API_SCHEME=http \
-        BASELINE_API_HOST=localhost:8085 \
+        BASELINE_API_HOST=localhost:8086 \
         BASELINE_API_SCHEME=http \
         cargo nextest run $([[ -n "$TEST" ]] && echo "$TEST" || echo --test "$SUITE") --status-level all --no-fail-fast --success-output final --failure-output final &> $TEST_OUTPUT
     fi
@@ -296,9 +296,9 @@ else
         VAULT_API_SCHEME=http \
         PRIVACY_API_HOST=localhost:8083 \
         PRIVACY_API_SCHEME=http \
-        NCHAIN_API_HOST=localhost:8084 \
+        NCHAIN_API_HOST=localhost:8085 \
         NCHAIN_API_SCHEME=http \
-        BASELINE_API_HOST=localhost:8085 \
+        BASELINE_API_HOST=localhost:8086 \
         BASELINE_API_SCHEME=http \
         cargo nextest run --no-fail-fast --failure-output immediate-final
     else
@@ -308,9 +308,9 @@ else
         VAULT_API_SCHEME=http \
         PRIVACY_API_HOST=localhost:8083 \
         PRIVACY_API_SCHEME=http \
-        NCHAIN_API_HOST=localhost:8084 \
+        NCHAIN_API_HOST=localhost:8085 \
         NCHAIN_API_SCHEME=http \
-        BASELINE_API_HOST=localhost:8085 \
+        BASELINE_API_HOST=localhost:8086 \
         BASELINE_API_SCHEME=http \
         cargo nextest run $([[ -n "$TEST" ]] && echo "$TEST" || echo --test "$SUITE") --no-fail-fast --failure-output immediate-final
     fi

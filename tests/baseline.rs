@@ -527,7 +527,7 @@ async fn baseline_setup() {
         write!(config_file, "{}", config_file_contents).expect("config contents");
 
         // start command & environment
-        let run_env = format!("LOG_LEVEL=TRACE IDENT_API_HOST=localhost:8081 IDENT_API_SCHEME=http NCHAIN_API_HOST=localhost:8084 NCHAIN_API_SCHEME=http VAULT_API_HOST=localhost:8082 VAULT_API_SCHEME=http PROVIDE_ORGANIZATION_REFRESH_TOKEN={}", &org_refresh_token);
+        let run_env = format!("LOG_LEVEL=TRACE IDENT_API_HOST=localhost:8081 IDENT_API_SCHEME=http NCHAIN_API_HOST=localhost:8085 NCHAIN_API_SCHEME=http VAULT_API_HOST=localhost:8082 VAULT_API_SCHEME=http PROVIDE_ORGANIZATION_REFRESH_TOKEN={}", &org_refresh_token);
 
         let mut run_cmd = String::from("prvd baseline stack start");
         run_cmd += &format!(" --api-endpoint={}", "http://localhost:8086");
@@ -547,7 +547,7 @@ async fn baseline_setup() {
         run_cmd += &format!(" --nats-ws-port={}", "4224");
         run_cmd += &format!(
             " --nchain-host={}",
-            std::env::var("NCHAIN_API_HOST").unwrap_or(String::from("localhost:8084"))
+            std::env::var("NCHAIN_API_HOST").unwrap_or(String::from("localhost:8085"))
         );
         run_cmd += &format!(
             " --nchain-scheme={}",
@@ -557,7 +557,7 @@ async fn baseline_setup() {
         run_cmd += &format!(" --organization={}", &create_organization_body.id);
         run_cmd += &format!(" --organization-address={}", &org_address);
         run_cmd += &format!(" --organization-refresh-token={}", &org_refresh_token);
-        run_cmd += &format!(" --port={}", "8085");
+        run_cmd += &format!(" --port={}", "8086");
         run_cmd += &format!(
             " --privacy-host={}",
             std::env::var("PRIVACY_API_HOST").unwrap_or(String::from("localhost:8083"))
