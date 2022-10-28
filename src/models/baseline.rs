@@ -273,3 +273,44 @@ pub struct SystemMiddleware {
     inbound: Option<SystemMiddlewarePolicy>,
     outbound: Option<SystemMiddlewarePolicy>,
 }
+
+#[derive(Serialize, Deserialize, Debug, Default, Clone)]
+pub struct SubjectAccount {
+    pub id: String,
+    created_at: String,
+
+    subject_id: String,
+    r#type: String,
+    vault_id: String,
+
+    credentials: Value,
+    credentials_secret_id: String,
+
+    pub metadata: SubjectAccountMetadata,
+    metadata_secret_id: String,
+
+    recovery_policy: Option<Value>,
+    recovery_policy_secret_id: Option<String>,
+
+    role: Option<Value>,
+    role_secret_id: Option<Value>,
+
+    security_policies: Option<Value>,
+    security_policies_secret_id: Option<Value>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Default, Clone)]
+pub struct SubjectAccountMetadata {
+    counterparties: Option<Vec<Participant>>,
+    network_id: Option<String>,
+    pub organization_address: Option<String>,
+    organization_domain: Option<String>,
+    organization_id: Option<String>,
+    organization_bpi_endpoint: Option<String>,
+    organization_messaging_endpoint: Option<String>,
+    organization_refresh_token: Option<String>,
+    organization_websocket_endpoint: Option<String>,
+    pub registry_contract_address: Option<String>,
+    sor: Option<Value>,
+    workgroup_id: Option<String>,
+}

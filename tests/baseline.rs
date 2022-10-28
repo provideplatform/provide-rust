@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+use base64::decode;
 use fake::faker::internet::en::{FreeEmail, Password};
 use fake::faker::name::en::{FirstName, LastName, Name};
 use fake::Fake;
@@ -21,7 +22,8 @@ use provide_rust::api::baseline::*;
 use provide_rust::api::client::ApiClient;
 use provide_rust::api::ident::{AuthenticateResponse, Ident, Organization, Token};
 use provide_rust::api::nchain::{
-    Account, Contract, NChain, Wallet, SEPOLIA_TESTNET_NETWORK_ID, POLYGON_MUMBAI_TESTNET_NETWORK_ID,
+    Account, Contract, NChain, Wallet, POLYGON_MUMBAI_TESTNET_NETWORK_ID,
+    SEPOLIA_TESTNET_NETWORK_ID,
 };
 use provide_rust::api::privacy::{
     BLS12_377_CURVE, GNARK_PROVIDER, GROTH16_PROVING_SCHEME, PREIMAGE_HASH_IDENTIFIER,
@@ -29,6 +31,7 @@ use provide_rust::api::privacy::{
 use provide_rust::api::vault::{Vault, VaultContainer, VaultKey};
 use provide_rust::models::ident::Application;
 use serde_json::{json, Value};
+use sha256::digest;
 use std::io::Write;
 use std::process::Command;
 use tokio::time::{self, Duration};
@@ -662,6 +665,8 @@ async fn baseline_setup() {
                 "registry_contract_address": &registry_contract_address,
                 "workgroup_id": &create_workgroup_body.id,
                 "organization_domain": "baseline.local",
+                "organization_bpi_endpoint": "nats://baseline-nats-1:4223",
+                "organization_messaging_endpoint": "http://prvd-bpi-1:8080"
             }
         });
 
@@ -6913,3 +6918,96 @@ async fn delete_system() {
 //         send_protocol_message_res.json::<Value>().await.unwrap()
 //     );
 // }
+
+#[tokio::test]
+async fn org_messaging_endpoint_is_registered_on_org_registry_contract_on_subject_account_creation()
+{
+    let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
+    let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
+
+    let org_access_token_json = config_vals["org_access_token"].to_string();
+    let org_access_token =
+        serde_json::from_str::<String>(&org_access_token_json).expect("organzation access token");
+
+    let org_id_json = config_vals["org_id"].to_string();
+    let org_id = serde_json::from_str::<String>(&org_id_json).expect("organization id");
+
+    let app_id_json = config_vals["app_id"].to_string();
+    let app_id = serde_json::from_str::<String>(&app_id_json).expect("workgroup id");
+
+    let baseline: ApiClient = Baseline::factory(&org_access_token);
+
+    let subject_account_id = digest(format!("{}.{}", &org_id, &app_id));
+
+    let get_subject_account_res = baseline
+        .get_subject_account(&org_id, &subject_account_id, None)
+        .await
+        .expect("get subject account res");
+    assert_eq!(get_subject_account_res.status(), 200);
+
+    let get_subject_account_body = get_subject_account_res
+        .json::<SubjectAccount>()
+        .await
+        .expect("get subject account body");
+
+    let nchain: ApiClient = NChain::factory(&org_access_token);
+
+    let create_account_params = json!({
+        "network_id": SEPOLIA_TESTNET_NETWORK_ID,
+    });
+
+    let create_account_res = nchain
+        .create_account(Some(create_account_params))
+        .await
+        .expect("create account response");
+    assert_eq!(create_account_res.status(), 201);
+
+    let create_account_body = create_account_res
+        .json::<Account>()
+        .await
+        .expect("create account body");
+
+    let execute_contract_params = json!({
+        "account_id": &create_account_body.id,
+        "method":     "getOrg",
+        "params":     [&get_subject_account_body.metadata.organization_address.unwrap()],
+        "value":      0,
+    });
+
+    let execute_contract_res = nchain
+        .execute_contract(
+            &get_subject_account_body
+                .metadata
+                .registry_contract_address
+                .unwrap(),
+            Some(execute_contract_params),
+        )
+        .await
+        .expect("execute contract res");
+    assert_eq!(execute_contract_res.status(), 200);
+
+    let execute_contract_body = execute_contract_res
+        .json::<Value>()
+        .await
+        .expect("execute contract body");
+
+    let received_organization_messaging_endpoint_encoded: String =
+        match execute_contract_body["response"][2].as_str() {
+            Some(v) => v.to_string(),
+            None => panic!(
+            "failed to parse organization messaging endpoint from execute contract response body"
+        ),
+        };
+
+    let received_organization_messaging_endpoint_decoded_raw =
+        decode(received_organization_messaging_endpoint_encoded)
+            .expect("raw decoded messaging endpoint");
+    let received_organization_messaging_endpoint =
+        std::str::from_utf8(&received_organization_messaging_endpoint_decoded_raw)
+            .expect("decoded messaging endpoint");
+
+    assert_eq!(
+        received_organization_messaging_endpoint,
+        "nats://baseline-nats-1:4223"
+    );
+}

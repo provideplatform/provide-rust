@@ -46,21 +46,21 @@ pub trait Baseline {
 
     async fn update_subject(&self, subject_id: &str, params: Params) -> Response;
 
-    async fn list_subject_accounts(&self, subject_id: &str, query_params: QueryParams) -> Response;
+    async fn list_subject_accounts(&self, org_id: &str, query_params: QueryParams) -> Response;
 
     async fn get_subject_account(
         &self,
-        subject_id: &str,
-        account_id: &str,
+        org_id: &str,
+        subject_account_id: &str,
         query_params: QueryParams,
     ) -> Response;
 
-    async fn create_subject_account(&self, subject_id: &str, params: Params) -> Response;
+    async fn create_subject_account(&self, org_id: &str, params: Params) -> Response;
 
     async fn update_subject_account(
         &self,
-        subject_id: &str,
-        account_id: &str,
+        org_id: &str,
+        subject_account_id: &str,
         params: Params,
     ) -> Response;
 
@@ -223,18 +223,18 @@ impl Baseline for ApiClient {
         return self.put(&uri, params).await;
     }
 
-    async fn list_subject_accounts(&self, subject_id: &str, query_params: QueryParams) -> Response {
-        let uri = format!("subjects/{}/accounts", subject_id);
+    async fn list_subject_accounts(&self, org_id: &str, query_params: QueryParams) -> Response {
+        let uri = format!("subjects/{}/accounts", org_id);
         return self.get(&uri, query_params).await;
     }
 
     async fn get_subject_account(
         &self,
-        subject_id: &str,
-        account_id: &str,
+        org_id: &str,
+        subject_account_id: &str,
         query_params: QueryParams,
     ) -> Response {
-        let uri = format!("subjects/{}/accounts/{}", subject_id, account_id);
+        let uri = format!("subjects/{}/accounts/{}", org_id, subject_account_id);
         return self.get(&uri, query_params).await;
     }
 
@@ -245,11 +245,11 @@ impl Baseline for ApiClient {
 
     async fn update_subject_account(
         &self,
-        subject_id: &str,
-        account_id: &str,
+        org_id: &str,
+        subject_account_id: &str,
         params: Params,
     ) -> Response {
-        let uri = format!("subjects/{}/accounts/{}", subject_id, account_id);
+        let uri = format!("subjects/{}/accounts/{}", org_id, subject_account_id);
         return self.put(&uri, params).await;
     }
 
