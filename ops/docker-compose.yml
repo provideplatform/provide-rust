@@ -327,6 +327,7 @@ services:
       - EVM_SYNC_TIMEOUT=10
       - ENABLED_L1_NETWORK_IDS=ffc9a168-1327-4ddc-8af9-2301da82cccb
       - ENABLED_L2_NETWORK_IDS=4251b6fd-c98d-4017-87a3-d691a77a52a7
+      - ENABLED_L3_NETWORK_IDS=f6d2383b-8e0b-48d8-b539-cfdc13c7b970
     healthcheck:
       test: ['CMD', 'curl', '-f', 'http://nchain:8080/status']
       interval: 1m
@@ -377,6 +378,7 @@ services:
       - EVM_SYNC_TIMEOUT=10
       - ENABLED_L1_NETWORK_IDS=ffc9a168-1327-4ddc-8af9-2301da82cccb
       - ENABLED_L2_NETWORK_IDS=4251b6fd-c98d-4017-87a3-d691a77a52a7
+      - ENABLED_L3_NETWORK_IDS=f6d2383b-8e0b-48d8-b539-cfdc13c7b970
     healthcheck:
       test: ['CMD', 'curl', '-f', 'http://nchain-consumer:8080/status'] # FIXME
       interval: 1m
@@ -424,6 +426,7 @@ services:
       - EVM_SYNC_TIMEOUT=10
       - ENABLED_L1_NETWORK_IDS=ffc9a168-1327-4ddc-8af9-2301da82cccb
       - ENABLED_L2_NETWORK_IDS=4251b6fd-c98d-4017-87a3-d691a77a52a7
+      - ENABLED_L3_NETWORK_IDS=f6d2383b-8e0b-48d8-b539-cfdc13c7b970
     healthcheck:
       test: ['CMD', 'curl', '-f', 'http://statsdaemon:8080/status']
       interval: 1m
