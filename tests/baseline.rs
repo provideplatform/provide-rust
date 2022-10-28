@@ -32,10 +32,10 @@ use provide_rust::api::vault::{Vault, VaultContainer, VaultKey};
 use provide_rust::models::ident::Application;
 use serde_json::{json, Value};
 use sha256::digest;
+use std::env;
 use std::io::Write;
 use std::process::Command;
 use tokio::time::{self, Duration};
-use std::env;
 
 mod utils;
 
@@ -6624,7 +6624,8 @@ async fn servicenow_system_reachability() {
     let bpi_endpoint = format!("{}://{}", &baseline_scheme, &baseline_host);
 
     // TODO-- test with both sap and servicenow credentials
-    let servicenow_endpoint_url = env::var("SERVICENOW_ENDPOINT_URL").expect("SERVICENOW_ENDPOINT_URL not set");
+    let servicenow_endpoint_url =
+        env::var("SERVICENOW_ENDPOINT_URL").expect("SERVICENOW_ENDPOINT_URL not set");
     let servicenow_username = env::var("SERVICENOW_USERNAME").expect("SERVICENOW_USERNAME not set");
     let servicenow_password = env::var("SERVICENOW_PASSWORD").expect("SERVICENOW_PASSWORD not set");
 
@@ -6726,7 +6727,8 @@ async fn get_system_details() {
     let bpi_endpoint = format!("{}://{}", &baseline_scheme, &baseline_host);
 
     // TODO-- test with both sap and servicenow credentials
-    let servicenow_endpoint_url = env::var("SERVICENOW_ENDPOINT_URL").expect("SERVICENOW_ENDPOINT_URL not set");
+    let servicenow_endpoint_url =
+        env::var("SERVICENOW_ENDPOINT_URL").expect("SERVICENOW_ENDPOINT_URL not set");
     let servicenow_username = env::var("SERVICENOW_USERNAME").expect("SERVICENOW_USERNAME not set");
     let servicenow_password = env::var("SERVICENOW_PASSWORD").expect("SERVICENOW_PASSWORD not set");
 
@@ -6813,7 +6815,8 @@ async fn create_system() {
     let bpi_endpoint = format!("{}://{}", &baseline_scheme, &baseline_host);
 
     // TODO-- test with both sap and servicenow credentials
-    let servicenow_endpoint_url = env::var("SERVICENOW_ENDPOINT_URL").expect("SERVICENOW_ENDPOINT_URL not set");
+    let servicenow_endpoint_url =
+        env::var("SERVICENOW_ENDPOINT_URL").expect("SERVICENOW_ENDPOINT_URL not set");
     let servicenow_username = env::var("SERVICENOW_USERNAME").expect("SERVICENOW_USERNAME not set");
     let servicenow_password = env::var("SERVICENOW_PASSWORD").expect("SERVICENOW_PASSWORD not set");
 
@@ -6894,7 +6897,8 @@ async fn update_system() {
     let bpi_endpoint = format!("{}://{}", &baseline_scheme, &baseline_host);
 
     // TODO-- test with both sap and servicenow credentials
-    let servicenow_endpoint_url = env::var("SERVICENOW_ENDPOINT_URL").expect("SERVICENOW_ENDPOINT_URL not set");
+    let servicenow_endpoint_url =
+        env::var("SERVICENOW_ENDPOINT_URL").expect("SERVICENOW_ENDPOINT_URL not set");
     let servicenow_username = env::var("SERVICENOW_USERNAME").expect("SERVICENOW_USERNAME not set");
     let servicenow_password = env::var("SERVICENOW_PASSWORD").expect("SERVICENOW_PASSWORD not set");
 
@@ -6985,7 +6989,8 @@ async fn delete_system() {
     let bpi_endpoint = format!("{}://{}", &baseline_scheme, &baseline_host);
 
     // TODO-- test with both sap and servicenow credentials
-    let servicenow_endpoint_url = env::var("SERVICENOW_ENDPOINT_URL").expect("SERVICENOW_ENDPOINT_URL not set");
+    let servicenow_endpoint_url =
+        env::var("SERVICENOW_ENDPOINT_URL").expect("SERVICENOW_ENDPOINT_URL not set");
     let servicenow_username = env::var("SERVICENOW_USERNAME").expect("SERVICENOW_USERNAME not set");
     let servicenow_password = env::var("SERVICENOW_PASSWORD").expect("SERVICENOW_PASSWORD not set");
 
