@@ -6570,8 +6570,167 @@ async fn delete_workstep_participant_fail_on_deployed() {
 
 // test passing participant with invalid witness / proof?
 
-// #[tokio::test]
-// async fn system_reachability() {}
+#[tokio::test]
+async fn sap_system_reachability() {
+    let ident_scheme = env::var("IDENT_API_SCHEME").expect("IDENT_API_SCHEME");
+    let ident_host = env::var("IDENT_API_HOST").expect("IDENT_API_HOST");
+    let baseline_scheme = env::var("BASELINE_API_SCHEME").expect("BASELINE_API_SCHEME");
+    let baseline_host = env::var("BASELINE_API_HOST").expect("BASELINE_API_HOST");
+
+    let ident_endpoint = format!("{}://{}", &ident_scheme, &ident_host);
+    let bpi_endpoint = format!("{}://{}", &baseline_scheme, &baseline_host);
+
+    // TODO-- test with both sap and servicenow credentials
+    let sap_endpoint_url = env::var("SAP_ENDPOINT_URL").expect("SAP_ENDPOINT_URL not set");
+    let sap_username = env::var("SAP_USERNAME").expect("SAP_USERNAME not set");
+    let sap_password = env::var("SAP_PASSWORD").expect("SAP_PASSWORD not set");
+
+    let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
+    let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
+
+    let org_access_token_json = config_vals["org_access_token"].to_string();
+    let org_access_token =
+        serde_json::from_str::<String>(&org_access_token_json).expect("organzation access token");
+
+    // let app_id_json = config_vals["app_id"].to_string();
+    // let app_id = serde_json::from_str::<String>(&app_id_json).expect("workgroup id");
+
+    let baseline: ApiClient = Baseline::factory(&org_access_token);
+
+    let system_reachability_params = json!({
+        "type": "sap",
+        "name": "proUBC",
+        "auth": {
+            "method": "Basic Auth",
+            "username": &sap_username,
+            "password": &sap_password,
+            "require_client_credentials": false,
+            "client_id": null,
+            "client_secret": null
+        },
+        "middleware": {
+            "inbound": {
+                "name": null,
+                "url": null,
+                "auth": {
+                    "method": "Basic Auth",
+                    "username": null,
+                    "password": null,
+                    "require_client_credentials": false,
+                    "client_id": null,
+                    "client_secret": null
+                }
+            },
+            "outbound": {
+                "name": null,
+                "url": null,
+                "auth": {
+                    "method": "Basic Auth",
+                    "username": null,
+                    "password": null,
+                    "require_client_credentials": false,
+                    "client_id": null,
+                    "client_secret": null
+                }
+            }
+        },
+        "endpoint_url": &sap_endpoint_url,
+        "ident_endpoint": &ident_endpoint,
+        "bpi_endpoint": &bpi_endpoint
+    });
+
+    let system_reachability_res = baseline
+        .system_reachability(Some(system_reachability_params))
+        .await
+        .expect("system reachability res");
+    assert_eq!(
+        system_reachability_res.status(),
+        204,
+        "system reachability res: {}",
+        system_reachability_res.json::<Value>().await.unwrap()
+    );
+}
+
+#[tokio::test]
+async fn servicenow_system_reachability() {
+    let ident_scheme = env::var("IDENT_API_SCHEME").expect("IDENT_API_SCHEME");
+    let ident_host = env::var("IDENT_API_HOST").expect("IDENT_API_HOST");
+    let baseline_scheme = env::var("BASELINE_API_SCHEME").expect("BASELINE_API_SCHEME");
+    let baseline_host = env::var("BASELINE_API_HOST").expect("BASELINE_API_HOST");
+
+    let ident_endpoint = format!("{}://{}", &ident_scheme, &ident_host);
+    let bpi_endpoint = format!("{}://{}", &baseline_scheme, &baseline_host);
+
+    // TODO-- test with both sap and servicenow credentials
+    let servicenow_endpoint_url = env::var("SERVICENOW_ENDPOINT_URL").expect("SERVICENOW_ENDPOINT_URL not set");
+    let servicenow_username = env::var("SERVICENOW_USERNAME").expect("SERVICENOW_USERNAME not set");
+    let servicenow_password = env::var("SERVICENOW_PASSWORD").expect("SERVICENOW_PASSWORD not set");
+
+    let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
+    let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
+
+    let org_access_token_json = config_vals["org_access_token"].to_string();
+    let org_access_token =
+        serde_json::from_str::<String>(&org_access_token_json).expect("organzation access token");
+
+    // let app_id_json = config_vals["app_id"].to_string();
+    // let app_id = serde_json::from_str::<String>(&app_id_json).expect("workgroup id");
+
+    let baseline: ApiClient = Baseline::factory(&org_access_token);
+
+    let system_reachability_params = json!({
+        "type": "servicenow",
+        "name": "ProvideSync",
+        "auth": {
+            "method": "Basic Auth",
+            "username": &servicenow_username,
+            "password": &servicenow_password,
+            "require_client_credentials": false,
+            "client_id": null,
+            "client_secret": null
+        },
+        "middleware": {
+            "inbound": {
+                "name": null,
+                "url": null,
+                "auth": {
+                    "method": "Basic Auth",
+                    "username": null,
+                    "password": null,
+                    "require_client_credentials": false,
+                    "client_id": null,
+                    "client_secret": null
+                }
+            },
+            "outbound": {
+                "name": null,
+                "url": null,
+                "auth": {
+                    "method": "Basic Auth",
+                    "username": null,
+                    "password": null,
+                    "require_client_credentials": false,
+                    "client_id": null,
+                    "client_secret": null
+                }
+            }
+        },
+        "endpoint_url": &servicenow_endpoint_url,
+        "ident_endpoint": &ident_endpoint,
+        "bpi_endpoint": &bpi_endpoint
+    });
+
+    let system_reachability_res = baseline
+        .system_reachability(Some(system_reachability_params))
+        .await
+        .expect("system reachability res");
+    assert_eq!(
+        system_reachability_res.status(),
+        204,
+        "system reachability res: {}",
+        system_reachability_res.json::<Value>().await.unwrap()
+    );
+}
 
 #[tokio::test]
 async fn list_systems() {
@@ -6596,6 +6755,19 @@ async fn list_systems() {
 
 #[tokio::test]
 async fn get_system_details() {
+    let ident_scheme = env::var("IDENT_API_SCHEME").expect("IDENT_API_SCHEME");
+    let ident_host = env::var("IDENT_API_HOST").expect("IDENT_API_HOST");
+    let baseline_scheme = env::var("BASELINE_API_SCHEME").expect("BASELINE_API_SCHEME");
+    let baseline_host = env::var("BASELINE_API_HOST").expect("BASELINE_API_HOST");
+
+    let ident_endpoint = format!("{}://{}", &ident_scheme, &ident_host);
+    let bpi_endpoint = format!("{}://{}", &baseline_scheme, &baseline_host);
+
+    // TODO-- test with both sap and servicenow credentials
+    let servicenow_endpoint_url = env::var("SERVICENOW_ENDPOINT_URL").expect("SERVICENOW_ENDPOINT_URL not set");
+    let servicenow_username = env::var("SERVICENOW_USERNAME").expect("SERVICENOW_USERNAME not set");
+    let servicenow_password = env::var("SERVICENOW_PASSWORD").expect("SERVICENOW_PASSWORD not set");
+
     let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
     let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
 
@@ -6609,12 +6781,12 @@ async fn get_system_details() {
     let baseline: ApiClient = Baseline::factory(&org_access_token);
 
     let create_system_params = json!({
-        "type": "sap",
-        "name": "test system",
+        "type": "servicenow",
+        "name": "ProvideSync",
         "auth": {
             "method": "Basic Auth",
-            "username": "username",
-            "password": "password",
+            "username": &servicenow_username,
+            "password": &servicenow_password,
             "require_client_credentials": false,
             "client_id": null,
             "client_secret": null
@@ -6645,13 +6817,16 @@ async fn get_system_details() {
                 }
             }
         },
-        "endpoint_url": "http://localhost:8070"
+        "endpoint_url": &servicenow_endpoint_url,
+        "ident_endpoint": &ident_endpoint,
+        "bpi_endpoint": &bpi_endpoint
     });
 
     let create_system_res = baseline
         .create_system(&app_id, Some(create_system_params))
         .await
         .expect("create system res");
+    assert_eq!(create_system_res.status(), 201);
 
     let create_system_body = create_system_res
         .json::<System>()
@@ -6667,6 +6842,19 @@ async fn get_system_details() {
 
 #[tokio::test]
 async fn create_system() {
+    let ident_scheme = env::var("IDENT_API_SCHEME").expect("IDENT_API_SCHEME");
+    let ident_host = env::var("IDENT_API_HOST").expect("IDENT_API_HOST");
+    let baseline_scheme = env::var("BASELINE_API_SCHEME").expect("BASELINE_API_SCHEME");
+    let baseline_host = env::var("BASELINE_API_HOST").expect("BASELINE_API_HOST");
+
+    let ident_endpoint = format!("{}://{}", &ident_scheme, &ident_host);
+    let bpi_endpoint = format!("{}://{}", &baseline_scheme, &baseline_host);
+
+    // TODO-- test with both sap and servicenow credentials
+    let servicenow_endpoint_url = env::var("SERVICENOW_ENDPOINT_URL").expect("SERVICENOW_ENDPOINT_URL not set");
+    let servicenow_username = env::var("SERVICENOW_USERNAME").expect("SERVICENOW_USERNAME not set");
+    let servicenow_password = env::var("SERVICENOW_PASSWORD").expect("SERVICENOW_PASSWORD not set");
+
     let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
     let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
 
@@ -6680,12 +6868,12 @@ async fn create_system() {
     let baseline: ApiClient = Baseline::factory(&org_access_token);
 
     let create_system_params = json!({
-        "type": "sap",
-        "name": "test system",
+        "type": "servicenow",
+        "name": "ProvideSync",
         "auth": {
             "method": "Basic Auth",
-            "username": "username",
-            "password": "password",
+            "username": &servicenow_username,
+            "password": &servicenow_password,
             "require_client_credentials": false,
             "client_id": null,
             "client_secret": null
@@ -6716,7 +6904,9 @@ async fn create_system() {
                 }
             }
         },
-        "endpoint_url": "http://localhost:8070"
+        "endpoint_url": &servicenow_endpoint_url,
+        "ident_endpoint": &ident_endpoint,
+        "bpi_endpoint": &bpi_endpoint
     });
 
     let create_system_res = baseline
@@ -6733,6 +6923,19 @@ async fn create_system() {
 
 #[tokio::test]
 async fn update_system() {
+    let ident_scheme = env::var("IDENT_API_SCHEME").expect("IDENT_API_SCHEME");
+    let ident_host = env::var("IDENT_API_HOST").expect("IDENT_API_HOST");
+    let baseline_scheme = env::var("BASELINE_API_SCHEME").expect("BASELINE_API_SCHEME");
+    let baseline_host = env::var("BASELINE_API_HOST").expect("BASELINE_API_HOST");
+
+    let ident_endpoint = format!("{}://{}", &ident_scheme, &ident_host);
+    let bpi_endpoint = format!("{}://{}", &baseline_scheme, &baseline_host);
+
+    // TODO-- test with both sap and servicenow credentials
+    let servicenow_endpoint_url = env::var("SERVICENOW_ENDPOINT_URL").expect("SERVICENOW_ENDPOINT_URL not set");
+    let servicenow_username = env::var("SERVICENOW_USERNAME").expect("SERVICENOW_USERNAME not set");
+    let servicenow_password = env::var("SERVICENOW_PASSWORD").expect("SERVICENOW_PASSWORD not set");
+
     let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
     let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
 
@@ -6746,12 +6949,12 @@ async fn update_system() {
     let baseline: ApiClient = Baseline::factory(&org_access_token);
 
     let create_system_params = json!({
-        "type": "sap",
-        "name": "test system",
+        "type": "servicenow",
+        "name": "ProvideSync",
         "auth": {
             "method": "Basic Auth",
-            "username": "username",
-            "password": "password",
+            "username": &servicenow_username,
+            "password": &servicenow_password,
             "require_client_credentials": false,
             "client_id": null,
             "client_secret": null
@@ -6782,7 +6985,9 @@ async fn update_system() {
                 }
             }
         },
-        "endpoint_url": "http://localhost:8070"
+        "endpoint_url": &servicenow_endpoint_url,
+        "ident_endpoint": &ident_endpoint,
+        "bpi_endpoint": &bpi_endpoint
     });
 
     let create_system_res = baseline
@@ -6809,6 +7014,19 @@ async fn update_system() {
 
 #[tokio::test]
 async fn delete_system() {
+    let ident_scheme = env::var("IDENT_API_SCHEME").expect("IDENT_API_SCHEME");
+    let ident_host = env::var("IDENT_API_HOST").expect("IDENT_API_HOST");
+    let baseline_scheme = env::var("BASELINE_API_SCHEME").expect("BASELINE_API_SCHEME");
+    let baseline_host = env::var("BASELINE_API_HOST").expect("BASELINE_API_HOST");
+
+    let ident_endpoint = format!("{}://{}", &ident_scheme, &ident_host);
+    let bpi_endpoint = format!("{}://{}", &baseline_scheme, &baseline_host);
+
+    // TODO-- test with both sap and servicenow credentials
+    let servicenow_endpoint_url = env::var("SERVICENOW_ENDPOINT_URL").expect("SERVICENOW_ENDPOINT_URL not set");
+    let servicenow_username = env::var("SERVICENOW_USERNAME").expect("SERVICENOW_USERNAME not set");
+    let servicenow_password = env::var("SERVICENOW_PASSWORD").expect("SERVICENOW_PASSWORD not set");
+
     let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
     let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
 
@@ -6822,12 +7040,12 @@ async fn delete_system() {
     let baseline: ApiClient = Baseline::factory(&org_access_token);
 
     let create_system_params = json!({
-        "type": "sap",
-        "name": "test system",
+        "type": "servicenow",
+        "name": "ProvideSync",
         "auth": {
             "method": "Basic Auth",
-            "username": "username",
-            "password": "password",
+            "username": &servicenow_username,
+            "password": &servicenow_password,
             "require_client_credentials": false,
             "client_id": null,
             "client_secret": null
@@ -6858,7 +7076,9 @@ async fn delete_system() {
                 }
             }
         },
-        "endpoint_url": "http://localhost:8070"
+        "endpoint_url": &servicenow_endpoint_url,
+        "ident_endpoint": &ident_endpoint,
+        "bpi_endpoint": &bpi_endpoint
     });
 
     let create_system_res = baseline
