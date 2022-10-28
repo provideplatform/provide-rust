@@ -14,11 +14,6 @@
  * limitations under the License.
  */
 
-use provide_rust::api::client::ApiClient;
-use provide_rust::api::ident::*;
-use provide_rust::api::nchain::SEPOLIA_TESTNET_NETWORK_ID;
-use provide_rust::api::vault::*;
-
 use fake::{
     faker::{
         internet::en::{FreeEmail, Password},
@@ -26,114 +21,21 @@ use fake::{
     },
     Fake,
 };
+use provide_rust::api::client::ApiClient;
+use provide_rust::api::ident::*;
+use provide_rust::api::vault::*;
 use serde_json::json;
 
-async fn generate_new_user_and_token() -> AuthenticateResponse {
-    let ident: ApiClient = Ident::factory("");
-
-    let email = FreeEmail().fake::<String>();
-    let password = Password(8..15).fake::<String>();
-
-    let user_data = json!({
-        "first_name": FirstName().fake::<String>(),
-        "last_name": LastName().fake::<String>(),
-        "email": &email,
-        "password": &password,
-    });
-    let create_user_res = ident
-        .create_user(Some(user_data))
-        .await
-        .expect("create user response");
-    assert_eq!(create_user_res.status(), 201);
-
-    let params = json!({
-        "email": &email,
-        "password": &password,
-        "scope": "offline_access",
-    });
-    let authenticate_res = ident
-        .authenticate(Some(params))
-        .await
-        .expect("authenticate response");
-    assert_eq!(authenticate_res.status(), 201);
-
-    return authenticate_res
-        .json::<AuthenticateResponse>()
-        .await
-        .expect("authentication response body");
-}
-
-async fn generate_new_application(ident: &ApiClient, user_id: &str) -> Application {
-    let application_data = json!({
-        "network_id": SEPOLIA_TESTNET_NETWORK_ID,
-        "user_id": user_id,
-        "name": format!("{} application", Name().fake::<String>()),
-        "description": "Some application description",
-        "type": "baseline",
-        "hidden": false
-    });
-
-    let create_application_res = ident
-        .create_application(Some(application_data))
-        .await
-        .expect("generate application response");
-    assert_eq!(create_application_res.status(), 201);
-
-    return create_application_res
-        .json::<Application>()
-        .await
-        .expect("create application body");
-}
-
-async fn generate_organization(ident: &ApiClient, user_id: &str) -> Organization {
-    let create_organization_params = Some(json!({
-        "name": format!("{} organization", Name().fake::<String>()),
-        "description": "Organization for testing",
-        "user_id": user_id,
-        "metadata": {
-            "hello": "world",
-            "arbitrary": "input"
-        },
-    }));
-    let create_organization_res = ident
-        .create_organization(create_organization_params)
-        .await
-        .expect("create organization response");
-    assert_eq!(create_organization_res.status(), 201);
-
-    return create_organization_res
-        .json::<Organization>()
-        .await
-        .expect("generate organization body");
-}
-
-async fn generate_vault(vault: &ApiClient, organization_id: &str) -> VaultContainer {
-    let create_vault_params = json!({
-        "name": format!("{} {}", Name().fake::<String>(), "Vault"),
-        "description": "Some vault description",
-        "organization_id": &organization_id,
-    });
-
-    let create_vault_res = vault
-        .create_vault(Some(create_vault_params))
-        .await
-        .expect("create vault response");
-    assert_eq!(create_vault_res.status(), 201);
-
-    return create_vault_res
-        .json::<VaultContainer>()
-        .await
-        .expect("create vault response");
-}
+mod utils;
 
 #[tokio::test]
 async fn create_user_and_authenticate() {
-    let _ = generate_new_user_and_token().await;
+    let _ = utils::generate_user_and_token().await;
 }
 
 #[tokio::test]
 async fn get_user() {
-    let authentication_res_body = generate_new_user_and_token().await;
+    let authentication_res_body = utils::generate_user_and_token().await;
     let access_token = match authentication_res_body.token.access_token {
         Some(string) => string,
         None => panic!("authentication response access token not found"),
@@ -150,7 +52,7 @@ async fn get_user() {
 
 #[tokio::test]
 async fn list_users() {
-    let authentication_res_body = generate_new_user_and_token().await;
+    let authentication_res_body = utils::generate_user_and_token().await;
     let access_token = match authentication_res_body.token.access_token {
         Some(string) => string,
         None => panic!("authentication response access token not found"),
@@ -164,7 +66,7 @@ async fn list_users() {
 
 #[tokio::test]
 async fn update_user() {
-    let authentication_res_body = generate_new_user_and_token().await;
+    let authentication_res_body = utils::generate_user_and_token().await;
     let access_token = match authentication_res_body.token.access_token {
         Some(string) => string,
         None => panic!("authentication response access token not found"),
@@ -184,7 +86,7 @@ async fn update_user() {
 
 #[tokio::test]
 async fn delete_user() {
-    let authentication_res_body = generate_new_user_and_token().await;
+    let authentication_res_body = utils::generate_user_and_token().await;
     let access_token = match authentication_res_body.token.access_token {
         Some(string) => string,
         None => panic!("authentication response access token not found"),
@@ -201,7 +103,7 @@ async fn delete_user() {
 
 #[tokio::test]
 async fn create_organization() {
-    let authentication_res_body = generate_new_user_and_token().await;
+    let authentication_res_body = utils::generate_user_and_token().await;
     let access_token = match authentication_res_body.token.access_token {
         Some(string) => string,
         None => panic!("authentication response access token not found"),
@@ -209,12 +111,12 @@ async fn create_organization() {
 
     let ident: ApiClient = Ident::factory(&access_token);
 
-    let _ = generate_organization(&ident, &authentication_res_body.user.id).await;
+    let _ = utils::generate_organization(&ident, &authentication_res_body.user.id).await;
 }
 
 #[tokio::test]
 async fn list_organizations() {
-    let authentication_res_body = generate_new_user_and_token().await;
+    let authentication_res_body = utils::generate_user_and_token().await;
     let access_token = match authentication_res_body.token.access_token {
         Some(string) => string,
         None => panic!("authentication response access token not found"),
@@ -231,7 +133,7 @@ async fn list_organizations() {
 
 #[tokio::test]
 async fn get_organization() {
-    let authentication_res_body = generate_new_user_and_token().await;
+    let authentication_res_body = utils::generate_user_and_token().await;
     let access_token = match authentication_res_body.token.access_token {
         Some(string) => string,
         None => panic!("authentication response access token not found"),
@@ -240,7 +142,7 @@ async fn get_organization() {
     let ident: ApiClient = Ident::factory(&access_token);
 
     let create_organization_body =
-        generate_organization(&ident, &authentication_res_body.user.id).await;
+        utils::generate_organization(&ident, &authentication_res_body.user.id).await;
 
     let get_organization_res = ident
         .get_organization(&create_organization_body.id, None)
@@ -251,7 +153,7 @@ async fn get_organization() {
 
 #[tokio::test]
 async fn update_organization() {
-    let authentication_res_body = generate_new_user_and_token().await;
+    let authentication_res_body = utils::generate_user_and_token().await;
     let access_token = match authentication_res_body.token.access_token {
         Some(string) => string,
         None => panic!("authentication response access token not found"),
@@ -260,7 +162,7 @@ async fn update_organization() {
     let ident: ApiClient = Ident::factory(&access_token);
 
     let create_organization_body =
-        generate_organization(&ident, &authentication_res_body.user.id).await;
+        utils::generate_organization(&ident, &authentication_res_body.user.id).await;
 
     let update_organization_params = json!({
         "name": "ACME Inc.",
@@ -279,7 +181,7 @@ async fn update_organization() {
 
 #[tokio::test]
 async fn authenticate_organization() {
-    let authentication_res_body = generate_new_user_and_token().await;
+    let authentication_res_body = utils::generate_user_and_token().await;
     let access_token = match authentication_res_body.token.access_token {
         Some(string) => string,
         None => panic!("authentication response access token not found"),
@@ -288,7 +190,7 @@ async fn authenticate_organization() {
     let ident: ApiClient = Ident::factory(&access_token);
 
     let create_organization_body =
-        generate_organization(&ident, &authentication_res_body.user.id).await;
+        utils::generate_organization(&ident, &authentication_res_body.user.id).await;
 
     let organization_authorization_params = json!({
         "organization_id": create_organization_body.id,
@@ -304,7 +206,7 @@ async fn authenticate_organization() {
 // FIXME
 #[tokio::test]
 async fn list_tokens() {
-    let authentication_res_body = generate_new_user_and_token().await;
+    let authentication_res_body = utils::generate_user_and_token().await;
     let access_token = match authentication_res_body.token.access_token {
         Some(string) => string,
         None => panic!("authentication response access token not found"),
@@ -356,7 +258,7 @@ async fn list_tokens() {
 
 #[tokio::test]
 async fn list_appications() {
-    let authentication_res_body = generate_new_user_and_token().await;
+    let authentication_res_body = utils::generate_user_and_token().await;
     let access_token = match authentication_res_body.token.access_token {
         Some(string) => string,
         None => panic!("authentication response access token not found"),
@@ -373,7 +275,7 @@ async fn list_appications() {
 
 #[tokio::test]
 async fn create_application() {
-    let authentication_res_body = generate_new_user_and_token().await;
+    let authentication_res_body = utils::generate_user_and_token().await;
     let access_token = match authentication_res_body.token.access_token {
         Some(string) => string,
         None => panic!("authentication response access token not found"),
@@ -381,12 +283,12 @@ async fn create_application() {
 
     let ident: ApiClient = Ident::factory(&access_token);
 
-    let _ = generate_new_application(&ident, &authentication_res_body.user.id).await;
+    let _ = utils::generate_application(&ident, &authentication_res_body.user.id).await;
 }
 
 #[tokio::test]
 async fn get_application() {
-    let authentication_res_body = generate_new_user_and_token().await;
+    let authentication_res_body = utils::generate_user_and_token().await;
     let access_token = match authentication_res_body.token.access_token {
         Some(string) => string,
         None => panic!("authentication response access token not found"),
@@ -395,7 +297,7 @@ async fn get_application() {
     let ident: ApiClient = Ident::factory(&access_token);
 
     let create_application_body =
-        generate_new_application(&ident, &authentication_res_body.user.id).await;
+        utils::generate_application(&ident, &authentication_res_body.user.id).await;
 
     let get_application_res = ident
         .get_application(&create_application_body.id, None)
@@ -406,7 +308,7 @@ async fn get_application() {
 
 #[tokio::test]
 async fn update_application() {
-    let authentication_res_body = generate_new_user_and_token().await;
+    let authentication_res_body = utils::generate_user_and_token().await;
     let access_token = match authentication_res_body.token.access_token {
         Some(string) => string,
         None => panic!("authentication response access token not found"),
@@ -415,7 +317,7 @@ async fn update_application() {
     let ident: ApiClient = Ident::factory(&access_token);
 
     let create_application_body =
-        generate_new_application(&ident, &authentication_res_body.user.id).await;
+        utils::generate_application(&ident, &authentication_res_body.user.id).await;
 
     let update_application_params = json!({
         "description": "An updated description"
@@ -429,7 +331,7 @@ async fn update_application() {
 
 #[tokio::test]
 async fn delete_application() {
-    let authentication_res_body = generate_new_user_and_token().await;
+    let authentication_res_body = utils::generate_user_and_token().await;
     let access_token = match authentication_res_body.token.access_token {
         Some(string) => string,
         None => panic!("authentication response access token not found"),
@@ -438,7 +340,7 @@ async fn delete_application() {
     let ident: ApiClient = Ident::factory(&access_token);
 
     let create_application_body =
-        generate_new_application(&ident, &authentication_res_body.user.id).await;
+        utils::generate_application(&ident, &authentication_res_body.user.id).await;
 
     let delete_application_res = ident
         .delete_application(&create_application_body.id)
@@ -449,7 +351,7 @@ async fn delete_application() {
 
 #[tokio::test]
 async fn list_application_users() {
-    let authentication_res_body = generate_new_user_and_token().await;
+    let authentication_res_body = utils::generate_user_and_token().await;
     let access_token = match authentication_res_body.token.access_token {
         Some(string) => string,
         None => panic!("authentication response access token not found"),
@@ -458,7 +360,7 @@ async fn list_application_users() {
     let ident: ApiClient = Ident::factory(&access_token);
 
     let create_application_body =
-        generate_new_application(&ident, &authentication_res_body.user.id).await;
+        utils::generate_application(&ident, &authentication_res_body.user.id).await;
 
     let list_application_users_res = ident
         .list_application_users(&create_application_body.id, None)
@@ -469,7 +371,7 @@ async fn list_application_users() {
 
 #[tokio::test]
 async fn create_application_user() {
-    let authentication_res_body = generate_new_user_and_token().await;
+    let authentication_res_body = utils::generate_user_and_token().await;
     let access_token = match authentication_res_body.token.access_token {
         Some(string) => string,
         None => panic!("authentication response access token not found"),
@@ -478,7 +380,7 @@ async fn create_application_user() {
     let mut ident: ApiClient = Ident::factory(&access_token);
 
     let create_application_body =
-        generate_new_application(&ident, &authentication_res_body.user.id).await;
+        utils::generate_application(&ident, &authentication_res_body.user.id).await;
 
     let application_authorization_params = json!({
         "application_id": create_application_body.id,
@@ -532,7 +434,7 @@ async fn create_application_user() {
 
 #[tokio::test]
 async fn authenticate_application() {
-    let authentication_res_body = generate_new_user_and_token().await;
+    let authentication_res_body = utils::generate_user_and_token().await;
     let access_token = match authentication_res_body.token.access_token {
         Some(string) => string,
         None => panic!("authentication response access token not found"),
@@ -541,7 +443,7 @@ async fn authenticate_application() {
     let ident: ApiClient = Ident::factory(&access_token);
 
     let create_application_body =
-        generate_new_application(&ident, &authentication_res_body.user.id).await;
+        utils::generate_application(&ident, &authentication_res_body.user.id).await;
 
     let application_authorization_params = json!({
         "application_id": create_application_body.id,
@@ -556,7 +458,7 @@ async fn authenticate_application() {
 
 #[tokio::test]
 async fn revoke_token() {
-    let authentication_res_body = generate_new_user_and_token().await;
+    let authentication_res_body = utils::generate_user_and_token().await;
     let access_token = match authentication_res_body.token.access_token {
         Some(string) => string,
         None => panic!("authentication response access token not found"),
@@ -565,7 +467,7 @@ async fn revoke_token() {
     let ident: ApiClient = Ident::factory(&access_token);
 
     let create_application_body =
-        generate_new_application(&ident, &authentication_res_body.user.id).await;
+        utils::generate_application(&ident, &authentication_res_body.user.id).await;
 
     let application_authorization_params = json!({
         "application_id": create_application_body.id
@@ -590,7 +492,7 @@ async fn revoke_token() {
 
 #[tokio::test]
 async fn create_application_organization() {
-    let authentication_res_body = generate_new_user_and_token().await;
+    let authentication_res_body = utils::generate_user_and_token().await;
     let access_token = match authentication_res_body.token.access_token {
         Some(string) => string,
         None => panic!("authentication response access token not found"),
@@ -599,7 +501,7 @@ async fn create_application_organization() {
     let mut ident: ApiClient = Ident::factory(&access_token);
 
     let create_application_body =
-        generate_new_application(&ident, &authentication_res_body.user.id).await;
+        utils::generate_application(&ident, &authentication_res_body.user.id).await;
 
     let application_authorization_params = json!({
         "application_id": create_application_body.id,
@@ -622,7 +524,7 @@ async fn create_application_organization() {
     ident.set_bearer_token(&app_access_token);
 
     let create_organization_body =
-        generate_organization(&ident, &authentication_res_body.user.id).await;
+        utils::generate_organization(&ident, &authentication_res_body.user.id).await;
 
     let associate_application_org_params = json!({
         "organization_id": &create_organization_body.id,
@@ -646,7 +548,7 @@ async fn create_application_organization() {
 
 #[tokio::test]
 async fn request_password_reset() {
-    let authentication_res_body = generate_new_user_and_token().await;
+    let authentication_res_body = utils::generate_user_and_token().await;
 
     let ident: ApiClient = Ident::factory("");
 
@@ -662,7 +564,7 @@ async fn request_password_reset() {
 
 #[tokio::test]
 async fn fetch_application_organizations() {
-    let authentication_res_body = generate_new_user_and_token().await;
+    let authentication_res_body = utils::generate_user_and_token().await;
     let access_token = match authentication_res_body.token.access_token {
         Some(string) => string,
         None => panic!("authentication response access token not found"),
@@ -671,7 +573,7 @@ async fn fetch_application_organizations() {
     let ident: ApiClient = Ident::factory(&access_token);
 
     let create_application_body =
-        generate_new_application(&ident, &authentication_res_body.user.id).await;
+        utils::generate_application(&ident, &authentication_res_body.user.id).await;
 
     let fetch_application_organizations_res = ident
         .list_application_organizations(&create_application_body.id, None)
@@ -682,7 +584,7 @@ async fn fetch_application_organizations() {
 
 // #[tokio::test]
 // async fn update_application_organization() {
-//     let authentication_res_body = generate_new_user_and_token().await;
+//     let authentication_res_body = utils::generate_user_and_token().await;
 //     let access_token = match authentication_res_body.token.access_token {
 //         Some(string) => string,
 //         None => panic!("authentication response access token not found"),
@@ -691,7 +593,7 @@ async fn fetch_application_organizations() {
 //     let mut ident: ApiClient = Ident::factory(&access_token);
 
 //     let create_application_body =
-//         generate_new_application(&ident, &authentication_res_body.user.id).await;
+//         utils::generate_application(&ident, &authentication_res_body.user.id).await;
 
 //     let application_authorization_params = json!({
 //         "application_id": create_application_body.id,
@@ -714,7 +616,7 @@ async fn fetch_application_organizations() {
 //     ident.set_bearer_token(&app_access_token);
 
 //     let create_organization_body =
-//         generate_organization(&ident, &authentication_res_body.user.id).await;
+//         utils::generate_organization(&ident, &authentication_res_body.user.id).await;
 
 //     let associate_application_org_params = json!({
 //         "organization_id": &create_organization_body.id,
@@ -746,7 +648,7 @@ async fn fetch_application_organizations() {
 
 #[tokio::test]
 async fn delete_application_organization() {
-    let authentication_res_body = generate_new_user_and_token().await;
+    let authentication_res_body = utils::generate_user_and_token().await;
     let access_token = match authentication_res_body.token.access_token {
         Some(string) => string,
         None => panic!("authentication response access token not found"),
@@ -755,7 +657,7 @@ async fn delete_application_organization() {
     let mut ident: ApiClient = Ident::factory(&access_token);
 
     let create_application_body =
-        generate_new_application(&ident, &authentication_res_body.user.id).await;
+        utils::generate_application(&ident, &authentication_res_body.user.id).await;
 
     let application_authorization_params = json!({
         "application_id": create_application_body.id,
@@ -778,7 +680,7 @@ async fn delete_application_organization() {
     ident.set_bearer_token(&app_access_token);
 
     let create_organization_body =
-        generate_organization(&ident, &authentication_res_body.user.id).await;
+        utils::generate_organization(&ident, &authentication_res_body.user.id).await;
 
     let associate_application_org_params = json!({
         "organization_id": &create_organization_body.id,
@@ -802,7 +704,7 @@ async fn delete_application_organization() {
 
 #[tokio::test]
 async fn fetch_application_invitations() {
-    let authentication_res_body = generate_new_user_and_token().await;
+    let authentication_res_body = utils::generate_user_and_token().await;
     let access_token = match authentication_res_body.token.access_token {
         Some(string) => string,
         None => panic!("authentication response access token not found"),
@@ -811,7 +713,7 @@ async fn fetch_application_invitations() {
     let ident: ApiClient = Ident::factory(&access_token);
 
     let create_application_body =
-        generate_new_application(&ident, &authentication_res_body.user.id).await;
+        utils::generate_application(&ident, &authentication_res_body.user.id).await;
 
     let fetch_application_invitations_res = ident
         .list_application_invitations(&create_application_body.id, None)
@@ -822,7 +724,7 @@ async fn fetch_application_invitations() {
 
 #[tokio::test]
 async fn fetch_application_tokens() {
-    let authentication_res_body = generate_new_user_and_token().await;
+    let authentication_res_body = utils::generate_user_and_token().await;
     let access_token = match authentication_res_body.token.access_token {
         Some(string) => string,
         None => panic!("authentication response access token not found"),
@@ -831,7 +733,7 @@ async fn fetch_application_tokens() {
     let ident: ApiClient = Ident::factory(&access_token);
 
     let create_application_body =
-        generate_new_application(&ident, &authentication_res_body.user.id).await;
+        utils::generate_application(&ident, &authentication_res_body.user.id).await;
 
     let fetch_application_tokens_res = ident
         .list_application_tokens(&create_application_body.id, None)
@@ -842,7 +744,7 @@ async fn fetch_application_tokens() {
 
 #[tokio::test]
 async fn authenticate_application_user() {
-    let authentication_res_body = generate_new_user_and_token().await;
+    let authentication_res_body = utils::generate_user_and_token().await;
     let access_token = match authentication_res_body.token.access_token {
         Some(string) => string,
         None => panic!("authentication response access token not found"),
@@ -851,7 +753,7 @@ async fn authenticate_application_user() {
     let mut ident: ApiClient = Ident::factory(&access_token);
 
     let create_application_body =
-        generate_new_application(&ident, &authentication_res_body.user.id).await;
+        utils::generate_application(&ident, &authentication_res_body.user.id).await;
 
     let application_authorization_params = json!({
         "application_id": create_application_body.id,
@@ -912,7 +814,7 @@ async fn authenticate_application_user() {
 
 // #[tokio::test]
 // async fn update_application_user() {
-//     let authentication_res_body = generate_new_user_and_token().await;
+//     let authentication_res_body = utils::generate_user_and_token().await;
 //     let access_token = match authentication_res_body.token.access_token {
 //         Some(string) => string,
 //         None => panic!("authentication response access token not found"),
@@ -921,7 +823,7 @@ async fn authenticate_application_user() {
 //     let mut ident: ApiClient = Ident::factory(&access_token);
 
 //     let create_application_body =
-//         generate_new_application(&ident, &authentication_res_body.user.id).await;
+//         utils::generate_application(&ident, &authentication_res_body.user.id).await;
 
 //     let application_authorization_params = json!({
 //         "application_id": create_application_body.id,
@@ -989,7 +891,7 @@ async fn authenticate_application_user() {
 
 #[tokio::test]
 async fn delete_application_user() {
-    let authentication_res_body = generate_new_user_and_token().await;
+    let authentication_res_body = utils::generate_user_and_token().await;
     let access_token = match authentication_res_body.token.access_token {
         Some(string) => string,
         None => panic!("authentication response access token not found"),
@@ -998,7 +900,7 @@ async fn delete_application_user() {
     let mut ident: ApiClient = Ident::factory(&access_token);
 
     let create_application_body =
-        generate_new_application(&ident, &authentication_res_body.user.id).await;
+        utils::generate_application(&ident, &authentication_res_body.user.id).await;
 
     let application_authorization_params = json!({
         "application_id": create_application_body.id,
@@ -1058,7 +960,7 @@ async fn delete_application_user() {
 
 #[tokio::test]
 async fn fetch_organization_invitations() {
-    let authentication_res_body = generate_new_user_and_token().await;
+    let authentication_res_body = utils::generate_user_and_token().await;
     let access_token = match authentication_res_body.token.access_token {
         Some(string) => string,
         None => panic!("authentication response access token not found"),
@@ -1067,7 +969,7 @@ async fn fetch_organization_invitations() {
     let ident: ApiClient = Ident::factory(&access_token);
 
     let create_organization_body =
-        generate_organization(&ident, &authentication_res_body.user.id).await;
+        utils::generate_organization(&ident, &authentication_res_body.user.id).await;
 
     let fetch_organization_invitations_res = ident
         .list_organization_invitations(&create_organization_body.id, None)
@@ -1078,7 +980,7 @@ async fn fetch_organization_invitations() {
 
 #[tokio::test]
 async fn fetch_organization_users() {
-    let authentication_res_body = generate_new_user_and_token().await;
+    let authentication_res_body = utils::generate_user_and_token().await;
     let access_token = match authentication_res_body.token.access_token {
         Some(string) => string,
         None => panic!("authentication response access token not found"),
@@ -1087,7 +989,7 @@ async fn fetch_organization_users() {
     let ident: ApiClient = Ident::factory(&access_token);
 
     let create_organization_body =
-        generate_organization(&ident, &authentication_res_body.user.id).await;
+        utils::generate_organization(&ident, &authentication_res_body.user.id).await;
 
     let fetch_organization_users_res = ident
         .list_organization_users(&create_organization_body.id, None)
@@ -1098,7 +1000,7 @@ async fn fetch_organization_users() {
 
 #[tokio::test]
 async fn create_organization_user() {
-    let authentication_res_body = generate_new_user_and_token().await;
+    let authentication_res_body = utils::generate_user_and_token().await;
     let access_token = match authentication_res_body.token.access_token {
         Some(string) => string,
         None => panic!("authentication response access token not found"),
@@ -1107,7 +1009,7 @@ async fn create_organization_user() {
     let mut ident: ApiClient = Ident::factory(&access_token);
 
     let create_organization_body =
-        generate_organization(&ident, &authentication_res_body.user.id).await;
+        utils::generate_organization(&ident, &authentication_res_body.user.id).await;
 
     let organization_authorization_params = json!({
         "organization_id": create_organization_body.id,
@@ -1161,7 +1063,7 @@ async fn create_organization_user() {
 
 // #[tokio::test]
 // async fn update_organization_user() {
-//     let authentication_res_body = generate_new_user_and_token().await;
+//     let authentication_res_body = utils::generate_user_and_token().await;
 //     let access_token = match authentication_res_body.token.access_token {
 //         Some(string) => string,
 //         None => panic!("authentication response access token not found"),
@@ -1170,7 +1072,7 @@ async fn create_organization_user() {
 //     let mut ident: ApiClient = Ident::factory(&access_token);
 
 //     let create_organization_body =
-//         generate_organization(&ident, &authentication_res_body.user.id).await;
+//         utils::generate_organization(&ident, &authentication_res_body.user.id).await;
 
 //     let organization_authorization_params = json!({
 //         "organization_id": create_organization_body.id,
@@ -1238,7 +1140,7 @@ async fn create_organization_user() {
 
 #[tokio::test]
 async fn delete_organization_user() {
-    let authentication_res_body = generate_new_user_and_token().await;
+    let authentication_res_body = utils::generate_user_and_token().await;
     let access_token = match authentication_res_body.token.access_token {
         Some(string) => string,
         None => panic!("authentication response access token not found"),
@@ -1247,7 +1149,7 @@ async fn delete_organization_user() {
     let mut ident: ApiClient = Ident::factory(&access_token);
 
     let create_organization_body =
-        generate_organization(&ident, &authentication_res_body.user.id).await;
+        utils::generate_organization(&ident, &authentication_res_body.user.id).await;
 
     let organization_authorization_params = json!({
         "organization_id": create_organization_body.id,
@@ -1307,7 +1209,7 @@ async fn delete_organization_user() {
 
 #[tokio::test]
 async fn fetch_organization_vaults() {
-    let authentication_res_body = generate_new_user_and_token().await;
+    let authentication_res_body = utils::generate_user_and_token().await;
     let access_token = match authentication_res_body.token.access_token {
         Some(string) => string,
         None => panic!("authentication response access token not found"),
@@ -1316,7 +1218,7 @@ async fn fetch_organization_vaults() {
     let ident: ApiClient = Ident::factory(&access_token);
 
     let create_organization_body =
-        generate_organization(&ident, &authentication_res_body.user.id).await;
+        utils::generate_organization(&ident, &authentication_res_body.user.id).await;
 
     let fetch_organization_vaults_res = ident
         .list_organization_vaults(&create_organization_body.id, None)
@@ -1327,19 +1229,31 @@ async fn fetch_organization_vaults() {
 
 #[tokio::test]
 async fn fetch_organization_vault_keys() {
-    let authentication_res_body = generate_new_user_and_token().await;
+    let authentication_res_body = utils::generate_user_and_token().await;
     let access_token = match authentication_res_body.token.access_token {
         Some(string) => string,
         None => panic!("authentication response access token not found"),
     };
 
     let ident: ApiClient = Ident::factory(&access_token);
-    let vault: ApiClient = Vault::factory(&access_token);
+    let mut vault: ApiClient = Vault::factory(&access_token);
 
     let create_organization_body =
-        generate_organization(&ident, &authentication_res_body.user.id).await;
+        utils::generate_organization(&ident, &authentication_res_body.user.id).await;
 
-    let create_organization_vault_body = generate_vault(&vault, &create_organization_body.id).await;
+    let organization_auth_body =
+        utils::generate_organization_auth(&ident, &create_organization_body.id).await;
+    let organization_access_token = match organization_auth_body.access_token {
+        Some(string) => string,
+        None => panic!(
+            "organization authentication response access token not found {:?}",
+            organization_auth_body
+        ),
+    };
+
+    vault.set_bearer_token(&organization_access_token);
+
+    let create_organization_vault_body = utils::generate_vault(&vault).await;
 
     let fetch_organization_vault_keys_res = ident
         .list_organization_vault_keys(
@@ -1354,7 +1268,7 @@ async fn fetch_organization_vault_keys() {
 
 // #[tokio::test]
 // async fn create_organization_vault_key() {
-//     let authentication_res_body = generate_new_user_and_token().await;
+//     let authentication_res_body = utils::generate_user_and_token().await;
 //     let access_token = match authentication_res_body.token.access_token {
 //         Some(string) => string,
 //         None => panic!("authentication response access token not found"),
@@ -1364,9 +1278,9 @@ async fn fetch_organization_vault_keys() {
 //     let vault: ApiClient = Vault::factory(&access_token);
 
 //     let create_organization_body =
-//         generate_organization(&ident, &authentication_res_body.user.id).await;
+//         utils::generate_organization(&ident, &authentication_res_body.user.id).await;
 
-//     let create_organization_vault_body = generate_vault(&vault, &create_organization_body.id).await;
+//     let create_organization_vault_body = utils::generate_vault(&vault, &create_organization_body.id).await;
 
 //     let create_organization_vault_key_params = json!({
 //         "type": "symmetric",
@@ -1401,7 +1315,7 @@ async fn fetch_organization_vault_keys() {
 
 // #[tokio::test]
 // async fn delete_organization_vault_key() {
-//     let authentication_res_body = generate_new_user_and_token().await;
+//     let authentication_res_body = utils::generate_user_and_token().await;
 //     let access_token = match authentication_res_body.token.access_token {
 //         Some(string) => string,
 //         None => panic!("authentication response access token not found"),
@@ -1411,9 +1325,9 @@ async fn fetch_organization_vault_keys() {
 //     let vault: ApiClient = Vault::factory(&access_token);
 
 //     let create_organization_body =
-//         generate_organization(&ident, &authentication_res_body.user.id).await;
+//         utils::generate_organization(&ident, &authentication_res_body.user.id).await;
 
-//     let create_organization_vault_body = generate_vault(&vault, &create_organization_body.id).await;
+//     let create_organization_vault_body = utils::generate_vault(&vault, &create_organization_body.id).await;
 
 //     let create_organization_vault_key_params = json!({
 //         "type": "symmetric",
@@ -1469,19 +1383,31 @@ async fn fetch_organization_vault_keys() {
 
 #[tokio::test]
 async fn fetch_organization_vault_secrets() {
-    let authentication_res_body = generate_new_user_and_token().await;
+    let authentication_res_body = utils::generate_user_and_token().await;
     let access_token = match authentication_res_body.token.access_token {
         Some(string) => string,
         None => panic!("authentication response access token not found"),
     };
 
     let ident: ApiClient = Ident::factory(&access_token);
-    let vault: ApiClient = Vault::factory(&access_token);
+    let mut vault: ApiClient = Vault::factory(&access_token);
 
     let create_organization_body =
-        generate_organization(&ident, &authentication_res_body.user.id).await;
+        utils::generate_organization(&ident, &authentication_res_body.user.id).await;
 
-    let create_organization_vault_body = generate_vault(&vault, &create_organization_body.id).await;
+    let organization_auth_body =
+        utils::generate_organization_auth(&ident, &create_organization_body.id).await;
+    let organization_access_token = match organization_auth_body.access_token {
+        Some(string) => string,
+        None => panic!(
+            "organization authentication response access token not found {:?}",
+            organization_auth_body
+        ),
+    };
+
+    vault.set_bearer_token(&organization_access_token);
+
+    let create_organization_vault_body = utils::generate_vault(&vault).await;
 
     let fetch_organization_vault_secrets_res = ident
         .list_organization_vault_secrets(
@@ -1496,7 +1422,7 @@ async fn fetch_organization_vault_secrets() {
 
 // #[tokio::test]
 // async fn create_organization_vault_secret() {
-//     let authentication_res_body = generate_new_user_and_token().await;
+//     let authentication_res_body = utils::generate_user_and_token().await;
 //     let access_token = match authentication_res_body.token.access_token {
 //         Some(string) => string,
 //         None => panic!("authentication response access token not found"),
@@ -1506,9 +1432,9 @@ async fn fetch_organization_vault_secrets() {
 //     let vault: ApiClient = Vault::factory(&access_token);
 
 //     let create_organization_body =
-//         generate_organization(&ident, &authentication_res_body.user.id).await;
+//         utils::generate_organization(&ident, &authentication_res_body.user.id).await;
 
-//     let create_organization_vault_body = generate_vault(&vault, &create_organization_body.id).await;
+//     let create_organization_vault_body = utils::generate_vault(&vault, &create_organization_body.id).await;
 
 //     let create_organization_vault_secret_params = json!({
 //         "type": "sample secret",
@@ -1531,7 +1457,7 @@ async fn fetch_organization_vault_secrets() {
 
 // #[tokio::test]
 // async fn delete_organization_vault_secret() {
-//     let authentication_res_body = generate_new_user_and_token().await;
+//     let authentication_res_body = utils::generate_user_and_token().await;
 //     let access_token = match authentication_res_body.token.access_token {
 //         Some(string) => string,
 //         None => panic!("authentication response access token not found"),
@@ -1541,9 +1467,9 @@ async fn fetch_organization_vault_secrets() {
 //     let vault: ApiClient = Vault::factory(&access_token);
 
 //     let create_organization_body =
-//         generate_organization(&ident, &authentication_res_body.user.id).await;
+//         utils::generate_organization(&ident, &authentication_res_body.user.id).await;
 
-//     let create_organization_vault_body = generate_vault(&vault, &create_organization_body.id).await;
+//     let create_organization_vault_body = utils::generate_vault(&vault, &create_organization_body.id).await;
 
 //     let create_organization_vault_secret_params = json!({
 //         "type": "sample secret",
@@ -1587,7 +1513,7 @@ async fn fetch_organization_vault_secrets() {
 
 #[tokio::test]
 async fn create_invitation() {
-    let authentication_res_body = generate_new_user_and_token().await;
+    let authentication_res_body = utils::generate_user_and_token().await;
     let access_token = match authentication_res_body.token.access_token {
         Some(string) => string,
         None => panic!("authentication response access token not found"),
@@ -1596,7 +1522,7 @@ async fn create_invitation() {
     let mut ident: ApiClient = Ident::factory(&access_token);
 
     let create_application_body =
-        generate_new_application(&ident, &authentication_res_body.user.id).await;
+        utils::generate_application(&ident, &authentication_res_body.user.id).await;
 
     let application_authorization_params = json!({
         "application_id": create_application_body.id,
@@ -1619,7 +1545,7 @@ async fn create_invitation() {
     ident.set_bearer_token(&app_access_token);
 
     let create_organization_body =
-        generate_organization(&ident, &authentication_res_body.user.id).await;
+        utils::generate_organization(&ident, &authentication_res_body.user.id).await;
 
     let associate_application_org_params = json!({
         "organization_id": &create_organization_body.id,

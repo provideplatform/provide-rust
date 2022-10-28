@@ -14,66 +14,13 @@
  * limitations under the License.
  */
 
-use fake::faker::internet::en::{FreeEmail, Password};
-use fake::faker::name::en::{FirstName, LastName, Name};
+use fake::faker::name::en::Name;
 use fake::Fake;
 use provide_rust::api::client::ApiClient;
-use provide_rust::api::ident::{AuthenticateResponse, Ident};
 use provide_rust::api::vault::*;
 use serde_json::json;
 
-async fn generate_new_user_and_token() -> AuthenticateResponse {
-    let ident: ApiClient = Ident::factory("");
-
-    let email = FreeEmail().fake::<String>();
-    let password = Password(8..15).fake::<String>();
-
-    let user_data = json!({
-        "first_name": FirstName().fake::<String>(),
-        "last_name": LastName().fake::<String>(),
-        "email": &email,
-        "password": &password,
-    });
-    let create_user_res = ident
-        .create_user(Some(user_data))
-        .await
-        .expect("create user response");
-    assert_eq!(create_user_res.status(), 201);
-
-    let params = json!({
-        "email": &email,
-        "password": &password,
-        "scope": "offline_access",
-    });
-    let authenticate_res = ident
-        .authenticate(Some(params))
-        .await
-        .expect("authenticate response");
-    assert_eq!(authenticate_res.status(), 201);
-
-    return authenticate_res
-        .json::<AuthenticateResponse>()
-        .await
-        .expect("authentication response body");
-}
-
-async fn generate_vault(vault: &ApiClient) -> VaultContainer {
-    let create_vault_params = json!({
-        "name": format!("{} {}", Name().fake::<String>(), "Vault"),
-        "description": "Some vault description",
-    });
-
-    let create_vault_res = vault
-        .create_vault(Some(create_vault_params))
-        .await
-        .expect("create vault response");
-    assert_eq!(create_vault_res.status(), 201);
-
-    return create_vault_res
-        .json::<VaultContainer>()
-        .await
-        .expect("create vault response");
-}
+mod utils;
 
 async fn generate_key(vault: &ApiClient, vault_id: &str) -> VaultKey {
     let create_key_params = json!({
@@ -97,7 +44,7 @@ async fn generate_key(vault: &ApiClient, vault_id: &str) -> VaultKey {
 
 #[tokio::test]
 async fn create_vault() {
-    let authentication_res_body = generate_new_user_and_token().await;
+    let authentication_res_body = utils::generate_user_and_token().await;
     let access_token = match authentication_res_body.token.access_token {
         Some(string) => string,
         None => panic!("authentication response access token not found"),
@@ -105,12 +52,12 @@ async fn create_vault() {
 
     let vault: ApiClient = Vault::factory(&access_token);
 
-    let _ = generate_vault(&vault);
+    let _ = utils::generate_vault(&vault);
 }
 
 #[tokio::test]
 async fn list_vaults() {
-    let authentication_res_body = generate_new_user_and_token().await;
+    let authentication_res_body = utils::generate_user_and_token().await;
     let access_token = match authentication_res_body.token.access_token {
         Some(string) => string,
         None => panic!("authentication response access token not found"),
@@ -124,7 +71,7 @@ async fn list_vaults() {
 
 #[tokio::test]
 async fn create_seal_unseal_key() {
-    let authentication_res_body = generate_new_user_and_token().await;
+    let authentication_res_body = utils::generate_user_and_token().await;
     let access_token = match authentication_res_body.token.access_token {
         Some(string) => string,
         None => panic!("authentication response access token not found"),
@@ -141,7 +88,7 @@ async fn create_seal_unseal_key() {
 
 #[tokio::test]
 async fn unseal_vault() {
-    let authentication_res_body = generate_new_user_and_token().await;
+    let authentication_res_body = utils::generate_user_and_token().await;
     let access_token = match authentication_res_body.token.access_token {
         Some(string) => string,
         None => panic!("authentication response access token not found"),
@@ -172,7 +119,7 @@ async fn unseal_vault() {
 
 #[tokio::test]
 async fn create_key() {
-    let authentication_res_body = generate_new_user_and_token().await;
+    let authentication_res_body = utils::generate_user_and_token().await;
     let access_token = match authentication_res_body.token.access_token {
         Some(string) => string,
         None => panic!("authentication response access token not found"),
@@ -180,14 +127,14 @@ async fn create_key() {
 
     let vault: ApiClient = Vault::factory(&access_token);
 
-    let create_vault_res = generate_vault(&vault).await;
+    let create_vault_res = utils::generate_vault(&vault).await;
 
     let _ = generate_key(&vault, &create_vault_res.id);
 }
 
 #[tokio::test]
 async fn delete_key() {
-    let authentication_res_body = generate_new_user_and_token().await;
+    let authentication_res_body = utils::generate_user_and_token().await;
     let access_token = match authentication_res_body.token.access_token {
         Some(string) => string,
         None => panic!("authentication response access token not found"),
@@ -195,7 +142,7 @@ async fn delete_key() {
 
     let vault: ApiClient = Vault::factory(&access_token);
 
-    let create_vault_res = generate_vault(&vault).await;
+    let create_vault_res = utils::generate_vault(&vault).await;
     let create_key_res = generate_key(&vault, &create_vault_res.id).await;
 
     let delete_key_res = vault
@@ -207,7 +154,7 @@ async fn delete_key() {
 
 #[tokio::test]
 async fn derive_key() {
-    let authentication_res_body = generate_new_user_and_token().await;
+    let authentication_res_body = utils::generate_user_and_token().await;
     let access_token = match authentication_res_body.token.access_token {
         Some(string) => string,
         None => panic!("authentication response access token not found"),
@@ -215,7 +162,7 @@ async fn derive_key() {
 
     let vault: ApiClient = Vault::factory(&access_token);
 
-    let create_vault_res = generate_vault(&vault).await;
+    let create_vault_res = utils::generate_vault(&vault).await;
     let create_key_res = generate_key(&vault, &create_vault_res.id).await;
     let derive_key_params = json!({
         "nonce": 2,
@@ -237,7 +184,7 @@ async fn derive_key() {
 
 #[tokio::test]
 async fn encrypt() {
-    let authentication_res_body = generate_new_user_and_token().await;
+    let authentication_res_body = utils::generate_user_and_token().await;
     let access_token = match authentication_res_body.token.access_token {
         Some(string) => string,
         None => panic!("authentication response access token not found"),
@@ -245,7 +192,7 @@ async fn encrypt() {
 
     let vault: ApiClient = Vault::factory(&access_token);
 
-    let create_vault_res = generate_vault(&vault).await;
+    let create_vault_res = utils::generate_vault(&vault).await;
     let create_key_res = generate_key(&vault, &create_vault_res.id).await;
     let encrypt_params = json!({
         "data": "some data",
@@ -264,7 +211,7 @@ async fn encrypt() {
 
 #[tokio::test]
 async fn decrypt() {
-    let authentication_res_body = generate_new_user_and_token().await;
+    let authentication_res_body = utils::generate_user_and_token().await;
     let access_token = match authentication_res_body.token.access_token {
         Some(string) => string,
         None => panic!("authentication response access token not found"),
@@ -272,7 +219,7 @@ async fn decrypt() {
 
     let vault: ApiClient = Vault::factory(&access_token);
 
-    let create_vault_res = generate_vault(&vault).await;
+    let create_vault_res = utils::generate_vault(&vault).await;
     let create_key_res = generate_key(&vault, &create_vault_res.id).await;
     let encrypt_params = json!({
         "data": "some data",
@@ -309,7 +256,7 @@ async fn decrypt() {
 
 #[tokio::test]
 async fn list_users() {
-    let authentication_res_body = generate_new_user_and_token().await;
+    let authentication_res_body = utils::generate_user_and_token().await;
     let access_token = match authentication_res_body.token.access_token {
         Some(string) => string,
         None => panic!("authentication response access token not found"),
@@ -317,7 +264,7 @@ async fn list_users() {
 
     let vault: ApiClient = Vault::factory(&access_token);
 
-    let create_vault_res = generate_vault(&vault).await;
+    let create_vault_res = utils::generate_vault(&vault).await;
 
     let list_keys_res = vault
         .list_keys(&create_vault_res.id, None)
@@ -328,7 +275,7 @@ async fn list_users() {
 
 #[tokio::test]
 async fn list_secrets() {
-    let authentication_res_body = generate_new_user_and_token().await;
+    let authentication_res_body = utils::generate_user_and_token().await;
     let access_token = match authentication_res_body.token.access_token {
         Some(string) => string,
         None => panic!("authentication response access token not found"),
@@ -336,7 +283,7 @@ async fn list_secrets() {
 
     let vault: ApiClient = Vault::factory(&access_token);
 
-    let create_vault_res = generate_vault(&vault).await;
+    let create_vault_res = utils::generate_vault(&vault).await;
 
     let list_secrets_res = vault
         .list_keys(&create_vault_res.id, None)
@@ -347,7 +294,7 @@ async fn list_secrets() {
 
 #[tokio::test]
 async fn store_secret() {
-    let authentication_res_body = generate_new_user_and_token().await;
+    let authentication_res_body = utils::generate_user_and_token().await;
     let access_token = match authentication_res_body.token.access_token {
         Some(string) => string,
         None => panic!("authentication response access token not found"),
@@ -355,7 +302,7 @@ async fn store_secret() {
 
     let vault: ApiClient = Vault::factory(&access_token);
 
-    let create_vault_res = generate_vault(&vault).await;
+    let create_vault_res = utils::generate_vault(&vault).await;
 
     let store_secret_params = json!({
         "type": "sample secret",
@@ -373,7 +320,7 @@ async fn store_secret() {
 
 #[tokio::test]
 async fn retrieve_secret() {
-    let authentication_res_body = generate_new_user_and_token().await;
+    let authentication_res_body = utils::generate_user_and_token().await;
     let access_token = match authentication_res_body.token.access_token {
         Some(string) => string,
         None => panic!("authentication response access token not found"),
@@ -381,7 +328,7 @@ async fn retrieve_secret() {
 
     let vault: ApiClient = Vault::factory(&access_token);
 
-    let create_vault_res = generate_vault(&vault).await;
+    let create_vault_res = utils::generate_vault(&vault).await;
 
     let store_secret_params = json!({
         "type": "sample secret",
@@ -410,7 +357,7 @@ async fn retrieve_secret() {
 
 #[tokio::test]
 async fn delete_secret() {
-    let authentication_res_body = generate_new_user_and_token().await;
+    let authentication_res_body = utils::generate_user_and_token().await;
     let access_token = match authentication_res_body.token.access_token {
         Some(string) => string,
         None => panic!("authentication response access token not found"),
@@ -418,7 +365,7 @@ async fn delete_secret() {
 
     let vault: ApiClient = Vault::factory(&access_token);
 
-    let create_vault_res = generate_vault(&vault).await;
+    let create_vault_res = utils::generate_vault(&vault).await;
 
     let store_secret_params = json!({
         "type": "sample secret",

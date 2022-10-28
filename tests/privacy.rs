@@ -14,50 +14,16 @@
  * limitations under the License.
  */
 
-use fake::faker::internet::en::{FreeEmail, Password};
-use fake::faker::name::en::{FirstName, LastName, Name};
+use fake::faker::name::en::Name;
 use fake::Fake;
 use provide_rust::api::client::ApiClient;
-use provide_rust::api::ident::{Application, AuthenticateResponse, Ident, Token};
+use provide_rust::api::ident::{Application, Ident, Token};
 use provide_rust::api::nchain::SEPOLIA_TESTNET_NETWORK_ID;
 use provide_rust::api::privacy::*;
 use serde_json::json;
 use tokio::time::{self, Duration};
 
-async fn generate_new_user_and_token() -> AuthenticateResponse {
-    let ident: ApiClient = Ident::factory("");
-
-    let email = FreeEmail().fake::<String>();
-    let password = Password(8..15).fake::<String>();
-
-    let user_data = Some(json!({
-        "first_name": FirstName().fake::<String>(),
-        "last_name": LastName().fake::<String>(),
-        "email": &email,
-        "password": &password,
-    }));
-    let create_user_res = ident
-        .create_user(user_data)
-        .await
-        .expect("create user response");
-    assert_eq!(create_user_res.status(), 201);
-
-    let params = Some(json!({
-        "email": &email,
-        "password": &password,
-        "scope": "offline_access",
-    }));
-    let authenticate_res = ident
-        .authenticate(params)
-        .await
-        .expect("authenticate response");
-    assert_eq!(authenticate_res.status(), 201);
-
-    return authenticate_res
-        .json::<AuthenticateResponse>()
-        .await
-        .expect("authentication response body");
-}
+mod utils;
 
 async fn deploy_prover(privacy: &ApiClient) -> Prover {
     let create_prover_params = Some(json!({
@@ -82,7 +48,7 @@ async fn deploy_prover(privacy: &ApiClient) -> Prover {
 
 #[tokio::test]
 async fn list_provers() {
-    let authentication_res_body = generate_new_user_and_token().await;
+    let authentication_res_body = utils::generate_user_and_token().await;
     let access_token = match authentication_res_body.token.access_token {
         Some(string) => string,
         None => panic!("authentication response access token not found"),
@@ -99,7 +65,7 @@ async fn list_provers() {
 
 #[tokio::test]
 async fn create_prover() {
-    let authentication_res_body = generate_new_user_and_token().await;
+    let authentication_res_body = utils::generate_user_and_token().await;
     let access_token = match authentication_res_body.token.access_token {
         Some(string) => string,
         None => panic!("authentication response access token not found"),
@@ -111,7 +77,7 @@ async fn create_prover() {
 
 #[tokio::test]
 async fn get_prover() {
-    let authentication_res_body = generate_new_user_and_token().await;
+    let authentication_res_body = utils::generate_user_and_token().await;
     let access_token = match authentication_res_body.token.access_token {
         Some(string) => string,
         None => panic!("authentication response access token not found"),
@@ -129,7 +95,7 @@ async fn get_prover() {
 
 #[tokio::test]
 async fn generate_proof() {
-    let authentication_res_body = generate_new_user_and_token().await;
+    let authentication_res_body = utils::generate_user_and_token().await;
     let access_token = match authentication_res_body.token.access_token {
         Some(string) => string,
         None => panic!("authentication response access token not found"),
@@ -226,7 +192,7 @@ async fn generate_proof() {
 
 #[tokio::test]
 async fn verify_proof() {
-    let authentication_res_body = generate_new_user_and_token().await;
+    let authentication_res_body = utils::generate_user_and_token().await;
     let access_token = match authentication_res_body.token.access_token {
         Some(string) => string,
         None => panic!("authentication response access token not found"),
@@ -342,7 +308,7 @@ async fn verify_proof() {
 
 #[tokio::test]
 async fn retrieve_store_value() {
-    let authentication_res_body = generate_new_user_and_token().await;
+    let authentication_res_body = utils::generate_user_and_token().await;
     let access_token = match authentication_res_body.token.access_token {
         Some(string) => string,
         None => panic!("authentication response access token not found"),

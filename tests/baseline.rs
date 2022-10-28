@@ -20,7 +20,7 @@ use fake::faker::name::en::{FirstName, LastName, Name};
 use fake::Fake;
 use provide_rust::api::baseline::*;
 use provide_rust::api::client::ApiClient;
-use provide_rust::api::ident::{AuthenticateResponse, Ident, Organization, Token};
+use provide_rust::api::ident::{AuthenticateResponse, Ident, Token};
 use provide_rust::api::nchain::{
     Account, Contract, NChain, Wallet, POLYGON_MUMBAI_TESTNET_NETWORK_ID,
     SEPOLIA_TESTNET_NETWORK_ID,
@@ -35,6 +35,9 @@ use sha256::digest;
 use std::io::Write;
 use std::process::Command;
 use tokio::time::{self, Duration};
+use std::env;
+
+mod utils;
 
 const DEFAULT_DEPLOY_REGISTRY_CONTRACT_TIMEOUT: Duration = Duration::new(5 * 60, 0);
 const DEFAULT_DEPLOY_WORKFLOW_TIMEOUT: Duration = Duration::new(3 * 60, 0);
@@ -260,47 +263,6 @@ async fn _deploy_workflow(baseline: &ApiClient, workflow_id: &str, expected_stat
     }
 }
 
-async fn generate_workgroup(baseline: &ApiClient) -> Workgroup {
-    let workgroup_params = json!({
-        "network_id": SEPOLIA_TESTNET_NETWORK_ID,
-        "name": format!("{} application", Name().fake::<String>()),
-        "type": "baseline",
-    });
-
-    let create_workgroup_res = baseline
-        .create_workgroup(Some(workgroup_params))
-        .await
-        .expect("generate workgroup response");
-    assert_eq!(create_workgroup_res.status(), 201);
-
-    return create_workgroup_res
-        .json::<Workgroup>()
-        .await
-        .expect("create workgroup body");
-}
-
-async fn generate_baseline_organization(ident: &ApiClient, user_id: &str) -> Organization {
-    let create_organization_params = Some(json!({
-        "name": format!("{} organization", Name().fake::<String>()).chars().filter(|c| !c.is_whitespace()).collect::<String>().replace("'", ""),
-        "description": "Organization for testing",
-        "user_id": user_id,
-        "metadata": {
-            "hello": "world",
-            "arbitrary": "input",
-        },
-    }));
-    let create_organization_res = ident
-        .create_organization(create_organization_params)
-        .await
-        .expect("create organization response");
-    assert_eq!(create_organization_res.status(), 201);
-
-    return create_organization_res
-        .json::<Organization>()
-        .await
-        .expect("generate organization body");
-}
-
 #[ignore]
 #[tokio::test]
 async fn baseline_setup() {
@@ -348,7 +310,7 @@ async fn baseline_setup() {
 
     // create organization
     let create_organization_body =
-        generate_baseline_organization(&ident, &authentication_res_body.user.id).await;
+        utils::generate_organization(&ident, &authentication_res_body.user.id).await;
     let organization_authorization_params = json!({
         "organization_id": &create_organization_body.id,
         "scope": "offline_access",
@@ -435,7 +397,7 @@ async fn baseline_setup() {
         .expect("create account body");
 
     let mut registry_contract_address =
-        std::env::var("BASELINE_REGISTRY_CONTRACT_ADDRESS").unwrap_or(String::from("0x"));
+        env::var("BASELINE_REGISTRY_CONTRACT_ADDRESS").unwrap_or(String::from("0x"));
 
     if registry_contract_address == "0x" {
         registry_contract_address =
@@ -456,7 +418,7 @@ async fn baseline_setup() {
     let workgroup_id: String;
     let workgroup_access_token: String;
 
-    let invoke_prvd_cli = std::env::var("INVOKE_PRVD_CLI")
+    let invoke_prvd_cli = env::var("INVOKE_PRVD_CLI")
         .unwrap_or(String::from("true"))
         .to_lowercase()
         == "true";
@@ -537,11 +499,11 @@ async fn baseline_setup() {
         run_cmd += &format!(" --config={}", &config_file_name);
         run_cmd += &format!(
             " --ident-host={}",
-            std::env::var("IDENT_API_HOST").unwrap_or(String::from("localhost:8081"))
+            env::var("IDENT_API_HOST").unwrap_or(String::from("localhost:8081"))
         );
         run_cmd += &format!(
             " --ident-scheme={}",
-            std::env::var("IDENT_API_SCHEME").unwrap_or(String::from("http"))
+            env::var("IDENT_API_SCHEME").unwrap_or(String::from("http"))
         );
         run_cmd += &format!(" --messaging-endpoint={}", "nats://localhost:4223");
         run_cmd += &format!(" --name=\"{}\"", &create_organization_body.name);
@@ -550,11 +512,11 @@ async fn baseline_setup() {
         run_cmd += &format!(" --nats-ws-port={}", "4224");
         run_cmd += &format!(
             " --nchain-host={}",
-            std::env::var("NCHAIN_API_HOST").unwrap_or(String::from("localhost:8085"))
+            env::var("NCHAIN_API_HOST").unwrap_or(String::from("localhost:8085"))
         );
         run_cmd += &format!(
             " --nchain-scheme={}",
-            std::env::var("NCHAIN_API_SCHEME").unwrap_or(String::from("http"))
+            env::var("NCHAIN_API_SCHEME").unwrap_or(String::from("http"))
         );
         run_cmd += &format!(" --nchain-network-id={}", SEPOLIA_TESTNET_NETWORK_ID);
         run_cmd += &format!(" --organization={}", &create_organization_body.id);
@@ -563,11 +525,11 @@ async fn baseline_setup() {
         run_cmd += &format!(" --port={}", "8086");
         run_cmd += &format!(
             " --privacy-host={}",
-            std::env::var("PRIVACY_API_HOST").unwrap_or(String::from("localhost:8083"))
+            env::var("PRIVACY_API_HOST").unwrap_or(String::from("localhost:8083"))
         );
         run_cmd += &format!(
             " --privacy-scheme={}",
-            std::env::var("PRIVACY_API_SCHEME").unwrap_or(String::from("http"))
+            env::var("PRIVACY_API_SCHEME").unwrap_or(String::from("http"))
         );
         run_cmd += &format!(
             " --registry-contract-address={}",
@@ -578,12 +540,12 @@ async fn baseline_setup() {
         run_cmd += &format!(" --sor={}", "ephemeral");
         run_cmd += &format!(
             " --vault-host={}",
-            std::env::var("VAULT_API_HOST").unwrap_or(String::from("localhost:8082"))
+            env::var("VAULT_API_HOST").unwrap_or(String::from("localhost:8082"))
         );
         run_cmd += &format!(" --vault-refresh-token={}", &org_refresh_token);
         run_cmd += &format!(
             " --vault-scheme={}",
-            std::env::var("VAULT_API_SCHEME").unwrap_or(String::from("http"))
+            env::var("VAULT_API_SCHEME").unwrap_or(String::from("http"))
         );
         run_cmd += &format!(" --workgroup={}", &create_app_body.id);
         run_cmd += &format!(
@@ -614,8 +576,8 @@ async fn baseline_setup() {
         let mut baseline_status_client = ApiClient::new("", "", "", "");
         baseline_status_client.set_base_url(&format!(
             "{}://{}",
-            std::env::var("BASELINE_API_SCHEME").expect("baseline api scheme"),
-            std::env::var("BASELINE_API_HOST").expect("baseline api host")
+            env::var("BASELINE_API_SCHEME").expect("baseline api scheme"),
+            env::var("BASELINE_API_HOST").expect("baseline api host")
         ));
 
         let mut baseline_container_status = String::from("");
@@ -636,7 +598,7 @@ async fn baseline_setup() {
         workgroup_id = create_app_body.id;
     } else {
         // create workgroup
-        let create_workgroup_body = generate_workgroup(&baseline).await;
+        let create_workgroup_body = utils::generate_workgroup(&baseline).await;
         let application_authorization_params = json!({
             "application_id": &create_workgroup_body.id,
             "scope": "offline_access",
@@ -7231,3 +7193,6 @@ async fn org_messaging_endpoint_is_registered_on_org_registry_contract_on_subjec
         "nats://baseline-nats-1:4223"
     );
 }
+
+// #[tokio::test]
+// async fn domain_models_are_propogated_on_organization_invitation_acceptance() {}

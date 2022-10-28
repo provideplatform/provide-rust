@@ -15,3 +15,5 @@ Cargo.lock
 /examples/wasm-demo/client/node_modules
 
 /test-output
+
+.env
