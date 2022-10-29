@@ -7179,7 +7179,7 @@ async fn org_messaging_endpoint_is_registered_on_org_registry_contract_on_subjec
         .expect("execute contract body");
 
     let received_organization_messaging_endpoint_encoded: String =
-        match execute_contract_body["response"][2].as_str() {
+        match execute_contract_body["response"][3].as_str() {
             Some(v) => v.to_string(),
             None => panic!(
             "failed to parse organization messaging endpoint from execute contract response body"
