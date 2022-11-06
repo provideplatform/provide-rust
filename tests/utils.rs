@@ -234,24 +234,17 @@ pub async fn scrape_invitation_token() -> Result<String, Error> {
 
         let token_re = Regex::new(r#"["]dispatch invitation[:] (.*)["]"#).unwrap();
 
-        match token_re.captures(logs_str) {
-            Some(caps) => {
-                token = caps
-                    .get(caps.len() - 1)
-                    .map_or("", |m| m.as_str())
-                    .to_owned();
-            }
-            None => {
-                interval.tick().await;
+        let matches = token_re.captures_iter(logs_str);
+        let collected = matches.collect::<Vec<regex::Captures>>();
+        if collected.len() > 0 {
+            token = collected[collected.len() - 1]["token"].to_owned()
+        } else {
+            interval.tick().await;
 
-                if now.elapsed() >= timeout {
-                    return Err(Error::new(
-                        ErrorKind::TimedOut,
-                        "failed to find invitation token; scraping timed out",
-                    ));
-                }
+            if now.elapsed() >= timeout {
+                panic!("failed to find invitation token; scraping timed out");
             }
-        };
+        }
     }
 
     Ok(token)
