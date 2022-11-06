@@ -242,7 +242,10 @@ pub async fn scrape_invitation_token() -> Result<String, Error> {
             interval.tick().await;
 
             if now.elapsed() >= timeout {
-                panic!("failed to find invitation token; scraping timed out");
+                return Err(Error::new(
+                    ErrorKind::TimedOut,
+                    "failed to find invitation token; scraping timed out",
+                ));
             }
         }
     }
