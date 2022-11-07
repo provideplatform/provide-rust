@@ -15,6 +15,8 @@
  */
 
 use base64::decode;
+use elasticsearch::http::transport::Transport;
+use elasticsearch::{Elasticsearch, SearchParts};
 use fake::faker::internet::en::{FreeEmail, Password};
 use fake::faker::name::en::{FirstName, LastName, Name};
 use fake::Fake;
@@ -41,6 +43,7 @@ mod utils;
 
 const DEFAULT_DEPLOY_REGISTRY_CONTRACT_TIMEOUT: Duration = Duration::new(5 * 60, 0);
 const DEFAULT_DEPLOY_WORKFLOW_TIMEOUT: Duration = Duration::new(3 * 60, 0);
+const DEFAULT_INDEX_WORKFLOW_TIMEOUT: Duration = Duration::new(1 * 60, 0);
 
 async fn _create_org_registry_contract(
     nchain: &ApiClient,
@@ -202,9 +205,9 @@ async fn _deploy_workflow(baseline: &ApiClient, workflow_id: &str, expected_stat
         let mut interval = time::interval(Duration::from_secs(5));
         let now = std::time::Instant::now();
 
-        let mut deployed_worksteps_status = false;
+        let mut has_deployed_worksteps = false;
 
-        while deployed_worksteps_status != true {
+        while !has_deployed_worksteps {
             let fetch_worksteps_res = baseline
                 .list_worksteps(workflow_id, None)
                 .await
@@ -223,7 +226,7 @@ async fn _deploy_workflow(baseline: &ApiClient, workflow_id: &str, expected_stat
             }
 
             if count == fetch_worksteps_body.len() {
-                deployed_worksteps_status = true
+                has_deployed_worksteps = true
             } else {
                 interval.tick().await;
 
@@ -232,11 +235,11 @@ async fn _deploy_workflow(baseline: &ApiClient, workflow_id: &str, expected_stat
                 }
             }
         }
-        assert!(deployed_worksteps_status);
+        assert!(has_deployed_worksteps);
 
-        let mut deployed_workflow_status = false;
+        let mut has_deployed_workflow = false;
 
-        while deployed_workflow_status != true {
+        while !has_deployed_workflow {
             let get_workflow_res = baseline
                 .get_workflow(workflow_id, None)
                 .await
@@ -247,7 +250,7 @@ async fn _deploy_workflow(baseline: &ApiClient, workflow_id: &str, expected_stat
                 .expect("get workflow body");
 
             if get_workflow_body.status == "deployed" {
-                deployed_workflow_status = true;
+                has_deployed_workflow = true;
             } else {
                 interval.tick().await;
 
@@ -259,7 +262,7 @@ async fn _deploy_workflow(baseline: &ApiClient, workflow_id: &str, expected_stat
                 }
             }
         }
-        assert!(deployed_workflow_status);
+        assert!(has_deployed_workflow);
     }
 }
 
@@ -506,7 +509,7 @@ async fn baseline_setup() {
             env::var("IDENT_API_SCHEME").unwrap_or(String::from("http"))
         );
         run_cmd += &format!(" --messaging-endpoint={}", "nats://localhost:4223");
-        run_cmd += &format!(" --name=\"{}\"", &create_organization_body.name);
+        run_cmd += &format!(" --name=\"{}\"", "baseline");
         run_cmd += &format!(" --nats-auth-token={}", "testtoken");
         run_cmd += &format!(" --nats-port={}", "4223");
         run_cmd += &format!(" --nats-ws-port={}", "4224");
@@ -535,7 +538,7 @@ async fn baseline_setup() {
             " --registry-contract-address={}",
             &registry_contract_address
         );
-        run_cmd += &format!(" --redis-hostname={}-redis", &create_organization_body.name);
+        run_cmd += &format!(" --redis-hostname={}-redis", "baseline");
         run_cmd += &format!(" --redis-port={}", "6380");
         run_cmd += &format!(" --sor={}", "ephemeral");
         run_cmd += &format!(
@@ -548,15 +551,12 @@ async fn baseline_setup() {
             env::var("VAULT_API_SCHEME").unwrap_or(String::from("http"))
         );
         run_cmd += &format!(" --workgroup={}", &create_app_body.id);
-        run_cmd += &format!(
-            " --postgres-hostname={}-postgres",
-            &create_organization_body.name
-        );
+        run_cmd += &format!(" --postgres-hostname={}-postgres", "baseline");
         run_cmd += &format!(" --postgres-port={}", "5433");
 
         let key_str = r"\n-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAqU/GXp8MqmugQyRk5FUF\nBvlJt1/h7L3Crzlzejz/OxriZdq/lBNQW9S1kzGc7qjXprZ1Kg3zP6irr6wmvP0W\nYBGltWs2cWUAmxh0PSxuKdT/OyL9w+rjKLh4yo3ex6DX3Ij0iP01Ej2POe5WrPDS\n8j6LT0s4HZ1FprL5h7RUQWV3cO4pF+1kl6HlBpNzEQzocW9ig4DNdSeUENARHWoC\nixE1gFYo9RXm7acqgqCk3ihdJRIbO4e/m1aZq2mvAFK+yHTIWBL0p5PF0Fe8zcWd\nNeEATYB+eRdNJ3jjS8447YrcbQcBQmhFjk8hbCnc3Rv3HvAapk8xDFhImdVF1ffD\nFwIDAQAB\n-----END PUBLIC KEY-----";
         run_cmd += &format!(" --jwt-signer-public-key='{}'", &key_str);
-        run_cmd += " --elasticsearch-ssl-insecure";
+        run_cmd += " --elasticsearch-scheme=http";
 
         let localhost_regex = regex::Regex::new(r"localhost").expect("localhost regex expression");
         run_cmd = localhost_regex
@@ -7543,3 +7543,121 @@ async fn org_messaging_endpoint_is_registered_on_org_registry_contract_on_subjec
 
 // #[tokio::test]
 // async fn domain_models_are_propogated_on_organization_invitation_acceptance() {}
+
+#[tokio::test]
+async fn workflow_creation_indexes_appropriate_items() {
+    let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
+    let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
+
+    let org_access_token_json = config_vals["org_access_token"].to_string();
+    let org_access_token =
+        serde_json::from_str::<String>(&org_access_token_json).expect("organzation access token");
+
+    let app_id_json = config_vals["app_id"].to_string();
+    let app_id = serde_json::from_str::<String>(&app_id_json).expect("workgroup id");
+
+    let baseline: ApiClient = Baseline::factory(&org_access_token);
+
+    let create_workflow_params = json!({
+        "workgroup_id": &app_id,
+        "name": format!("{} workstep", Name().fake::<String>()),
+        "version": "v0.0.1",
+    });
+
+    let create_workflow_body = _create_workflow(&baseline, create_workflow_params, 201).await;
+
+    let mapping_type = format!("{} type", Name().fake::<String>());
+    let create_mapping_params = json!({
+      "name": &mapping_type,
+      "type": &mapping_type,
+      "workgroup_id": &app_id,
+      "models": [
+        {
+          "description": "test model",
+          "primary_key": "id",
+          "type": &mapping_type,
+          "fields": [
+            {
+              "is_primary_key": true,
+              "name": "id",
+              "type": "string"
+            }
+          ]
+        }
+      ]
+    });
+
+    let create_mapping_res = baseline
+        .create_mapping(Some(create_mapping_params))
+        .await
+        .expect("create mapping response");
+
+    let create_mapping_body = create_mapping_res
+        .json::<Mapping>()
+        .await
+        .expect("create mapping body");
+    let mapping_model = &create_mapping_body.models[0];
+
+    let create_workstep_params = json!({
+        "name": format!("{} workstep", Name().fake::<String>()),
+        "require_finality": true,
+        "metadata": {
+            "prover": {
+                "identifier": PREIMAGE_HASH_IDENTIFIER,
+                "name": "General Consistency",
+                "provider": GNARK_PROVIDER,
+                "proving_scheme": GROTH16_PROVING_SCHEME,
+                "curve": BLS12_377_CURVE,
+            },
+            "mapping_model_id": mapping_model.id
+        },
+    });
+
+    let _ = _create_workstep(
+        &baseline,
+        &create_workflow_body.id,
+        create_workstep_params,
+        201,
+    )
+    .await;
+
+    let _ = _deploy_workflow(&baseline, &create_workflow_body.id, 202).await;
+
+    let transport = Transport::single_node("http://localhost:9200").unwrap();
+    let client = Elasticsearch::new(transport);
+
+    let mut interval = time::interval(Duration::from_millis(500));
+    let now = std::time::Instant::now();
+
+    let mut has_found_workflow_items = false;
+
+    while !has_found_workflow_items {
+        let query_es_res = client
+            .search(SearchParts::None)
+            .send()
+            .await
+            .expect("query es res");
+
+        let query_es_body = query_es_res.json::<Value>().await.expect("query es body");
+
+        let hits = query_es_body["hits"]["hits"].as_array().unwrap();
+        for hit in hits {
+            let hit_source = hit["_source"].clone();
+            let object_types = hit_source["workstep_object_types"].as_array().unwrap();
+
+            for t in object_types {
+                if t.as_str().unwrap() == &mapping_type {
+                    has_found_workflow_items = true
+                }
+            }
+        }
+
+        interval.tick().await;
+
+        if now.elapsed() >= DEFAULT_INDEX_WORKFLOW_TIMEOUT {
+            panic!("failed to find indexed workflow items; search timed out");
+        }
+    }
+
+    assert!(has_found_workflow_items);
+}

@@ -186,7 +186,7 @@ pub async fn generate_workgroup(baseline: &ApiClient) -> Workgroup {
         .expect("create workgroup body");
 }
 
-pub async fn scrape_invitation_token() -> Result<String, Error> {
+pub async fn get_container_hash(container_re: Regex) -> Result<String, Error> {
     let dps_raw = Command::new("docker")
         .arg("ps")
         .output()
@@ -197,25 +197,27 @@ pub async fn scrape_invitation_token() -> Result<String, Error> {
     let split_dps_re = Regex::new(r"\r?\n|\r|\n").unwrap();
     let split_dps = split_dps_re.split(dps_str);
 
-    let ident_consumer_container_re = Regex::new(r"ident\-consumer").unwrap();
-    let mut ident_consumer_container_str = "";
     for s in split_dps {
-        if ident_consumer_container_re.is_match(s) {
-            ident_consumer_container_str = s
+        if container_re.is_match(s) {
+            let split_consumer_info_re = Regex::new(r"\s+").unwrap();
+            let ident_consumer_container_hash =
+                split_consumer_info_re.split(s).collect::<Vec<&str>>()[0];
+
+            return Ok(ident_consumer_container_hash.to_string());
         }
     }
 
-    if ident_consumer_container_str == "" {
-        return Err(Error::new(
-            ErrorKind::NotFound,
-            "failed to find invitation token; failed to find ident consumer container hash",
-        ));
-    }
+    Err(Error::new(
+        ErrorKind::NotFound,
+        "failed to find container hash",
+    ))
+}
 
-    let split_consumer_info_re = Regex::new(r"\s+").unwrap();
-    let ident_consumer_container_hash = split_consumer_info_re
-        .split(ident_consumer_container_str)
-        .collect::<Vec<&str>>()[0];
+pub async fn scrape_invitation_token() -> Result<String, Error> {
+    let ident_consumer_re = Regex::new(r"ident\-consumer").unwrap();
+    let container_hash = get_container_hash(ident_consumer_re)
+        .await
+        .expect("ident consumer container hash");
 
     let mut interval = time::interval(Duration::from_millis(100));
     let now = Instant::now();
@@ -226,7 +228,7 @@ pub async fn scrape_invitation_token() -> Result<String, Error> {
     while token == "" {
         let logs_raw = Command::new("docker")
             .arg("logs")
-            .arg(ident_consumer_container_hash)
+            .arg(&container_hash)
             .output()
             .expect("docker logs");
 
