@@ -532,10 +532,11 @@ services:
       - bpi-1
 
   baseline-elasticsearch-1:
-    image: elasticsearch:8.3.3
+    image: elasticsearch:7.17.7
     container_name: baseline-elasticsearch-1
     environment:
       - ELASTIC_PASSWORD=3l4s71c
+      - discovery.type=single-node
     healthcheck:
       test: ['CMD', 'nc', '-zv', 'prvd-elasticsearch', '9200']
       interval: 1m
@@ -590,8 +591,8 @@ services:
       - BASELINE_ORGANIZATION_MESSAGING_ENDPOINT=nats://baseline-nats-1:4223
       - BASELINE_ORGANIZATION_PROXY_ENDPOINT=http://prvd-bpi-1:8080
       - ELASTICSEARCH_HOSTS=baseline-elasticsearch-1:9200
-      - ELASTICSEARCH_ACCEPT_SELF_SIGNED_CERTIFICATE=true
-      - ELASTICSEARCH_API_SCHEME=https
+      - ELASTICSEARCH_ACCEPT_SELF_SIGNED_CERTIFICATE=false
+      - ELASTICSEARCH_API_SCHEME=http
       - ELASTICSEARCH_USERNAME=elastic
       - ELASTICSEARCH_PASSWORD=3l4s71c
       - SERVICENOW_LIST_SCHEMAS_API_PATH=api/x_prot9_provide/setup_configuration/ListSchemas
@@ -653,8 +654,8 @@ services:
       - BASELINE_API_HOST=prvd-bpi-1:8080
       - BASELINE_API_PATH=api/v1
       - ELASTICSEARCH_HOSTS=baseline-elasticsearch-1:9200
-      - ELASTICSEARCH_ACCEPT_SELF_SIGNED_CERTIFICATE=true
-      - ELASTICSEARCH_API_SCHEME=https
+      - ELASTICSEARCH_ACCEPT_SELF_SIGNED_CERTIFICATE=false
+      - ELASTICSEARCH_API_SCHEME=http
       - ELASTICSEARCH_USERNAME=elastic
       - ELASTICSEARCH_PASSWORD=3l4s71c
       - SERVICENOW_LIST_SCHEMAS_API_PATH=api/x_prot9_provide/setup_configuration/ListSchemas
