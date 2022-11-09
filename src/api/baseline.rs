@@ -125,6 +125,35 @@ pub trait Baseline {
         params: Params,
     ) -> Response;
 
+    async fn list_workstep_constraints(
+        &self,
+        workflow_id: &str,
+        workstep_id: &str,
+        query_params: QueryParams,
+    ) -> Response;
+
+    async fn create_workstep_constraint(
+        &self,
+        workflow_id: &str,
+        workstep_id: &str,
+        params: Params,
+    ) -> Response;
+
+    async fn update_workstep_constraint(
+        &self,
+        workflow_id: &str,
+        workstep_id: &str,
+        constraint_id: &str,
+        params: Params,
+    ) -> Response;
+
+    async fn delete_workstep_constraint(
+        &self,
+        workflow_id: &str,
+        workstep_id: &str,
+        constraint_id: &str,
+    ) -> Response;
+
     async fn list_workstep_participants(
         &self,
         workflow_id: &str,
@@ -376,6 +405,59 @@ impl Baseline for ApiClient {
             workflow_id, workstep_id
         );
         return self.post(&uri, params).await;
+    }
+
+    async fn list_workstep_constraints(
+        &self,
+        workflow_id: &str,
+        workstep_id: &str,
+        query_params: QueryParams,
+    ) -> Response {
+        let uri = format!(
+            "workflows/{}/worksteps/{}/constraints",
+            workflow_id, workstep_id
+        );
+        return self.get(&uri, query_params).await;
+    }
+
+    async fn create_workstep_constraint(
+        &self,
+        workflow_id: &str,
+        workstep_id: &str,
+        params: Params,
+    ) -> Response {
+        let uri = format!(
+            "workflows/{}/worksteps/{}/constraints",
+            workflow_id, workstep_id
+        );
+        return self.post(&uri, params).await;
+    }
+
+    async fn update_workstep_constraint(
+        &self,
+        workflow_id: &str,
+        workstep_id: &str,
+        constraint_id: &str,
+        params: Params,
+    ) -> Response {
+        let uri = format!(
+            "workflows/{}/worksteps/{}/constraints/{}",
+            workflow_id, workstep_id, constraint_id
+        );
+        return self.put(&uri, params).await;
+    }
+
+    async fn delete_workstep_constraint(
+        &self,
+        workflow_id: &str,
+        workstep_id: &str,
+        constraint_id: &str,
+    ) -> Response {
+        let uri = format!(
+            "workflows/{}/worksteps/{}/constraints/{}",
+            workflow_id, workstep_id, constraint_id
+        );
+        return self.delete(&uri).await;
     }
 
     async fn list_workstep_participants(

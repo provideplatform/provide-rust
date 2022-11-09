@@ -314,3 +314,14 @@ pub struct SubjectAccountMetadata {
     sor: Option<Value>,
     workgroup_id: Option<String>,
 }
+
+#[derive(Serialize, Deserialize, Debug, Default, Clone)]
+pub struct WorkstepConstraint {
+    pub id: String,
+    created_at: String,
+    pub expression: String,
+    pub execution_requirement: bool,
+    pub finality_requirement: bool,
+    description: Option<String>,
+    pub workstep_id: String,
+}

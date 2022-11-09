@@ -6036,6 +6036,348 @@ async fn execute_workstep_fail_on_draft() {
 }
 
 #[tokio::test]
+async fn list_workstep_constraints() {
+    let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
+    let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
+
+    let org_access_token_json = config_vals["org_access_token"].to_string();
+    let org_access_token =
+        serde_json::from_str::<String>(&org_access_token_json).expect("organzation access token");
+
+    let app_id_json = config_vals["app_id"].to_string();
+    let app_id = serde_json::from_str::<String>(&app_id_json).expect("workgroup id");
+
+    let baseline: ApiClient = Baseline::factory(&org_access_token);
+
+    let create_workflow_params = json!({
+        "workgroup_id": &app_id,
+        "name": format!("{} workstep", Name().fake::<String>()),
+        "version": "v0.0.1",
+    });
+
+    let create_workflow_body = _create_workflow(&baseline, create_workflow_params, 201).await;
+
+    let create_workstep_params = json!({
+        "name": format!("{} workstep", Name().fake::<String>()),
+        "require_finality": true,
+        "metadata": {
+            "prover": {
+                "identifier": PREIMAGE_HASH_IDENTIFIER,
+                "name": "General Consistency",
+                "provider": GNARK_PROVIDER,
+                "proving_scheme": GROTH16_PROVING_SCHEME,
+                "curve": BLS12_377_CURVE,
+            },
+        },
+    });
+
+    let create_workstep_body = _create_workstep(
+        &baseline,
+        &create_workflow_body.id,
+        create_workstep_params,
+        201,
+    )
+    .await;
+
+    let list_workstep_constraints_res = baseline
+        .list_workstep_constraints(&create_workflow_body.id, &create_workstep_body.id, None)
+        .await
+        .expect("list workstep constraints res");
+    assert_eq!(list_workstep_constraints_res.status(), 200);
+}
+
+#[tokio::test]
+async fn create_workstep_constraints() {
+    let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
+    let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
+
+    let org_access_token_json = config_vals["org_access_token"].to_string();
+    let org_access_token =
+        serde_json::from_str::<String>(&org_access_token_json).expect("organzation access token");
+
+    let app_id_json = config_vals["app_id"].to_string();
+    let app_id = serde_json::from_str::<String>(&app_id_json).expect("workgroup id");
+
+    let baseline: ApiClient = Baseline::factory(&org_access_token);
+
+    let create_workflow_params = json!({
+        "workgroup_id": &app_id,
+        "name": format!("{} workstep", Name().fake::<String>()),
+        "version": "v0.0.1",
+    });
+
+    let create_workflow_body = _create_workflow(&baseline, create_workflow_params, 201).await;
+
+    let create_workstep_params = json!({
+        "name": format!("{} workstep", Name().fake::<String>()),
+        "require_finality": true,
+        "metadata": {
+            "prover": {
+                "identifier": PREIMAGE_HASH_IDENTIFIER,
+                "name": "General Consistency",
+                "provider": GNARK_PROVIDER,
+                "proving_scheme": GROTH16_PROVING_SCHEME,
+                "curve": BLS12_377_CURVE,
+            },
+        },
+    });
+
+    let create_workstep_body = _create_workstep(
+        &baseline,
+        &create_workflow_body.id,
+        create_workstep_params,
+        201,
+    )
+    .await;
+
+    let create_workstep_constraint_params = json!({
+        "expression": "field > 50",
+        "execution_requirement": true,
+        "finality_requirement": false,
+        "workstep_id": &create_workstep_body.id,
+    });
+
+    let create_workstep_constraint_res = baseline
+        .create_workstep_constraint(
+            &create_workflow_body.id,
+            &create_workstep_body.id,
+            Some(create_workstep_constraint_params),
+        )
+        .await
+        .expect("create workstep constraint res");
+    assert_eq!(
+        create_workstep_constraint_res.status(),
+        201,
+        "create workstep constraint res: {}",
+        serde_json::to_string_pretty(
+            &create_workstep_constraint_res
+                .json::<Value>()
+                .await
+                .unwrap()
+        )
+        .unwrap()
+    );
+
+    let create_workstep_constraint_body = create_workstep_constraint_res
+        .json::<WorkstepConstraint>()
+        .await
+        .expect("create workstep constraint body");
+    assert_eq!(create_workstep_constraint_body.expression, "field > 50");
+    assert_eq!(
+        &create_workstep_constraint_body.workstep_id,
+        &create_workstep_body.id
+    );
+    assert!(create_workstep_constraint_body.execution_requirement);
+    assert!(!create_workstep_constraint_body.finality_requirement);
+}
+
+#[tokio::test]
+async fn update_workstep_constraints() {
+    let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
+    let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
+
+    let org_access_token_json = config_vals["org_access_token"].to_string();
+    let org_access_token =
+        serde_json::from_str::<String>(&org_access_token_json).expect("organzation access token");
+
+    let app_id_json = config_vals["app_id"].to_string();
+    let app_id = serde_json::from_str::<String>(&app_id_json).expect("workgroup id");
+
+    let baseline: ApiClient = Baseline::factory(&org_access_token);
+
+    let create_workflow_params = json!({
+        "workgroup_id": &app_id,
+        "name": format!("{} workstep", Name().fake::<String>()),
+        "version": "v0.0.1",
+    });
+
+    let create_workflow_body = _create_workflow(&baseline, create_workflow_params, 201).await;
+
+    let create_workstep_params = json!({
+        "name": format!("{} workstep", Name().fake::<String>()),
+        "require_finality": true,
+        "metadata": {
+            "prover": {
+                "identifier": PREIMAGE_HASH_IDENTIFIER,
+                "name": "General Consistency",
+                "provider": GNARK_PROVIDER,
+                "proving_scheme": GROTH16_PROVING_SCHEME,
+                "curve": BLS12_377_CURVE,
+            },
+        },
+    });
+
+    let create_workstep_body = _create_workstep(
+        &baseline,
+        &create_workflow_body.id,
+        create_workstep_params,
+        201,
+    )
+    .await;
+
+    let create_workstep_constraint_params = json!({
+        "expression": "field > 50",
+        "execution_requirement": true,
+        "finality_requirement": false,
+        "workstep_id": &create_workstep_body.id,
+    });
+
+    let create_workstep_constraint_res = baseline
+        .create_workstep_constraint(
+            &create_workflow_body.id,
+            &create_workstep_body.id,
+            Some(create_workstep_constraint_params),
+        )
+        .await
+        .expect("create workstep constraint res");
+    assert_eq!(
+        create_workstep_constraint_res.status(),
+        201,
+        "create workstep constraint res: {}",
+        serde_json::to_string_pretty(
+            &create_workstep_constraint_res
+                .json::<Value>()
+                .await
+                .unwrap()
+        )
+        .unwrap()
+    );
+
+    let create_workstep_constraint_body = create_workstep_constraint_res
+        .json::<WorkstepConstraint>()
+        .await
+        .expect("create workstep constraint body");
+
+    let update_workstep_constraint_params = json!({
+        "expression": "field > 51",
+        "workstep_id": &create_workstep_body.id,
+        "execution_requirement": false,
+        "finality_requirement": true,
+    });
+
+    let update_workstep_constraint_res = baseline
+        .update_workstep_constraint(
+            &create_workflow_body.id,
+            &create_workstep_body.id,
+            &create_workstep_constraint_body.id,
+            Some(update_workstep_constraint_params),
+        )
+        .await
+        .expect("update workstep constraint res");
+    assert_eq!(
+        update_workstep_constraint_res.status(),
+        204,
+        "update workstep constraint res: {}",
+        serde_json::to_string_pretty(
+            &update_workstep_constraint_res
+                .json::<Value>()
+                .await
+                .unwrap()
+        )
+        .unwrap()
+    );
+}
+
+#[tokio::test]
+async fn delete_workstep_constraints() {
+    let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
+    let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
+
+    let org_access_token_json = config_vals["org_access_token"].to_string();
+    let org_access_token =
+        serde_json::from_str::<String>(&org_access_token_json).expect("organzation access token");
+
+    let app_id_json = config_vals["app_id"].to_string();
+    let app_id = serde_json::from_str::<String>(&app_id_json).expect("workgroup id");
+
+    let baseline: ApiClient = Baseline::factory(&org_access_token);
+
+    let create_workflow_params = json!({
+        "workgroup_id": &app_id,
+        "name": format!("{} workstep", Name().fake::<String>()),
+        "version": "v0.0.1",
+    });
+
+    let create_workflow_body = _create_workflow(&baseline, create_workflow_params, 201).await;
+
+    let create_workstep_params = json!({
+        "name": format!("{} workstep", Name().fake::<String>()),
+        "require_finality": true,
+        "metadata": {
+            "prover": {
+                "identifier": PREIMAGE_HASH_IDENTIFIER,
+                "name": "General Consistency",
+                "provider": GNARK_PROVIDER,
+                "proving_scheme": GROTH16_PROVING_SCHEME,
+                "curve": BLS12_377_CURVE,
+            },
+        },
+    });
+
+    let create_workstep_body = _create_workstep(
+        &baseline,
+        &create_workflow_body.id,
+        create_workstep_params,
+        201,
+    )
+    .await;
+
+    let create_workstep_constraint_params = json!({
+        "expression": "field > 50",
+        "execution_requirement": true,
+        "finality_requirement": false,
+        "workstep_id": &create_workstep_body.id,
+    });
+
+    let create_workstep_constraint_res = baseline
+        .create_workstep_constraint(
+            &create_workflow_body.id,
+            &create_workstep_body.id,
+            Some(create_workstep_constraint_params),
+        )
+        .await
+        .expect("create workstep constraint res");
+    assert_eq!(
+        create_workstep_constraint_res.status(),
+        201,
+        "create workstep constraint res: {}",
+        serde_json::to_string_pretty(
+            &create_workstep_constraint_res
+                .json::<Value>()
+                .await
+                .unwrap()
+        )
+        .unwrap()
+    );
+
+    let create_workstep_constraint_body = create_workstep_constraint_res
+        .json::<WorkstepConstraint>()
+        .await
+        .expect("create workstep constraint body");
+
+    let delete_workstep_constraint_res = baseline
+        .delete_workstep_constraint(
+            &create_workflow_body.id,
+            &create_workstep_body.id,
+            &create_workstep_constraint_body.id,
+        )
+        .await
+        .expect("delete workstep constraint res");
+    assert_eq!(
+        delete_workstep_constraint_res.status(),
+        204,
+        "delete workstep constraint res: {}",
+        serde_json::to_string_pretty(
+            &delete_workstep_constraint_res
+                .json::<Value>()
+                .await
+                .unwrap()
+        )
+        .unwrap()
+    );
+}
+
+#[tokio::test]
 async fn fetch_workstep_participants() {
     let json_config = std::fs::File::open(".test-config.tmp.json").expect("json config file");
     let config_vals: Value = serde_json::from_reader(json_config).expect("json config values");
