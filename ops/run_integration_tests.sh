@@ -228,60 +228,23 @@ if [[ $* != *--skip-startup* ]]; then
     wait
 fi
 
-# should selectively run this if SUITE or TEST is baseline-related, not only if --skip-setup is provided; should prolly be --with-baseline-setup flag instead anyways
-if [[ $* != *--skip-setup* && "$RUN_MANY" == "true" ]]; then
-    SAP_ENDPOINT_URL=$SAP_ENDPOINT_URL \
-    SAP_USERNAME=$SAP_USERNAME \
-    SAP_PASSWORD=$SAP_PASSWORD \
-    SERVICENOW_ENDPOINT_URL=$SERVICENOW_ENDPOINT_URL \
-    SERVICENOW_USERNAME=$SERVICENOW_USERNAME \
-    SERVICENOW_PASSWORD=$SERVICENOW_PASSWORD \
-    BASELINE_REGISTRY_CONTRACT_ADDRESS=$BASELINE_REGISTRY_CONTRACT_ADDRESS \
-    INVOKE_PRVD_CLI=$INVOKE_PRVD_CLI \
-    IDENT_API_HOST=localhost:8081 \
-    IDENT_API_SCHEME=http \
-    VAULT_API_HOST=localhost:8082 \
-    VAULT_API_SCHEME=http \
-    PRIVACY_API_HOST=localhost:8083 \
-    PRIVACY_API_SCHEME=http \
-    NCHAIN_API_HOST=localhost:8085 \
-    NCHAIN_API_SCHEME=http \
-    BASELINE_API_HOST=localhost:8086 \
-    BASELINE_API_SCHEME=http \
-    cargo nextest run --retries 3 --run-ignored ignored-only --status-level all --success-output final --failure-output final &> $SETUP_OUTPUT
-
-elif [[ $* != *--skip-setup* ]]; then
-    SAP_ENDPOINT_URL=$SAP_ENDPOINT_URL \
-    SAP_USERNAME=$SAP_USERNAME \
-    SAP_PASSWORD=$SAP_PASSWORD \
-    SERVICENOW_ENDPOINT_URL=$SERVICENOW_ENDPOINT_URL \
-    SERVICENOW_USERNAME=$SERVICENOW_USERNAME \
-    SERVICENOW_PASSWORD=$SERVICENOW_PASSWORD \
-    BASELINE_REGISTRY_CONTRACT_ADDRESS=$BASELINE_REGISTRY_CONTRACT_ADDRESS \
-    INVOKE_PRVD_CLI=$INVOKE_PRVD_CLI \
-    IDENT_API_HOST=localhost:8081 \
-    IDENT_API_SCHEME=http \
-    VAULT_API_HOST=localhost:8082 \
-    VAULT_API_SCHEME=http \
-    PRIVACY_API_HOST=localhost:8083 \
-    PRIVACY_API_SCHEME=http \
-    NCHAIN_API_HOST=localhost:8085 \
-    NCHAIN_API_SCHEME=http \
-    BASELINE_API_HOST=localhost:8086 \
-    BASELINE_API_SCHEME=http \
-    cargo nextest run --retries 3 --run-ignored ignored-only
-
+if [[ "$REPEAT_EACH" == "" ]]; then
+    REPEAT_EACH=1
 fi
 
-# TODO-- CLEANUP CODE
-if [[ "$RUN_MANY" == "true" ]]; then
-    if [[ "$ALL" == "true" ]]; then
+echo "Running tests $REPEAT_EACH times"
+
+while [ "$REPEAT_EACH" -gt 0 ]; do
+    # should selectively run this if SUITE or TEST is baseline-related, not only if --skip-setup is provided; should prolly be --with-baseline-setup flag instead anyways
+    if [[ $* != *--skip-setup* && "$RUN_MANY" == "true" ]]; then
         SAP_ENDPOINT_URL=$SAP_ENDPOINT_URL \
         SAP_USERNAME=$SAP_USERNAME \
         SAP_PASSWORD=$SAP_PASSWORD \
         SERVICENOW_ENDPOINT_URL=$SERVICENOW_ENDPOINT_URL \
         SERVICENOW_USERNAME=$SERVICENOW_USERNAME \
         SERVICENOW_PASSWORD=$SERVICENOW_PASSWORD \
+        BASELINE_REGISTRY_CONTRACT_ADDRESS=$BASELINE_REGISTRY_CONTRACT_ADDRESS \
+        INVOKE_PRVD_CLI=$INVOKE_PRVD_CLI \
         IDENT_API_HOST=localhost:8081 \
         IDENT_API_SCHEME=http \
         VAULT_API_HOST=localhost:8082 \
@@ -292,14 +255,17 @@ if [[ "$RUN_MANY" == "true" ]]; then
         NCHAIN_API_SCHEME=http \
         BASELINE_API_HOST=localhost:8086 \
         BASELINE_API_SCHEME=http \
-        cargo nextest run --status-level all --no-fail-fast --success-output final --failure-output final &> $TEST_OUTPUT
-    else
+        cargo nextest run --retries 3 --run-ignored ignored-only --status-level all --success-output final --failure-output final &> $SETUP_OUTPUT
+
+    elif [[ $* != *--skip-setup* ]]; then
         SAP_ENDPOINT_URL=$SAP_ENDPOINT_URL \
         SAP_USERNAME=$SAP_USERNAME \
         SAP_PASSWORD=$SAP_PASSWORD \
         SERVICENOW_ENDPOINT_URL=$SERVICENOW_ENDPOINT_URL \
         SERVICENOW_USERNAME=$SERVICENOW_USERNAME \
         SERVICENOW_PASSWORD=$SERVICENOW_PASSWORD \
+        BASELINE_REGISTRY_CONTRACT_ADDRESS=$BASELINE_REGISTRY_CONTRACT_ADDRESS \
+        INVOKE_PRVD_CLI=$INVOKE_PRVD_CLI \
         IDENT_API_HOST=localhost:8081 \
         IDENT_API_SCHEME=http \
         VAULT_API_HOST=localhost:8082 \
@@ -310,47 +276,91 @@ if [[ "$RUN_MANY" == "true" ]]; then
         NCHAIN_API_SCHEME=http \
         BASELINE_API_HOST=localhost:8086 \
         BASELINE_API_SCHEME=http \
-        cargo nextest run $([[ -n "$TEST" ]] && echo "$TEST" || echo --test "$SUITE") --status-level all --no-fail-fast --success-output final --failure-output final &> $TEST_OUTPUT
+        cargo nextest run --retries 3 --run-ignored ignored-only
+
     fi
-else
-    if [[ "$ALL" == "true" ]]; then
-        SAP_ENDPOINT_URL=$SAP_ENDPOINT_URL \
-        SAP_USERNAME=$SAP_USERNAME \
-        SAP_PASSWORD=$SAP_PASSWORD \
-        SERVICENOW_ENDPOINT_URL=$SERVICENOW_ENDPOINT_URL \
-        SERVICENOW_USERNAME=$SERVICENOW_USERNAME \
-        SERVICENOW_PASSWORD=$SERVICENOW_PASSWORD \
-        IDENT_API_HOST=localhost:8081 \
-        IDENT_API_SCHEME=http \
-        VAULT_API_HOST=localhost:8082 \
-        VAULT_API_SCHEME=http \
-        PRIVACY_API_HOST=localhost:8083 \
-        PRIVACY_API_SCHEME=http \
-        NCHAIN_API_HOST=localhost:8085 \
-        NCHAIN_API_SCHEME=http \
-        BASELINE_API_HOST=localhost:8086 \
-        BASELINE_API_SCHEME=http \
-        cargo nextest run --no-fail-fast --failure-output immediate-final
+
+    # TODO-- CLEANUP CODE
+    if [[ "$RUN_MANY" == "true" ]]; then
+        if [[ "$ALL" == "true" ]]; then
+            SAP_ENDPOINT_URL=$SAP_ENDPOINT_URL \
+            SAP_USERNAME=$SAP_USERNAME \
+            SAP_PASSWORD=$SAP_PASSWORD \
+            SERVICENOW_ENDPOINT_URL=$SERVICENOW_ENDPOINT_URL \
+            SERVICENOW_USERNAME=$SERVICENOW_USERNAME \
+            SERVICENOW_PASSWORD=$SERVICENOW_PASSWORD \
+            IDENT_API_HOST=localhost:8081 \
+            IDENT_API_SCHEME=http \
+            VAULT_API_HOST=localhost:8082 \
+            VAULT_API_SCHEME=http \
+            PRIVACY_API_HOST=localhost:8083 \
+            PRIVACY_API_SCHEME=http \
+            NCHAIN_API_HOST=localhost:8085 \
+            NCHAIN_API_SCHEME=http \
+            BASELINE_API_HOST=localhost:8086 \
+            BASELINE_API_SCHEME=http \
+            cargo nextest run --status-level all --no-fail-fast --success-output final --failure-output final &> $TEST_OUTPUT
+        else
+            SAP_ENDPOINT_URL=$SAP_ENDPOINT_URL \
+            SAP_USERNAME=$SAP_USERNAME \
+            SAP_PASSWORD=$SAP_PASSWORD \
+            SERVICENOW_ENDPOINT_URL=$SERVICENOW_ENDPOINT_URL \
+            SERVICENOW_USERNAME=$SERVICENOW_USERNAME \
+            SERVICENOW_PASSWORD=$SERVICENOW_PASSWORD \
+            IDENT_API_HOST=localhost:8081 \
+            IDENT_API_SCHEME=http \
+            VAULT_API_HOST=localhost:8082 \
+            VAULT_API_SCHEME=http \
+            PRIVACY_API_HOST=localhost:8083 \
+            PRIVACY_API_SCHEME=http \
+            NCHAIN_API_HOST=localhost:8085 \
+            NCHAIN_API_SCHEME=http \
+            BASELINE_API_HOST=localhost:8086 \
+            BASELINE_API_SCHEME=http \
+            cargo nextest run $([[ -n "$TEST" ]] && echo "$TEST" || echo --test "$SUITE") --status-level all --no-fail-fast --success-output final --failure-output final &> $TEST_OUTPUT
+        fi
     else
-        SAP_ENDPOINT_URL=$SAP_ENDPOINT_URL \
-        SAP_USERNAME=$SAP_USERNAME \
-        SAP_PASSWORD=$SAP_PASSWORD \
-        SERVICENOW_ENDPOINT_URL=$SERVICENOW_ENDPOINT_URL \
-        SERVICENOW_USERNAME=$SERVICENOW_USERNAME \
-        SERVICENOW_PASSWORD=$SERVICENOW_PASSWORD \
-        IDENT_API_HOST=localhost:8081 \
-        IDENT_API_SCHEME=http \
-        VAULT_API_HOST=localhost:8082 \
-        VAULT_API_SCHEME=http \
-        PRIVACY_API_HOST=localhost:8083 \
-        PRIVACY_API_SCHEME=http \
-        NCHAIN_API_HOST=localhost:8085 \
-        NCHAIN_API_SCHEME=http \
-        BASELINE_API_HOST=localhost:8086 \
-        BASELINE_API_SCHEME=http \
-        cargo nextest run $([[ -n "$TEST" ]] && echo "$TEST" || echo --test "$SUITE") --no-fail-fast --failure-output immediate-final
+        if [[ "$ALL" == "true" ]]; then
+            SAP_ENDPOINT_URL=$SAP_ENDPOINT_URL \
+            SAP_USERNAME=$SAP_USERNAME \
+            SAP_PASSWORD=$SAP_PASSWORD \
+            SERVICENOW_ENDPOINT_URL=$SERVICENOW_ENDPOINT_URL \
+            SERVICENOW_USERNAME=$SERVICENOW_USERNAME \
+            SERVICENOW_PASSWORD=$SERVICENOW_PASSWORD \
+            IDENT_API_HOST=localhost:8081 \
+            IDENT_API_SCHEME=http \
+            VAULT_API_HOST=localhost:8082 \
+            VAULT_API_SCHEME=http \
+            PRIVACY_API_HOST=localhost:8083 \
+            PRIVACY_API_SCHEME=http \
+            NCHAIN_API_HOST=localhost:8085 \
+            NCHAIN_API_SCHEME=http \
+            BASELINE_API_HOST=localhost:8086 \
+            BASELINE_API_SCHEME=http \
+            cargo nextest run --no-fail-fast --failure-output immediate-final
+        else
+            SAP_ENDPOINT_URL=$SAP_ENDPOINT_URL \
+            SAP_USERNAME=$SAP_USERNAME \
+            SAP_PASSWORD=$SAP_PASSWORD \
+            SERVICENOW_ENDPOINT_URL=$SERVICENOW_ENDPOINT_URL \
+            SERVICENOW_USERNAME=$SERVICENOW_USERNAME \
+            SERVICENOW_PASSWORD=$SERVICENOW_PASSWORD \
+            IDENT_API_HOST=localhost:8081 \
+            IDENT_API_SCHEME=http \
+            VAULT_API_HOST=localhost:8082 \
+            VAULT_API_SCHEME=http \
+            PRIVACY_API_HOST=localhost:8083 \
+            PRIVACY_API_SCHEME=http \
+            NCHAIN_API_HOST=localhost:8085 \
+            NCHAIN_API_SCHEME=http \
+            BASELINE_API_HOST=localhost:8086 \
+            BASELINE_API_SCHEME=http \
+            cargo nextest run $([[ -n "$TEST" ]] && echo "$TEST" || echo --test "$SUITE") --no-fail-fast --failure-output immediate-final
+        fi
     fi
-fi
+
+    ((REPEAT_EACH--))
+done
 
 if [[ $* != *--skip-shutdown* ]]; then
     handle_shutdown
